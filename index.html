@@ -102,6 +102,35 @@
     padding:12px; margin-top:14px; text-align:center; font-size:14px;
   }
   .venda-total-preview b{ color:var(--brasero-yellow); font-size:20px; display:block; margin-top:4px; }
+
+  .carrinho-item{
+    display:flex; justify-content:space-between; align-items:center; gap:8px;
+    background:#0c0a09; border:1px solid #2a2119; border-radius:9px;
+    padding:9px 12px; margin-bottom:8px; font-size:13px;
+  }
+  .carrinho-item .info{ flex:1; }
+  .carrinho-item .info b{ display:block; color:var(--brasero-cream); }
+  .carrinho-item .info span{ font-size:11.5px; color:var(--muted); }
+  .carrinho-item .remover{
+    width:auto; margin:0; padding:5px 9px; font-size:11px;
+    background:transparent; color:#ff8a80; border:1px solid #4a2e2c;
+  }
+
+  .registro-item{
+    display:flex; justify-content:space-between; align-items:center; gap:8px;
+    padding:8px 0; border-bottom:1px solid #241c15; font-size:12.5px;
+  }
+  .registro-item:last-child{ border-bottom:none; }
+  .registro-item .info b{ display:block; font-size:13px; }
+  .registro-item .info span{ color:var(--muted); font-size:11px; }
+  .registro-item .valor{ font-weight:700; white-space:nowrap; }
+  .registro-item .valor.saida{ color:#ff8a80; }
+  .registro-item .valor.entrada{ color:var(--brasero-green); }
+  .dia-total-linha{
+    display:flex; justify-content:space-between; margin-top:10px; padding-top:10px;
+    border-top:2px solid var(--brasero-orange); font-size:14px; font-weight:800;
+  }
+  .dia-total-linha b{ color:var(--brasero-yellow); }
 </style>
 </head>
 <body>
@@ -135,7 +164,10 @@
   <!-- ABA VENDER -->
   <div class="tab-conteudo ativa" id="tab-vender">
     <div class="card">
-      <label class="first">Tipo de venda</label>
+      <label class="first">Data da venda</label>
+      <input type="date" id="venda-data">
+
+      <label>Tipo de item</label>
       <select id="venda-tipo">
         <option value="Espeto">Espeto (rua)</option>
         <option value="Refrigerante">Refrigerante</option>
@@ -159,12 +191,21 @@
         <input type="number" id="pacote-custo" step="0.01" placeholder="0,00">
       </div>
 
+      <button class="btn-secondary" id="btn-add-carrinho">➕ Adicionar item</button>
+
+      <div id="carrinho-lista" style="margin-top:14px;"></div>
+
       <div class="venda-total-preview" id="venda-preview" style="display:none;">
-        Valor total<b id="venda-preview-valor">R$ 0,00</b>
+        Total do carrinho<b id="venda-preview-valor">R$ 0,00</b>
       </div>
 
-      <button class="btn-primary" id="btn-registrar-venda">💰 Registrar Venda</button>
+      <button class="btn-primary" id="btn-registrar-venda" style="display:none;">💰 Registrar Venda(s)</button>
       <p class="status-msg" id="venda-status"></p>
+    </div>
+
+    <div class="card">
+      <p style="margin:0 0 10px; font-family:'Poppins',sans-serif; font-weight:700; color:var(--brasero-yellow);">📋 Registrado em <span id="label-data-lista"></span></p>
+      <div id="lista-vendas-dia"><p style="color:var(--muted); font-size:13px;">Carregando...</p></div>
     </div>
   </div>
 
@@ -190,6 +231,22 @@
       <p style="margin:0 0 10px; font-size:13px; color:var(--muted);">Lançamento rápido do custo fixo do dia (vinagrete + farofa + carvão), direto como saída.</p>
       <button class="btn-secondary" id="btn-custos-fixos">📌 Registrar custos fixos de hoje</button>
       <p class="status-msg" id="custos-fixos-status"></p>
+    </div>
+
+    <div class="card">
+      <p style="margin:0 0 10px; font-family:'Poppins',sans-serif; font-weight:700; color:var(--brasero-yellow);">🔍 Ver registros de dias anteriores</p>
+      <div class="grid2">
+        <div>
+          <label class="first">De</label>
+          <input type="date" id="mov-filtro-inicio">
+        </div>
+        <div>
+          <label class="first">Até</label>
+          <input type="date" id="mov-filtro-fim">
+        </div>
+      </div>
+      <button class="btn-primary" id="btn-filtrar-mov">Buscar</button>
+      <div id="lista-movimentos-filtrados" style="margin-top:10px;"></div>
     </div>
   </div>
 
@@ -227,7 +284,7 @@
 <script>
 const CONFIG = {
   // Cole aqui a URL do Web App do Apps Script (financeiro.gs)
-  API_URL: "COLE_AQUI_A_URL_DO_APPS_SCRIPT"
+  API_URL: "https://script.google.com/macros/s/AKfycbwE-8P0cEBLQTDQ0KsOH_5J3bAd0N8tg17VzUTIoOFaXVcfjvzm4p6OCL2WB-sWI770HA/exec"
 };
 
 const $ = (id) => document.getElementById(id);
@@ -251,7 +308,7 @@ function chamarApi(params) {
       script.remove();
     };
     const script = document.createElement("script");
-    script.src = "https://script.google.com/macros/s/AKfycbzpegRFAS-9BVLy-UCd6RhhbyoYKIMXLV975_SSkfGRpvHqCo0Af2e9luNPu2t9wg6Mew/exec" + "?" + query.toString();
+    script.src = CONFIG.API_URL + "?" + query.toString();
     script.onerror = () => reject(new Error("Falha de conexão com o servidor."));
     document.body.appendChild(script);
     setTimeout(() => {
@@ -316,8 +373,12 @@ async function iniciarApp() {
   montarListaProdutosEditavel();
 
   const hoje = new Date().toISOString().slice(0, 10);
+  $("venda-data").value = hoje;
   $("resumo-data-inicio").value = hoje;
   $("resumo-data-fim").value = hoje;
+  $("mov-filtro-inicio").value = hoje;
+  $("mov-filtro-fim").value = hoje;
+  carregarVendasDoDia();
 }
 
 // tenta login automático se já tiver usuário salvo neste aparelho
@@ -341,8 +402,10 @@ document.querySelectorAll(".tab-btn").forEach(btn => {
 });
 
 // ---------------------------------------------------------------------------
-// VENDER
+// VENDER (carrinho)
 // ---------------------------------------------------------------------------
+let CARRINHO = [];
+
 function produtosPorTipo(tipo) {
   const mapa = { "Espeto": "Espeto", "Refrigerante": "Refrigerante", "Baião de Dois": "Baião de Dois" };
   return PRODUTOS.filter(p => p.categoria === mapa[tipo]);
@@ -358,7 +421,6 @@ function montarSelectProdutoVenda() {
     opt.textContent = `${p.nome} (${fmt(p.preco)})`;
     select.appendChild(opt);
   });
-  atualizarPreviewVenda();
 }
 
 $("venda-tipo").onchange = () => {
@@ -367,31 +429,10 @@ $("venda-tipo").onchange = () => {
   $("venda-campos-produto").style.display = ehPacote ? "none" : "block";
   $("venda-campos-pacote").style.display = ehPacote ? "block" : "none";
   if (!ehPacote) montarSelectProdutoVenda();
-  atualizarPreviewVenda();
 };
-$("venda-produto").onchange = atualizarPreviewVenda;
-$("venda-quantidade").oninput = atualizarPreviewVenda;
-$("pacote-valor").oninput = atualizarPreviewVenda;
 
-function atualizarPreviewVenda() {
+$("btn-add-carrinho").onclick = () => {
   const tipo = $("venda-tipo").value;
-  let valorTotal = 0;
-  if (tipo === "Pacote") {
-    valorTotal = Number($("pacote-valor").value) || 0;
-  } else {
-    const nomeProduto = $("venda-produto").value;
-    const produto = PRODUTOS.find(p => p.nome === nomeProduto);
-    const qtd = Number($("venda-quantidade").value) || 0;
-    valorTotal = produto ? produto.preco * qtd : 0;
-  }
-  $("venda-preview").style.display = valorTotal > 0 ? "block" : "none";
-  $("venda-preview-valor").textContent = fmt(valorTotal);
-}
-
-$("btn-registrar-venda").onclick = async () => {
-  const tipo = $("venda-tipo").value;
-  let payload = { usuario: USUARIO_LOGADO, tipo };
-
   if (tipo === "Pacote") {
     const nomeEvento = $("pacote-nome").value.trim();
     const valorTotal = Number($("pacote-valor").value) || 0;
@@ -401,7 +442,8 @@ $("btn-registrar-venda").onclick = async () => {
       $("venda-status").style.color = "#ff8a80";
       return;
     }
-    payload = { ...payload, produto: nomeEvento, quantidade: 1, valorUnitario: valorTotal, valorTotal, custoUnitario: custoTotal, custoTotal };
+    CARRINHO.push({ tipo, produto: nomeEvento, quantidade: 1, valorUnitario: valorTotal, valorTotal, custoUnitario: custoTotal, custoTotal });
+    $("pacote-nome").value = ""; $("pacote-valor").value = ""; $("pacote-custo").value = "";
   } else {
     const nomeProduto = $("venda-produto").value;
     const produto = PRODUTOS.find(p => p.nome === nomeProduto);
@@ -411,32 +453,96 @@ $("btn-registrar-venda").onclick = async () => {
       $("venda-status").style.color = "#ff8a80";
       return;
     }
-    payload = {
-      ...payload, produto: produto.nome, quantidade: qtd,
+    CARRINHO.push({
+      tipo, produto: produto.nome, quantidade: qtd,
       valorUnitario: produto.preco, valorTotal: produto.preco * qtd,
       custoUnitario: produto.custo, custoTotal: produto.custo * qtd
-    };
+    });
+    $("venda-quantidade").value = 1;
   }
+  $("venda-status").textContent = "";
+  renderizarCarrinho();
+};
 
+function renderizarCarrinho() {
+  const container = $("carrinho-lista");
+  container.innerHTML = "";
+  let total = 0;
+  CARRINHO.forEach((item, idx) => {
+    total += item.valorTotal;
+    const div = document.createElement("div");
+    div.className = "carrinho-item";
+    div.innerHTML = `
+      <div class="info"><b>${item.quantidade}x ${item.produto}</b><span>${item.tipo} — ${fmt(item.valorTotal)}</span></div>
+      <button class="remover">Remover</button>
+    `;
+    div.querySelector("button").onclick = () => { CARRINHO.splice(idx, 1); renderizarCarrinho(); };
+    container.appendChild(div);
+  });
+  $("venda-preview").style.display = CARRINHO.length ? "block" : "none";
+  $("venda-preview-valor").textContent = fmt(total);
+  $("btn-registrar-venda").style.display = CARRINHO.length ? "block" : "none";
+}
+
+function dataFormularioParaBR() {
+  const valor = $("venda-data").value; // yyyy-mm-dd
+  const [ano, mes, dia] = valor.split("-");
+  const agora = new Date();
+  const hora = String(agora.getHours()).padStart(2, "0");
+  const min = String(agora.getMinutes()).padStart(2, "0");
+  const seg = String(agora.getSeconds()).padStart(2, "0");
+  return `${dia}/${mes}/${ano} ${hora}:${min}:${seg}`;
+}
+
+$("btn-registrar-venda").onclick = async () => {
+  if (!CARRINHO.length) return;
   $("venda-status").textContent = "Registrando...";
   $("venda-status").style.color = "var(--muted)";
+  const dataHora = dataFormularioParaBR();
   try {
-    const resp = await chamarApi({ acao: "registrarVenda", ...payload });
-    if (resp.status === "ok") {
-      $("venda-status").textContent = "✓ Venda registrada!";
-      $("venda-status").style.color = "var(--muted)";
-      $("venda-quantidade").value = 1;
-      $("pacote-nome").value = ""; $("pacote-valor").value = ""; $("pacote-custo").value = "";
-      atualizarPreviewVenda();
-    } else {
-      $("venda-status").textContent = "❌ " + resp.mensagem;
-      $("venda-status").style.color = "#ff8a80";
+    for (const item of CARRINHO) {
+      const resp = await chamarApi({ acao: "registrarVenda", usuario: USUARIO_LOGADO, dataHora, ...item });
+      if (resp.status !== "ok") throw new Error(resp.mensagem);
     }
+    $("venda-status").textContent = "✓ " + CARRINHO.length + " item(ns) registrado(s)!";
+    $("venda-status").style.color = "var(--muted)";
+    CARRINHO = [];
+    renderizarCarrinho();
+    carregarVendasDoDia();
   } catch (e) {
     $("venda-status").textContent = "❌ " + e.message;
     $("venda-status").style.color = "#ff8a80";
   }
 };
+
+function dataInputParaBR(valorInput) {
+  const [ano, mes, dia] = valorInput.split("-");
+  return `${dia}/${mes}/${ano}`;
+}
+
+async function carregarVendasDoDia() {
+  const dataInput = $("venda-data").value;
+  const dataBR = dataInputParaBR(dataInput);
+  $("label-data-lista").textContent = dataBR;
+  const container = $("lista-vendas-dia");
+  container.innerHTML = `<p style="color:var(--muted); font-size:13px;">Carregando...</p>`;
+  try {
+    const r = await chamarApi({ acao: "listarVendasDia", data: dataBR });
+    if (r.status !== "ok" || !r.registros.length) {
+      container.innerHTML = `<p style="color:var(--muted); font-size:13px;">Nenhuma venda registrada nesse dia.</p>`;
+      return;
+    }
+    container.innerHTML = r.registros.map(v => `
+      <div class="registro-item">
+        <div class="info"><b>${v.quantidade}x ${v.produto}</b><span>${v.tipo} · ${v.usuario} · ${v.dataHora.split(" ")[1] || ""}</span></div>
+        <span class="valor entrada">${fmt(v.valorTotal)}</span>
+      </div>
+    `).join("") + `<div class="dia-total-linha"><span>Total do dia</span><b>${fmt(r.total)}</b></div>`;
+  } catch (e) {
+    container.innerHTML = `<p style="color:#ff8a80; font-size:13px;">${e.message}</p>`;
+  }
+}
+$("venda-data").onchange = carregarVendasDoDia;
 
 // ---------------------------------------------------------------------------
 // SAÍDA / ENTRADA
@@ -498,6 +604,28 @@ $("btn-custos-fixos").onclick = async () => {
   } catch (e) {
     $("custos-fixos-status").textContent = "❌ " + e.message;
     $("custos-fixos-status").style.color = "#ff8a80";
+  }
+};
+
+$("btn-filtrar-mov").onclick = async () => {
+  const dataInicio = $("mov-filtro-inicio").value;
+  const dataFim = $("mov-filtro-fim").value;
+  const container = $("lista-movimentos-filtrados");
+  container.innerHTML = `<p style="color:var(--muted); font-size:13px;">Buscando...</p>`;
+  try {
+    const r = await chamarApi({ acao: "listarMovimentos", dataInicio, dataFim });
+    if (r.status !== "ok" || !r.registros.length) {
+      container.innerHTML = `<p style="color:var(--muted); font-size:13px;">Nenhum registro no período.</p>`;
+      return;
+    }
+    container.innerHTML = r.registros.map(m => `
+      <div class="registro-item">
+        <div class="info"><b>${m.categoria}</b><span>${m.tipoMovimento} · ${m.descricao || "-"} · ${m.dataHora}</span></div>
+        <span class="valor ${m.tipoMovimento === "Saída" ? "saida" : "entrada"}">${m.tipoMovimento === "Saída" ? "-" : "+"}${fmt(m.valor)}</span>
+      </div>
+    `).join("");
+  } catch (e) {
+    container.innerHTML = `<p style="color:#ff8a80; font-size:13px;">${e.message}</p>`;
   }
 };
 
