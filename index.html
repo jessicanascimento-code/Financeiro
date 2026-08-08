@@ -159,6 +159,7 @@
     <button class="tab-btn" data-tab="movimento">Saída/Entrada</button>
     <button class="tab-btn" data-tab="custos">Custos &amp; Preços</button>
     <button class="tab-btn" data-tab="resumo">Resumo</button>
+    <button class="tab-btn" data-tab="caixa">Caixa</button>
   </div>
 
   <!-- ABA VENDER -->
@@ -197,6 +198,22 @@
 
       <div class="venda-total-preview" id="venda-preview" style="display:none;">
         Total do carrinho<b id="venda-preview-valor">R$ 0,00</b>
+      </div>
+
+      <div id="pagamento-campos" style="display:none;">
+        <label>Forma de pagamento</label>
+        <select id="venda-pagamento">
+          <option value="Dinheiro">Dinheiro</option>
+          <option value="Pix">Pix</option>
+          <option value="Cartão">Cartão</option>
+        </select>
+        <div id="pagamento-dinheiro-campos" style="display:none;">
+          <label>Valor recebido do cliente (R$)</label>
+          <input type="number" id="venda-valor-recebido" step="0.01" placeholder="0,00">
+          <div class="venda-total-preview" id="troco-preview" style="display:none; border-color:var(--brasero-green);">
+            Troco<b id="troco-preview-valor">R$ 0,00</b>
+          </div>
+        </div>
       </div>
 
       <button class="btn-primary" id="btn-registrar-venda" style="display:none;">💰 Registrar Venda(s)</button>
@@ -253,6 +270,27 @@
   <!-- ABA CUSTOS & PREÇOS -->
   <div class="tab-conteudo" id="tab-custos">
     <div class="card">
+      <p style="margin:0 0 4px; font-family:'Poppins',sans-serif; font-weight:700; color:var(--brasero-yellow);">➕ Adicionar novo item</p>
+      <label class="first">Categoria</label>
+      <input type="text" id="novo-item-categoria" list="lista-categorias-existentes" placeholder="Ex: Bebida, Espeto, Sobremesa...">
+      <datalist id="lista-categorias-existentes"></datalist>
+      <label>Nome do item</label>
+      <input type="text" id="novo-item-nome" placeholder="Ex: Água 500ml">
+      <div class="grid2">
+        <div>
+          <label>Custo (R$)</label>
+          <input type="number" id="novo-item-custo" step="0.01" placeholder="0,00">
+        </div>
+        <div>
+          <label>Preço de venda (R$)</label>
+          <input type="number" id="novo-item-preco" step="0.01" placeholder="0,00">
+        </div>
+      </div>
+      <button class="btn-green" id="btn-add-produto">Adicionar item ao cardápio</button>
+      <p class="status-msg" id="novo-item-status"></p>
+    </div>
+
+    <div class="card">
       <p style="margin:0 0 4px; font-size:13px; color:var(--muted);">Edite custo e preço de qualquer item. Toque em "Salvar" na linha que alterar.</p>
       <div id="lista-produtos-editavel"></div>
     </div>
@@ -278,6 +316,16 @@
       <button class="btn-primary" id="btn-buscar-resumo">Buscar</button>
     </div>
     <div class="card" id="card-resumo-resultado" style="display:none;"></div>
+  </div>
+
+  <!-- ABA CAIXA -->
+  <div class="tab-conteudo" id="tab-caixa">
+    <div class="card">
+      <label class="first">Data</label>
+      <input type="date" id="caixa-data">
+      <button class="btn-primary" id="btn-buscar-caixa">Ver fechamento do dia</button>
+    </div>
+    <div class="card" id="card-caixa-resultado" style="display:none;"></div>
   </div>
 </div>
 
@@ -368,9 +416,11 @@ async function iniciarApp() {
   if (respProdutos.status === "ok") PRODUTOS = respProdutos.produtos;
   if (respCategorias.status === "ok") CATEGORIAS = respCategorias;
 
+  montarTipoVenda();
   montarSelectProdutoVenda();
   montarCategoriasMovimento();
   montarListaProdutosEditavel();
+  montarListaCategoriasExistentes();
 
   const hoje = new Date().toISOString().slice(0, 10);
   $("venda-data").value = hoje;
@@ -378,6 +428,7 @@ async function iniciarApp() {
   $("resumo-data-fim").value = hoje;
   $("mov-filtro-inicio").value = hoje;
   $("mov-filtro-fim").value = hoje;
+  $("caixa-data").value = hoje;
   carregarVendasDoDia();
 }
 
@@ -406,9 +457,28 @@ document.querySelectorAll(".tab-btn").forEach(btn => {
 // ---------------------------------------------------------------------------
 let CARRINHO = [];
 
+function categoriasVendaveis() {
+  const cats = [...new Set(PRODUTOS.map(p => p.categoria))].filter(c => c !== "Custo Fixo Diário");
+  return cats;
+}
+
+function montarTipoVenda() {
+  const select = $("venda-tipo");
+  const valorAtual = select.value;
+  select.innerHTML = "";
+  categoriasVendaveis().forEach(cat => {
+    const opt = document.createElement("option");
+    opt.value = cat; opt.textContent = cat;
+    select.appendChild(opt);
+  });
+  const opcaoPacote = document.createElement("option");
+  opcaoPacote.value = "Pacote"; opcaoPacote.textContent = "Pacote (evento)";
+  select.appendChild(opcaoPacote);
+  if ([...select.options].some(o => o.value === valorAtual)) select.value = valorAtual;
+}
+
 function produtosPorTipo(tipo) {
-  const mapa = { "Espeto": "Espeto", "Refrigerante": "Refrigerante", "Baião de Dois": "Baião de Dois" };
-  return PRODUTOS.filter(p => p.categoria === mapa[tipo]);
+  return PRODUTOS.filter(p => p.categoria === tipo);
 }
 
 function montarSelectProdutoVenda() {
@@ -482,7 +552,24 @@ function renderizarCarrinho() {
   $("venda-preview").style.display = CARRINHO.length ? "block" : "none";
   $("venda-preview-valor").textContent = fmt(total);
   $("btn-registrar-venda").style.display = CARRINHO.length ? "block" : "none";
+  $("pagamento-campos").style.display = CARRINHO.length ? "block" : "none";
+  atualizarTroco();
 }
+
+function totalCarrinho() {
+  return CARRINHO.reduce((soma, i) => soma + i.valorTotal, 0);
+}
+
+function atualizarTroco() {
+  const recebido = Number($("venda-valor-recebido").value) || 0;
+  const troco = recebido - totalCarrinho();
+  $("troco-preview").style.display = recebido > 0 ? "block" : "none";
+  $("troco-preview-valor").textContent = fmt(Math.max(troco, 0));
+}
+$("venda-valor-recebido").oninput = atualizarTroco;
+$("venda-pagamento").onchange = () => {
+  $("pagamento-dinheiro-campos").style.display = $("venda-pagamento").value === "Dinheiro" ? "block" : "none";
+};
 
 function dataFormularioParaBR() {
   const valor = $("venda-data").value; // yyyy-mm-dd
@@ -499,14 +586,18 @@ $("btn-registrar-venda").onclick = async () => {
   $("venda-status").textContent = "Registrando...";
   $("venda-status").style.color = "var(--muted)";
   const dataHora = dataFormularioParaBR();
+  const formaPagamento = $("venda-pagamento").value;
+  const valorRecebido = Number($("venda-valor-recebido").value) || 0;
+  const troco = formaPagamento === "Dinheiro" ? Math.max(valorRecebido - totalCarrinho(), 0) : 0;
   try {
     for (const item of CARRINHO) {
-      const resp = await chamarApi({ acao: "registrarVenda", usuario: USUARIO_LOGADO, dataHora, ...item });
+      const resp = await chamarApi({ acao: "registrarVenda", usuario: USUARIO_LOGADO, dataHora, formaPagamento, troco, ...item });
       if (resp.status !== "ok") throw new Error(resp.mensagem);
     }
     $("venda-status").textContent = "✓ " + CARRINHO.length + " item(ns) registrado(s)!";
     $("venda-status").style.color = "var(--muted)";
     CARRINHO = [];
+    $("venda-valor-recebido").value = "";
     renderizarCarrinho();
     carregarVendasDoDia();
   } catch (e) {
@@ -534,7 +625,7 @@ async function carregarVendasDoDia() {
     }
     container.innerHTML = r.registros.map(v => `
       <div class="registro-item">
-        <div class="info"><b>${v.quantidade}x ${v.produto}</b><span>${v.tipo} · ${v.usuario} · ${v.dataHora.split(" ")[1] || ""}</span></div>
+        <div class="info"><b>${v.quantidade}x ${v.produto}</b><span>${v.tipo} · ${v.usuario} · ${(v.dataHora.split(" ")[1] || "")} · ${v.formaPagamento || "-"}</span></div>
         <span class="valor entrada">${fmt(v.valorTotal)}</span>
       </div>
     `).join("") + `<div class="dia-total-linha"><span>Total do dia</span><b>${fmt(r.total)}</b></div>`;
@@ -679,8 +770,88 @@ function montarListaProdutosEditavel() {
 }
 
 // ---------------------------------------------------------------------------
-// RESUMO
+// NOVO ITEM
 // ---------------------------------------------------------------------------
+function montarListaCategoriasExistentes() {
+  const datalist = $("lista-categorias-existentes");
+  datalist.innerHTML = "";
+  categoriasVendaveis().forEach(cat => {
+    const opt = document.createElement("option");
+    opt.value = cat;
+    datalist.appendChild(opt);
+  });
+}
+
+$("btn-add-produto").onclick = async () => {
+  const categoria = $("novo-item-categoria").value.trim();
+  const nome = $("novo-item-nome").value.trim();
+  const custo = $("novo-item-custo").value;
+  const preco = $("novo-item-preco").value;
+  if (!categoria || !nome) {
+    $("novo-item-status").textContent = "Preenche categoria e nome.";
+    $("novo-item-status").style.color = "#ff8a80";
+    return;
+  }
+  $("novo-item-status").textContent = "Adicionando...";
+  $("novo-item-status").style.color = "var(--muted)";
+  try {
+    const resp = await chamarApi({ acao: "adicionarProduto", usuario: USUARIO_LOGADO, categoria, nome, custo, preco });
+    if (resp.status === "ok") {
+      $("novo-item-status").textContent = "✓ Item adicionado!";
+      $("novo-item-status").style.color = "var(--muted)";
+      $("novo-item-categoria").value = ""; $("novo-item-nome").value = "";
+      $("novo-item-custo").value = ""; $("novo-item-preco").value = "";
+      const respProdutos = await chamarApi({ acao: "listarProdutos" });
+      if (respProdutos.status === "ok") PRODUTOS = respProdutos.produtos;
+      montarTipoVenda();
+      montarSelectProdutoVenda();
+      montarListaProdutosEditavel();
+      montarListaCategoriasExistentes();
+    } else {
+      $("novo-item-status").textContent = "❌ " + resp.mensagem;
+      $("novo-item-status").style.color = "#ff8a80";
+    }
+  } catch (e) {
+    $("novo-item-status").textContent = "❌ " + e.message;
+    $("novo-item-status").style.color = "#ff8a80";
+  }
+};
+
+// ---------------------------------------------------------------------------
+// CAIXA (fechamento por forma de pagamento)
+// ---------------------------------------------------------------------------
+$("btn-buscar-caixa").onclick = async () => {
+  const dataInput = $("caixa-data").value;
+  const dataBR = dataInputParaBR(dataInput);
+  const card = $("card-caixa-resultado");
+  card.style.display = "block";
+  card.innerHTML = `<p style="color:var(--muted); font-size:13px;">Buscando...</p>`;
+  try {
+    const r = await chamarApi({ acao: "listarVendasDia", data: dataBR });
+    if (r.status !== "ok" || !r.registros.length) {
+      card.innerHTML = `<p style="color:var(--muted); font-size:13px;">Nenhuma venda registrada em ${dataBR}.</p>`;
+      return;
+    }
+    const porForma = {};
+    let totalTroco = 0;
+    r.registros.forEach(v => {
+      const forma = v.formaPagamento || "Não informado";
+      porForma[forma] = (porForma[forma] || 0) + v.valorTotal;
+      totalTroco += v.troco || 0;
+    });
+    const linhas = Object.entries(porForma).map(([forma, valor]) =>
+      `<div class="resumo-linha"><span>${forma}</span><b>${fmt(valor)}</b></div>`
+    ).join("");
+    card.innerHTML = `
+      <p style="font-family:'Poppins',sans-serif; font-weight:700; color:var(--brasero-yellow); margin:0 0 10px;">Fechamento de ${dataBR}</p>
+      ${linhas}
+      <div class="resumo-linha total"><span>Total do dia</span><b>${fmt(r.total)}</b></div>
+      ${totalTroco > 0 ? `<p style="margin-top:10px; font-size:12.5px; color:var(--muted);">Total de troco dado em dinheiro: ${fmt(totalTroco)}</p>` : ""}
+    `;
+  } catch (e) {
+    card.innerHTML = `<p style="color:#ff8a80; font-size:13px;">${e.message}</p>`;
+  }
+};
 $("btn-resumo-hoje").onclick = () => {
   const hoje = new Date().toISOString().slice(0, 10);
   $("resumo-data-inicio").value = hoje;
