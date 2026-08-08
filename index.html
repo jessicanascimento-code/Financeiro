@@ -332,7 +332,7 @@
 <script>
 const CONFIG = {
   // Cole aqui a URL do Web App do Apps Script (financeiro.gs)
-  API_URL: "https://script.google.com/macros/s/AKfycbwE-8P0cEBLQTDQ0KsOH_5J3bAd0N8tg17VzUTIoOFaXVcfjvzm4p6OCL2WB-sWI770HA/exec"
+  API_URL: "https://script.google.com/macros/s/AKfycbzp0jdmpXPFAOS1al1DkzTK2M7EoNFY0kBEN7xkFyoz1bCKEDWU05V4b7oQhMWp0pTQsg/exec"
 };
 
 const $ = (id) => document.getElementById(id);
@@ -620,7 +620,12 @@ async function carregarVendasDoDia() {
   try {
     const r = await chamarApi({ acao: "listarVendasDia", data: dataBR });
     if (r.status !== "ok" || !r.registros.length) {
-      container.innerHTML = `<p style="color:var(--muted); font-size:13px;">Nenhuma venda registrada nesse dia.</p>`;
+      const debugHtml = r.debug ? `
+        <details style="margin-top:12px; font-size:11px; color:var(--muted);">
+          <summary>Ver diagnóstico técnico</summary>
+          <pre style="white-space:pre-wrap; word-break:break-all; background:#0c0a09; padding:8px; border-radius:6px; margin-top:6px;">${JSON.stringify(r.debug, null, 2)}</pre>
+        </details>` : "";
+      container.innerHTML = `<p style="color:var(--muted); font-size:13px;">Nenhuma venda registrada nesse dia.</p>${debugHtml}`;
       return;
     }
     container.innerHTML = r.registros.map(v => `
