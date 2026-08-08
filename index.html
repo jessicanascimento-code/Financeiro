@@ -251,7 +251,7 @@ function chamarApi(params) {
       script.remove();
     };
     const script = document.createElement("script");
-    script.src = https://script.google.com/macros/s/AKfycbzpegRFAS-9BVLy-UCd6RhhbyoYKIMXLV975_SSkfGRpvHqCo0Af2e9luNPu2t9wg6Mew/exec + "?" + query.toString();
+    script.src = "https://script.google.com/macros/s/AKfycbzpegRFAS-9BVLy-UCd6RhhbyoYKIMXLV975_SSkfGRpvHqCo0Af2e9luNPu2t9wg6Mew/exec" + "?" + query.toString();
     script.onerror = () => reject(new Error("Falha de conexão com o servidor."));
     document.body.appendChild(script);
     setTimeout(() => {
