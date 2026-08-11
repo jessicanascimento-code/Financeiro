@@ -423,7 +423,7 @@
 // CONFIG
 // =====================================================================
 const CONFIG = {
-  API_URL: "https://script.google.com/macros/s/AKfycbzFq3j01cSdnv-Os1DM5n49rC4kFLqXW2QGjRNvY-L__8MM8Q5Q3JQLKqqTRLdiV-rnIQ/exec"
+  API_URL: "https://script.google.com/macros/s/AKfycbyosNv8uvAq-x5GBKSbqgkXn6ZShtC0LwJ_XO3BXbXLx7GkyGWDNvAkSx5pFnRjmLz9ig/exec"
 };
 
 const $ = (id) => document.getElementById(id);
@@ -435,10 +435,10 @@ let COMANDA_ATUAL = null; // objeto retornado por obterComanda
 let FILTRO_STATUS_ATUAL = "Aberta";
 
 // =====================================================================
-// JSONP helper
+// JSONP helper (com 1 retentativa automática, útil em evento com rede instável)
 // =====================================================================
 let contadorJsonp = 0;
-function chamarAPI(acao, params) {
+function chamarAPIUmaVez(acao, params, timeoutMs) {
   return new Promise((resolve, reject) => {
     const nomeCallback = "jsonpCb_" + (contadorJsonp++) + "_" + Date.now();
     const query = new URLSearchParams(Object.assign({ acao: acao, callback: nomeCallback }, params || {}));
@@ -451,8 +451,22 @@ function chamarAPI(acao, params) {
     script.src = CONFIG.API_URL + "?" + query.toString();
     script.onerror = () => { delete window[nomeCallback]; script.remove(); reject(new Error("Falha de conexão com a planilha.")); };
     document.body.appendChild(script);
-    setTimeout(() => { if (window[nomeCallback]) { delete window[nomeCallback]; script.remove(); reject(new Error("Tempo esgotado.")); } }, 12000);
+    setTimeout(() => { if (window[nomeCallback]) { delete window[nomeCallback]; script.remove(); reject(new Error("Tempo esgotado.")); } }, timeoutMs);
   });
+}
+
+async function chamarAPI(acao, params) {
+  try {
+    return await chamarAPIUmaVez(acao, params, 15000);
+  } catch (primeiroErro) {
+    // 1 retentativa automática — evita que um pico momentâneo de tráfego
+    // (comum num evento com muita gente usando ao mesmo tempo) vire erro pro usuário.
+    try {
+      return await chamarAPIUmaVez(acao, params, 15000);
+    } catch (segundoErro) {
+      throw segundoErro;
+    }
+  }
 }
 
 // =====================================================================
@@ -620,7 +634,7 @@ function renderModalComanda() {
   $("modal-badge-status").className = "badge-status status-pill " + c.status;
 
   $("modal-lista-itens").innerHTML = itens.length ? itens.map(it => `
-    <div class="item-linha" data-item-id="${it.itemId}">
+    <div class="item-linha" data-item-id="${it.itemId}" data-linha="${it.linha || ''}">
       <div class="info">
         <div class="nome">${it.produto}</div>
         <div class="preco">${fmt(it.valorUnitario)} / un.</div>
@@ -638,13 +652,14 @@ function renderModalComanda() {
   $("modal-total").textContent = fmt(COMANDA_ATUAL.valorTotal);
 
   // ações por item
-  $("modal-lista-itens").querySelectorAll(".item-linha").forEach(linha => {
-    const itemId = linha.dataset.itemId;
-    const inputQtd = linha.querySelector(".qtd-valor");
-    linha.querySelector(".qtd-menos").onclick = () => ajustarQtdItem(itemId, Math.max(1, parseInt(inputQtd.value) - 1));
-    linha.querySelector(".qtd-mais").onclick = () => ajustarQtdItem(itemId, parseInt(inputQtd.value) + 1);
-    inputQtd.onchange = () => ajustarQtdItem(itemId, Math.max(1, parseInt(inputQtd.value) || 1));
-    linha.querySelector(".btn-remover").onclick = () => removerItem(itemId);
+  $("modal-lista-itens").querySelectorAll(".item-linha").forEach(linhaEl => {
+    const itemId = linhaEl.dataset.itemId;
+    const linhaPlanilha = linhaEl.dataset.linha;
+    const inputQtd = linhaEl.querySelector(".qtd-valor");
+    linhaEl.querySelector(".qtd-menos").onclick = () => ajustarQtdItem(itemId, linhaPlanilha, Math.max(1, parseInt(inputQtd.value) - 1));
+    linhaEl.querySelector(".qtd-mais").onclick = () => ajustarQtdItem(itemId, linhaPlanilha, parseInt(inputQtd.value) + 1);
+    inputQtd.onchange = () => ajustarQtdItem(itemId, linhaPlanilha, Math.max(1, parseInt(inputQtd.value) || 1));
+    linhaEl.querySelector(".btn-remover").onclick = () => removerItem(itemId, linhaPlanilha);
   });
 
   // caixa de pagamento / botões conforme status
@@ -681,7 +696,12 @@ $("btn-add-item-comanda").onclick = async () => {
     const resp = await chamarAPI("adicionarItemComanda", { comandaId: COMANDA_ATUAL.comanda.comandaId, produto, quantidade, usuario: USUARIO_LOGADO });
     if (resp.status === "ok") {
       $("modal-qtd-novo").value = 1;
-      COMANDA_ATUAL = resp;
+      // atualiza só localmente — o backend não precisou reler a comanda inteira
+      COMANDA_ATUAL.itens.push(resp.item);
+      COMANDA_ATUAL.comanda = resp.comanda;
+      COMANDA_ATUAL.valorTotal = resp.valorTotal;
+      COMANDA_ATUAL.custoTotal = resp.custoTotal;
+      COMANDA_ATUAL.totalQuantidade = resp.totalQuantidade;
       renderModalComanda();
       carregarComandas(); // segundo plano, não trava a comanda aberta
       carregarEstoque();  // segundo plano
@@ -689,11 +709,16 @@ $("btn-add-item-comanda").onclick = async () => {
   } catch (e) { alert("❌ " + e.message); }
 };
 
-async function ajustarQtdItem(itemId, novaQuantidade) {
+async function ajustarQtdItem(itemId, linhaPlanilha, novaQuantidade) {
   try {
-    const resp = await chamarAPI("editarItemComanda", { itemId, quantidade: novaQuantidade, usuario: USUARIO_LOGADO });
+    const resp = await chamarAPI("editarItemComanda", { itemId, linha: linhaPlanilha, quantidade: novaQuantidade, usuario: USUARIO_LOGADO });
     if (resp.status === "ok") {
-      COMANDA_ATUAL = resp;
+      const idx = COMANDA_ATUAL.itens.findIndex(it => it.itemId === itemId);
+      if (idx >= 0) COMANDA_ATUAL.itens[idx] = resp.item;
+      COMANDA_ATUAL.comanda = resp.comanda;
+      COMANDA_ATUAL.valorTotal = resp.valorTotal;
+      COMANDA_ATUAL.custoTotal = resp.custoTotal;
+      COMANDA_ATUAL.totalQuantidade = resp.totalQuantidade;
       renderModalComanda();
       carregarComandas();
       carregarEstoque();
@@ -701,12 +726,16 @@ async function ajustarQtdItem(itemId, novaQuantidade) {
   } catch (e) { alert("❌ " + e.message); }
 }
 
-async function removerItem(itemId) {
+async function removerItem(itemId, linhaPlanilha) {
   if (!confirm("Remover este item da comanda? O estoque será devolvido.")) return;
   try {
-    const resp = await chamarAPI("removerItemComanda", { itemId, usuario: USUARIO_LOGADO });
+    const resp = await chamarAPI("removerItemComanda", { itemId, linha: linhaPlanilha, usuario: USUARIO_LOGADO });
     if (resp.status === "ok") {
-      COMANDA_ATUAL = resp;
+      COMANDA_ATUAL.itens = COMANDA_ATUAL.itens.filter(it => it.itemId !== itemId);
+      COMANDA_ATUAL.comanda = resp.comanda;
+      COMANDA_ATUAL.valorTotal = resp.valorTotal;
+      COMANDA_ATUAL.custoTotal = resp.custoTotal;
+      COMANDA_ATUAL.totalQuantidade = resp.totalQuantidade;
       renderModalComanda();
       carregarComandas();
       carregarEstoque();
