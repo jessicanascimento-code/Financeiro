@@ -65,6 +65,13 @@
   header .marca-nome{ font-weight:800; color:var(--amarelo); font-size:15px; }
   header .marca-sub{ font-size:10px; color:var(--muted); text-transform:uppercase; letter-spacing:.6px; }
   header .usuario-atual{ font-size:12px; color:var(--muted); display:flex; align-items:center; gap:8px; }
+  .indicador-sync{
+    font-size:11px; font-weight:700; padding:4px 9px; border-radius:8px; display:flex; align-items:center; gap:5px;
+  }
+  .indicador-sync.pendente{ background:rgba(255,196,46,.15); color:var(--amarelo); }
+  .indicador-sync.offline{ background:rgba(255,138,128,.15); color:#ff8a80; }
+  @keyframes girar{ from{ transform:rotate(0deg); } to{ transform:rotate(360deg); } }
+  .indicador-sync .girando{ display:inline-block; animation:girar 1s linear infinite; }
   header .badge-perfil{
     background:var(--laranja); color:#1a0e00; font-weight:800; font-size:10px; text-transform:uppercase;
     padding:4px 10px; border-radius:8px; letter-spacing:.4px;
@@ -166,6 +173,9 @@
   }
   .item-linha .subtotal{ font-size:13px; font-weight:700; color:var(--amarelo); min-width:66px; text-align:right; }
   .item-linha .btn-remover{ background:transparent; border:none; color:#ff8a80; font-size:15px; padding:2px 4px; }
+  .item-linha.pendente{ border-style:dashed; }
+  @keyframes pulsar{ 0%,100%{ opacity:1; } 50%{ opacity:.25; } }
+  .ponto-pendente{ color:var(--amarelo); font-size:9px; animation:pulsar 1.2s ease-in-out infinite; display:inline-block; }
 
   .add-item-box{ background:var(--preto); border:1px dashed var(--borda); border-radius:10px; padding:10px; }
   .add-item-box select, .add-item-box input{
@@ -301,7 +311,10 @@
         <span class="marca-sub">Sistema Financeiro</span>
       </div>
     </div>
-    <div class="usuario-atual"><span id="nome-usuario-logado"></span><span class="badge-perfil" id="badge-perfil"></span><button id="btn-sair">Sair</button></div>
+    <div class="usuario-atual">
+      <span class="indicador-sync" id="indicador-sync" style="display:none;"></span>
+      <span id="nome-usuario-logado"></span><span class="badge-perfil" id="badge-perfil"></span><button id="btn-sair">Sair</button>
+    </div>
   </header>
 
   <nav class="abas">
@@ -467,7 +480,7 @@
       <select id="modal-select-produto"></select>
       <div class="add-item-grid">
         <div></div>
-        <input type="number" id="modal-qtd-novo" value="1" min="1">
+        <select id="modal-qtd-novo"></select>
         <button id="btn-add-item-comanda">+ Add</button>
       </div>
     </div>
@@ -510,7 +523,7 @@
 // CONFIG
 // =====================================================================
 const CONFIG = {
-  API_URL: "https://script.google.com/macros/s/AKfycbyn2D8_Ukux3AmjNpHGwHM6U1pW_KygIoNL-6Z2Ba5T6HMa1iF1tjQSMGaxpJUhK6xOWQ/exec"
+  API_URL: "https://script.google.com/macros/s/AKfycbxrQmd-4WAkZBJfw8O35SMmqc_4qk4sLbjG4TU0wjT-_IIVV-2PH6B_Oir-2E96nhTTSA/exec"
 };
 
 const $ = (id) => document.getElementById(id);
@@ -525,7 +538,9 @@ let FILTRO_STATUS_ATUAL = "Aberta";
 function ehAdmin() { return PERFIL_USUARIO === "Admin"; }
 
 // =====================================================================
-// JSONP helper (com 1 retentativa automática, útil em evento com rede instável)
+// JSONP helper (com retentativas automáticas, seguras contra duplicação —
+// veja "opId" abaixo — pra aguentar rede instável com várias pessoas usando
+// ao mesmo tempo)
 // =====================================================================
 let contadorJsonp = 0;
 function chamarAPIUmaVez(acao, params, timeoutMs) {
@@ -548,18 +563,117 @@ function chamarAPIUmaVez(acao, params, timeoutMs) {
 }
 
 async function chamarAPI(acao, params) {
-  try {
-    return await chamarAPIUmaVez(acao, params, 15000);
-  } catch (primeiroErro) {
-    // 1 retentativa automática — evita que um pico momentâneo de tráfego
-    // (comum num evento com muita gente usando ao mesmo tempo) vire erro pro usuário.
+  // "opId": número de protocolo único desta ação. É reaproveitado em TODAS as
+  // tentativas abaixo — se a 1ª tentativa já tiver sido salva no servidor e só
+  // a resposta se perdeu (tempo esgotado), a 2ª/3ª tentativa com o MESMO opId
+  // devolve o resultado já salvo em vez de repetir a operação. Isso é o que
+  // torna seguro tentar de novo automaticamente, mesmo em ações de escrita
+  // (adicionar item, fechar comanda etc.) — sem risco de duplicar nada.
+  const opId = "op_" + Date.now() + "_" + Math.random().toString(36).slice(2, 10);
+  const paramsComOpId = Object.assign({ opId }, params || {});
+
+  const tentativas = [15000, 15000, 15000]; // até 3 tentativas
+  let ultimoErro;
+  for (let i = 0; i < tentativas.length; i++) {
     try {
-      return await chamarAPIUmaVez(acao, params, 15000);
-    } catch (segundoErro) {
-      throw segundoErro;
+      return await chamarAPIUmaVez(acao, paramsComOpId, tentativas[i]);
+    } catch (erro) {
+      ultimoErro = erro;
     }
   }
+  throw ultimoErro;
 }
+
+// =====================================================================
+// FILA DE SINCRONIZAÇÃO — "registra local, sincroniza depois"
+// =====================================================================
+// Ideia: as ações do dia a dia (abrir comanda, adicionar/editar/remover
+// item, fechar comanda) atualizam a tela NA HORA, usando só o que já está
+// na memória do app — sem esperar a planilha responder. A gravação de
+// verdade entra numa fila e roda por trás, com repetição automática até
+// confirmar. Se a internet cair no meio do evento, a fila fica salva no
+// aparelho e continua tentando sozinha assim que a conexão voltar — nada
+// trava a operação.
+let FILA_SYNC = [];               // [{opId, acao, params}], persistida no localStorage
+let CALLBACKS_SYNC = {};          // opId -> {aoConcluir, aoFalhar} (só dura a sessão atual)
+let PROCESSANDO_FILA = false;
+
+function gerarId(prefixo) {
+  return prefixo + Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+}
+
+function agoraBR() {
+  const d = new Date();
+  const p = (n) => String(n).padStart(2, "0");
+  return `${p(d.getDate())}/${p(d.getMonth() + 1)}/${d.getFullYear()} ${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`;
+}
+
+function salvarFila() {
+  try { localStorage.setItem("brasero96_fila_sync", JSON.stringify(FILA_SYNC)); } catch (e) { /* armazenamento cheio, segue sem persistir */ }
+}
+
+function carregarFilaSalva() {
+  try { FILA_SYNC = JSON.parse(localStorage.getItem("brasero96_fila_sync") || "[]"); } catch (e) { FILA_SYNC = []; }
+}
+
+function atualizarIndicadorSync(mensagemErro) {
+  const el = $("indicador-sync");
+  if (FILA_SYNC.length === 0) { el.style.display = "none"; return; }
+  el.style.display = "flex";
+  if (mensagemErro) {
+    el.className = "indicador-sync offline";
+    el.innerHTML = `⚠️ Sem conexão — ${FILA_SYNC.length} pendente(s)`;
+  } else {
+    el.className = "indicador-sync pendente";
+    el.innerHTML = `<span class="girando">🔄</span> Sincronizando ${FILA_SYNC.length}...`;
+  }
+}
+
+// Coloca uma ação na fila e devolve na hora — quem chamou já atualizou a
+// tela de forma otimista antes de enfileirar. aoConcluir/aoFalhar rodam
+// quando a gravação de verdade terminar (podem chegar bem depois).
+function enfileirar(acao, params, aoConcluir, aoFalhar) {
+  const opId = "op_" + Date.now().toString(36) + "_" + Math.random().toString(36).slice(2, 8);
+  const item = { opId, acao, params: Object.assign({ opId }, params || {}) };
+  FILA_SYNC.push(item);
+  CALLBACKS_SYNC[opId] = { aoConcluir, aoFalhar };
+  salvarFila();
+  atualizarIndicadorSync();
+  processarFila();
+  return opId;
+}
+
+async function processarFila() {
+  if (PROCESSANDO_FILA) return;
+  PROCESSANDO_FILA = true;
+  while (FILA_SYNC.length > 0) {
+    const op = FILA_SYNC[0];
+    atualizarIndicadorSync();
+    try {
+      const resp = await chamarAPIUmaVez(op.acao, op.params, 20000);
+      FILA_SYNC.shift();
+      salvarFila();
+      const cbs = CALLBACKS_SYNC[op.opId];
+      delete CALLBACKS_SYNC[op.opId];
+      if (resp && resp.status === "ok") {
+        if (cbs && cbs.aoConcluir) { try { cbs.aoConcluir(resp); } catch (e) { /* não deixa um erro de UI travar a fila */ } }
+      } else {
+        // erro "de verdade" devolvido pelo servidor (ex: comanda não existe) —
+        // repetir não vai resolver, então tira da fila e avisa quem pediu.
+        if (cbs && cbs.aoFalhar) { try { cbs.aoFalhar((resp && resp.mensagem) || "Erro desconhecido."); } catch (e) {} }
+      }
+    } catch (erroRede) {
+      // falha de rede/tempo esgotado — mantém na fila (não perde a operação)
+      // e tenta de novo em alguns segundos, sem travar o resto do app.
+      atualizarIndicadorSync(erroRede.message);
+      await new Promise(r => setTimeout(r, 4000));
+    }
+  }
+  PROCESSANDO_FILA = false;
+  atualizarIndicadorSync();
+}
+
+window.addEventListener("online", () => processarFila());
 
 // =====================================================================
 // LOGIN
@@ -623,6 +737,10 @@ function iniciarApp() {
   carregarEstoque();
   carregarSaldoCaixa();
   carregarResumoInicial();
+  // retoma qualquer ação que ficou pendente de uma sessão anterior (ex:
+  // internet caiu no meio do evento antes de sincronizar tudo)
+  carregarFilaSalva();
+  processarFila();
 }
 
 // tenta retomar sessão salva
@@ -672,6 +790,24 @@ document.querySelectorAll(".filtros-status button").forEach(btn => {
 
 $("btn-filtrar-comandas").onclick = () => carregarComandas();
 
+function montarCardComanda(c, totalItens) {
+  const card = document.createElement("div");
+  card.className = "card-comanda " + c.status.toLowerCase();
+  card.dataset.comandaId = c.comandaId;
+  // abertaEm já vem como "dd/MM/yyyy HH:mm:ss"
+  const [dataComanda, horaComanda] = (c.abertaEm || "").toString().split(" ");
+  card.innerHTML = `
+    <div class="card-topo">
+      <div class="id">${c.identificacao}</div>
+      <span class="status-pill ${c.status}">${c.status}</span>
+    </div>
+    <div class="total">${fmt(c.valorTotal)}</div>
+    <div class="meta">${totalItens != null ? totalItens : (c.totalItens || 0)} espeto(s) · ${dataComanda || ""} ${horaComanda ? horaComanda.slice(0, 5) : ""}</div>
+  `;
+  card.onclick = () => abrirModalComanda(c.comandaId);
+  return card;
+}
+
 async function carregarComandas() {
   const grid = $("grid-comandas");
   grid.innerHTML = `<div class="vazio-lista">Carregando...</div>`;
@@ -691,41 +827,47 @@ async function carregarComandas() {
     if (resp.status !== "ok") { grid.innerHTML = `<div class="vazio-lista">❌ ${resp.mensagem}</div>`; return; }
     if (!resp.comandas.length) { grid.innerHTML = `<div class="vazio-lista">Nenhuma comanda por aqui ainda.</div>`; return; }
     grid.innerHTML = "";
-    resp.comandas.forEach(c => {
-      const card = document.createElement("div");
-      card.className = "card-comanda " + c.status.toLowerCase();
-      // abertaEm já vem como "dd/MM/yyyy HH:mm:ss" da planilha
-      const [dataComanda, horaComanda] = c.abertaEm.toString().split(" ");
-      card.innerHTML = `
-        <div class="card-topo">
-          <div class="id">${c.identificacao}</div>
-          <span class="status-pill ${c.status}">${c.status}</span>
-        </div>
-        <div class="total">${fmt(c.valorTotal)}</div>
-        <div class="meta">${c.totalItens} espeto(s) · ${dataComanda || ""} ${horaComanda ? horaComanda.slice(0, 5) : ""}</div>
-      `;
-      card.onclick = () => abrirModalComanda(c.comandaId);
-      grid.appendChild(card);
-    });
+    resp.comandas.forEach(c => grid.appendChild(montarCardComanda(c)));
   } catch (e) {
     grid.innerHTML = `<div class="vazio-lista">❌ ${e.message}</div>`;
   }
 }
 
-$("btn-nova-comanda").onclick = async () => {
+$("btn-nova-comanda").onclick = () => {
   const identificacao = prompt("Identificação da comanda (ex: Mesa 1, ou nome do cliente):");
   if (!identificacao || !identificacao.trim()) return;
-  try {
-    const resp = await chamarAPI("abrirComanda", { identificacao: identificacao.trim(), usuario: USUARIO_LOGADO });
-    if (resp.status === "ok") {
-      carregarComandas(); // atualiza a grade em segundo plano, sem travar a abertura do modal
-      await popularSelectProdutos();
-      abrirModalComPayload(resp);
-    } else {
-      alert("❌ " + resp.mensagem);
-    }
-  } catch (e) { alert("❌ " + e.message); }
+
+  // registra local primeiro: o ID é gerado aqui mesmo, então a comanda que
+  // já abre na tela do operador é a mesma linha que vai pra planilha depois
+  const comandaId = gerarId("C");
+  const payloadOtimista = {
+    comanda: {
+      comandaId, identificacao: identificacao.trim(), status: "Aberta",
+      usuarioAbertura: USUARIO_LOGADO, abertaEm: agoraBR(), usuarioFechamento: "", fechadaEm: "",
+      formaPagamento: "", troco: 0, observacao: "", totalQuantidade: 0, valorTotal: 0, custoTotal: 0
+    },
+    itens: [], totalQuantidade: 0, valorTotal: 0, custoTotal: 0, lucro: 0
+  };
+  popularSelectProdutos();
+  abrirModalComPayload(payloadOtimista);
+  inserirCardComandaLocal(payloadOtimista.comanda);
+
+  enfileirar("abrirComanda", { comandaId, identificacao: identificacao.trim() },
+    () => { /* já está tudo certo na tela, só confirma em segundo plano */ },
+    (msg) => { alert("❌ Não foi possível salvar a nova comanda na planilha: " + msg); carregarComandas(); }
+  );
 };
+
+// Insere/atualiza um card na grade de comandas na hora, sem esperar recarregar tudo do servidor.
+function inserirCardComandaLocal(comanda) {
+  if (FILTRO_STATUS_ATUAL !== "Aberta" && FILTRO_STATUS_ATUAL !== "Todas") return;
+  const vazio = document.querySelector("#grid-comandas .vazio-lista");
+  if (vazio) $("grid-comandas").innerHTML = "";
+  const existente = document.querySelector(`.card-comanda[data-comanda-id="${comanda.comandaId}"]`);
+  if (existente) existente.remove();
+  const card = montarCardComanda(comanda, comanda.totalQuantidade || 0);
+  $("grid-comandas").prepend(card);
+}
 
 // =====================================================================
 // MODAL DE COMANDA
@@ -769,9 +911,9 @@ function renderModalComanda() {
   $("modal-badge-status").className = "badge-status status-pill " + c.status;
 
   $("modal-lista-itens").innerHTML = itens.length ? itens.map(it => `
-    <div class="item-linha" data-item-id="${it.itemId}" data-linha="${it.linha || ''}">
+    <div class="item-linha${it.linha ? '' : ' pendente'}" data-item-id="${it.itemId}" data-linha="${it.linha || ''}">
       <div class="info">
-        <div class="nome">${it.produto}</div>
+        <div class="nome">${it.produto}${it.linha ? '' : ' <span class="ponto-pendente" title="Sincronizando...">●</span>'}</div>
         <div class="preco">${fmt(it.valorUnitario)} / un.</div>
       </div>
       <div class="qty-controle">
@@ -823,59 +965,140 @@ async function popularSelectProdutos() {
   sel.innerHTML = PRODUTOS_CACHE.map(p => `<option value="${p.nome}">${p.nome} — ${fmt(p.preco)}</option>`).join("");
 }
 
-$("btn-add-item-comanda").onclick = async () => {
-  const produto = $("modal-select-produto").value;
+// lista de 1 a 20 pra escolher a quantidade rapidinho, sem precisar digitar
+$("modal-qtd-novo").innerHTML = Array.from({ length: 20 }, (_, i) => i + 1).map(n => `<option value="${n}">${n}</option>`).join("");
+
+$("btn-add-item-comanda").onclick = () => {
+  const nomeProduto = $("modal-select-produto").value;
   const quantidade = parseInt($("modal-qtd-novo").value) || 1;
+  if (!nomeProduto || !COMANDA_ATUAL) return;
+  const produto = PRODUTOS_CACHE.find(p => p.nome === nomeProduto);
   if (!produto) return;
-  try {
-    const resp = await chamarAPI("adicionarItemComanda", { comandaId: COMANDA_ATUAL.comanda.comandaId, produto, quantidade, usuario: USUARIO_LOGADO });
-    if (resp.status === "ok") {
-      $("modal-qtd-novo").value = 1;
-      // atualiza só localmente — o backend não precisou reler a comanda inteira
-      COMANDA_ATUAL.itens.push(resp.item);
-      COMANDA_ATUAL.comanda = resp.comanda;
-      COMANDA_ATUAL.valorTotal = resp.valorTotal;
-      COMANDA_ATUAL.custoTotal = resp.custoTotal;
-      COMANDA_ATUAL.totalQuantidade = resp.totalQuantidade;
-      renderModalComanda();
-      carregarComandas(); // segundo plano, não trava a comanda aberta
-      carregarEstoque();  // segundo plano
-    } else { alert("❌ " + resp.mensagem); }
-  } catch (e) { alert("❌ " + e.message); }
+
+  const comandaId = COMANDA_ATUAL.comanda.comandaId;
+  const itemId = gerarId("I");
+  const valorUnitario = produto.preco;
+  const custoUnitario = produto.custo || 0;
+  const valorTotal = quantidade * valorUnitario;
+  const custoTotal = quantidade * custoUnitario;
+  const item = {
+    linha: null, itemId, comandaId, produto: produto.nome, categoria: produto.categoria,
+    quantidade, valorUnitario, valorTotal, custoUnitario, custoTotal, removido: false,
+    adicionadoEm: agoraBR(), usuario: USUARIO_LOGADO
+  };
+
+  // registra local primeiro: item aparece na comanda instantaneamente
+  COMANDA_ATUAL.itens.push(item);
+  COMANDA_ATUAL.valorTotal += valorTotal;
+  COMANDA_ATUAL.custoTotal += custoTotal;
+  COMANDA_ATUAL.totalQuantidade += quantidade;
+  COMANDA_ATUAL.comanda.valorTotal = COMANDA_ATUAL.valorTotal;
+  COMANDA_ATUAL.comanda.custoTotal = COMANDA_ATUAL.custoTotal;
+  COMANDA_ATUAL.comanda.totalQuantidade = COMANDA_ATUAL.totalQuantidade;
+  renderModalComanda();
+  $("modal-qtd-novo").value = 1;
+
+  enfileirar("adicionarItemComanda", { comandaId, itemId, produto: produto.nome, quantidade },
+    (resp) => {
+      // sincronizou: guarda a linha da planilha (deixa próximas edições rápidas)
+      // e corrige os totais com o valor oficial do servidor
+      const alvo = COMANDA_ATUAL && COMANDA_ATUAL.itens.find(it => it.itemId === itemId);
+      if (alvo) alvo.linha = resp.item.linha;
+      if (COMANDA_ATUAL && COMANDA_ATUAL.comanda.comandaId === comandaId) {
+        COMANDA_ATUAL.comanda = resp.comanda;
+        COMANDA_ATUAL.valorTotal = resp.valorTotal;
+        COMANDA_ATUAL.custoTotal = resp.custoTotal;
+        COMANDA_ATUAL.totalQuantidade = resp.totalQuantidade;
+        renderModalComanda();
+      }
+      carregarComandas();
+      carregarEstoque();
+    },
+    (msg) => {
+      // erro definitivo (não é rede) — desfaz na tela e avisa
+      if (COMANDA_ATUAL && COMANDA_ATUAL.comanda.comandaId === comandaId) {
+        COMANDA_ATUAL.itens = COMANDA_ATUAL.itens.filter(it => it.itemId !== itemId);
+        COMANDA_ATUAL.valorTotal -= valorTotal; COMANDA_ATUAL.custoTotal -= custoTotal; COMANDA_ATUAL.totalQuantidade -= quantidade;
+        COMANDA_ATUAL.comanda.valorTotal = COMANDA_ATUAL.valorTotal;
+        COMANDA_ATUAL.comanda.custoTotal = COMANDA_ATUAL.custoTotal;
+        COMANDA_ATUAL.comanda.totalQuantidade = COMANDA_ATUAL.totalQuantidade;
+        renderModalComanda();
+      }
+      alert("❌ Não foi possível adicionar " + produto.nome + ": " + msg);
+    }
+  );
 };
 
-async function ajustarQtdItem(itemId, linhaPlanilha, novaQuantidade) {
-  try {
-    const resp = await chamarAPI("editarItemComanda", { itemId, linha: linhaPlanilha, quantidade: novaQuantidade, usuario: USUARIO_LOGADO });
-    if (resp.status === "ok") {
-      const idx = COMANDA_ATUAL.itens.findIndex(it => it.itemId === itemId);
-      if (idx >= 0) COMANDA_ATUAL.itens[idx] = resp.item;
-      COMANDA_ATUAL.comanda = resp.comanda;
-      COMANDA_ATUAL.valorTotal = resp.valorTotal;
-      COMANDA_ATUAL.custoTotal = resp.custoTotal;
-      COMANDA_ATUAL.totalQuantidade = resp.totalQuantidade;
-      renderModalComanda();
+function ajustarQtdItem(itemId, linhaPlanilha, novaQuantidade) {
+  if (!COMANDA_ATUAL) return;
+  const item = COMANDA_ATUAL.itens.find(it => it.itemId === itemId);
+  if (!item) return;
+  const quantidadeAntiga = item.quantidade;
+  const valorTotalAntigo = item.valorTotal;
+  const custoTotalAntigo = item.custoTotal;
+
+  // atualiza local na hora
+  item.quantidade = novaQuantidade;
+  item.valorTotal = novaQuantidade * item.valorUnitario;
+  item.custoTotal = novaQuantidade * item.custoUnitario;
+  const deltaValor = item.valorTotal - valorTotalAntigo;
+  const deltaCusto = item.custoTotal - custoTotalAntigo;
+  COMANDA_ATUAL.valorTotal += deltaValor;
+  COMANDA_ATUAL.custoTotal += deltaCusto;
+  COMANDA_ATUAL.totalQuantidade += (novaQuantidade - quantidadeAntiga);
+  COMANDA_ATUAL.comanda.valorTotal = COMANDA_ATUAL.valorTotal;
+  COMANDA_ATUAL.comanda.custoTotal = COMANDA_ATUAL.custoTotal;
+  COMANDA_ATUAL.comanda.totalQuantidade = COMANDA_ATUAL.totalQuantidade;
+  renderModalComanda();
+
+  enfileirar("editarItemComanda", { itemId, linha: linhaPlanilha, quantidade: novaQuantidade },
+    (resp) => {
+      const alvo = COMANDA_ATUAL && COMANDA_ATUAL.itens.find(it => it.itemId === itemId);
+      if (alvo) alvo.linha = resp.item.linha;
+      if (COMANDA_ATUAL && COMANDA_ATUAL.comanda.comandaId === item.comandaId) {
+        COMANDA_ATUAL.comanda = resp.comanda;
+        COMANDA_ATUAL.valorTotal = resp.valorTotal;
+        COMANDA_ATUAL.custoTotal = resp.custoTotal;
+        COMANDA_ATUAL.totalQuantidade = resp.totalQuantidade;
+        renderModalComanda();
+      }
       carregarComandas();
       carregarEstoque();
-    } else { alert("❌ " + resp.mensagem); }
-  } catch (e) { alert("❌ " + e.message); }
+    },
+    (msg) => { alert("❌ Não foi possível atualizar a quantidade: " + msg); recarregarComanda(item.comandaId); }
+  );
 }
 
-async function removerItem(itemId, linhaPlanilha) {
+function removerItem(itemId, linhaPlanilha) {
   if (!confirm("Remover este item da comanda? O estoque será devolvido.")) return;
-  try {
-    const resp = await chamarAPI("removerItemComanda", { itemId, linha: linhaPlanilha, usuario: USUARIO_LOGADO });
-    if (resp.status === "ok") {
-      COMANDA_ATUAL.itens = COMANDA_ATUAL.itens.filter(it => it.itemId !== itemId);
-      COMANDA_ATUAL.comanda = resp.comanda;
-      COMANDA_ATUAL.valorTotal = resp.valorTotal;
-      COMANDA_ATUAL.custoTotal = resp.custoTotal;
-      COMANDA_ATUAL.totalQuantidade = resp.totalQuantidade;
-      renderModalComanda();
+  if (!COMANDA_ATUAL) return;
+  const item = COMANDA_ATUAL.itens.find(it => it.itemId === itemId);
+  if (!item) return;
+
+  // remove local na hora
+  COMANDA_ATUAL.itens = COMANDA_ATUAL.itens.filter(it => it.itemId !== itemId);
+  COMANDA_ATUAL.valorTotal -= item.valorTotal;
+  COMANDA_ATUAL.custoTotal -= item.custoTotal;
+  COMANDA_ATUAL.totalQuantidade -= item.quantidade;
+  COMANDA_ATUAL.comanda.valorTotal = COMANDA_ATUAL.valorTotal;
+  COMANDA_ATUAL.comanda.custoTotal = COMANDA_ATUAL.custoTotal;
+  COMANDA_ATUAL.comanda.totalQuantidade = COMANDA_ATUAL.totalQuantidade;
+  renderModalComanda();
+
+  enfileirar("removerItemComanda", { itemId, linha: linhaPlanilha },
+    (resp) => {
+      if (COMANDA_ATUAL && COMANDA_ATUAL.comanda.comandaId === item.comandaId) {
+        COMANDA_ATUAL.comanda = resp.comanda;
+        COMANDA_ATUAL.valorTotal = resp.valorTotal;
+        COMANDA_ATUAL.custoTotal = resp.custoTotal;
+        COMANDA_ATUAL.totalQuantidade = resp.totalQuantidade;
+        renderModalComanda();
+      }
       carregarComandas();
       carregarEstoque();
-    } else { alert("❌ " + resp.mensagem); }
-  } catch (e) { alert("❌ " + e.message); }
+    },
+    (msg) => { alert("❌ Não foi possível remover o item: " + msg); recarregarComanda(item.comandaId); }
+  );
 }
 
 // abrir/fechar caixa de pagamento
@@ -900,26 +1123,43 @@ function atualizarTroco() {
   $("modal-troco-info").textContent = recebido > 0 ? (troco >= 0 ? "Troco: " + fmt(troco) : "Faltam " + fmt(-troco)) : "";
 }
 
-$("btn-confirmar-fechamento").onclick = async () => {
+$("btn-confirmar-fechamento").onclick = () => {
   const forma = $("modal-forma-pagamento").value;
   const recebido = parseFloat($("modal-valor-recebido").value) || 0;
   const troco = forma === "Dinheiro" ? Math.max(0, recebido - COMANDA_ATUAL.valorTotal) : 0;
-  try {
-    const resp = await chamarAPI("fecharComanda", { comandaId: COMANDA_ATUAL.comanda.comandaId, formaPagamento: forma, troco, usuario: USUARIO_LOGADO });
-    if (resp.status === "ok") {
-      COMANDA_ATUAL = resp;
-      renderModalComanda();
+  const comandaId = COMANDA_ATUAL.comanda.comandaId;
+
+  // fecha local na hora
+  COMANDA_ATUAL.comanda.status = "Fechada";
+  COMANDA_ATUAL.comanda.formaPagamento = forma;
+  COMANDA_ATUAL.comanda.troco = troco;
+  COMANDA_ATUAL.comanda.fechadaEm = agoraBR();
+  COMANDA_ATUAL.comanda.usuarioFechamento = USUARIO_LOGADO;
+  renderModalComanda();
+  carregarComandas();
+
+  enfileirar("fecharComanda", { comandaId, formaPagamento: forma, troco },
+    (resp) => {
+      if (COMANDA_ATUAL && COMANDA_ATUAL.comanda.comandaId === comandaId) { COMANDA_ATUAL = resp; renderModalComanda(); }
       carregarComandas();
-    } else { alert("❌ " + resp.mensagem); }
-  } catch (e) { alert("❌ " + e.message); }
+    },
+    (msg) => { alert("❌ Não foi possível fechar a comanda: " + msg); recarregarComanda(comandaId); }
+  );
 };
 
-$("btn-reabrir-comanda").onclick = async () => {
-  try {
-    const resp = await chamarAPI("reabrirComanda", { comandaId: COMANDA_ATUAL.comanda.comandaId, usuario: USUARIO_LOGADO });
-    if (resp.status === "ok") { COMANDA_ATUAL = resp; renderModalComanda(); carregarComandas(); }
-    else alert("❌ " + resp.mensagem);
-  } catch (e) { alert("❌ " + e.message); }
+$("btn-reabrir-comanda").onclick = () => {
+  const comandaId = COMANDA_ATUAL.comanda.comandaId;
+  COMANDA_ATUAL.comanda.status = "Aberta";
+  renderModalComanda();
+  carregarComandas();
+
+  enfileirar("reabrirComanda", { comandaId },
+    (resp) => {
+      if (COMANDA_ATUAL && COMANDA_ATUAL.comanda.comandaId === comandaId) { COMANDA_ATUAL = resp; renderModalComanda(); }
+      carregarComandas();
+    },
+    (msg) => { alert("❌ Não foi possível reabrir a comanda: " + msg); recarregarComanda(comandaId); }
+  );
 };
 
 $("btn-cancelar-comanda").onclick = async () => {
