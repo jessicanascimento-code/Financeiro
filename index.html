@@ -65,6 +65,10 @@
   header .marca-nome{ font-weight:800; color:var(--amarelo); font-size:15px; }
   header .marca-sub{ font-size:10px; color:var(--muted); text-transform:uppercase; letter-spacing:.6px; }
   header .usuario-atual{ font-size:12px; color:var(--muted); display:flex; align-items:center; gap:8px; }
+  header .badge-perfil{
+    background:var(--laranja); color:#1a0e00; font-weight:800; font-size:10px; text-transform:uppercase;
+    padding:4px 10px; border-radius:8px; letter-spacing:.4px;
+  }
   header .usuario-atual button{
     background:transparent; border:1px solid var(--borda); color:var(--muted); border-radius:8px; padding:5px 9px; font-size:11.5px;
   }
@@ -245,6 +249,7 @@
     flex:1; background:var(--preto); border:1.5px solid var(--borda); border-radius:9px; padding:10px; color:var(--creme); font-size:15px; font-weight:700; outline:none;
   }
   .saldo-caixa-linha input:focus{ border-color:var(--laranja); }
+  .saldo-caixa-linha input.campo-travado{ opacity:.65; cursor:not-allowed; background:#0a0807; }
   .saldo-caixa-meta{ font-size:10.5px; color:var(--muted); margin-top:5px; min-height:14px; }
   .saldo-caixa-total{
     display:flex; justify-content:space-between; align-items:center; margin-top:16px; padding-top:14px;
@@ -288,7 +293,7 @@
         <span class="marca-sub">Sistema Financeiro</span>
       </div>
     </div>
-    <div class="usuario-atual"><span id="nome-usuario-logado"></span><button id="btn-sair">Sair</button></div>
+    <div class="usuario-atual"><span id="nome-usuario-logado"></span><span class="badge-perfil" id="badge-perfil"></span><button id="btn-sair">Sair</button></div>
   </header>
 
   <nav class="abas">
@@ -381,6 +386,7 @@
         <div class="linha-divisoria"></div>
       </div>
       <div class="card-form">
+        <p style="font-size:12px; color:var(--muted); margin-top:-4px;">Os cards abaixo já mostram o acumulado desde o primeiro registro até hoje. Se quiser um período específico, escolha as datas e gere de novo (deixe "De" em branco pra manter "desde o início").</p>
         <div class="grid2">
           <div><label>De</label><input type="date" id="rf-data-inicio"></div>
           <div><label>Até</label><input type="date" id="rf-data-fim"></div>
@@ -581,21 +587,29 @@ function aplicarRestricoesDePerfil() {
   // Estoque e Financeiro ficam visíveis pra todo mundo (consulta liberada);
   // só escondemos os controles de EDIÇÃO dentro delas pra quem é Padrão.
   document.querySelectorAll('.somente-admin').forEach(el => { el.style.display = admin ? "" : "none"; });
-  // saldo em caixa: Padrão enxerga os valores, mas os campos ficam travados
-  $("cx-dinheiro").disabled = !admin;
-  $("cx-conta").disabled = !admin;
+  // saldo em caixa: Padrão enxerga os valores, mas não digita nem salva —
+  // disabled (não digita) + readOnly (reforço) + botão Salvar escondido (já
+  // coberto pela classe somente-admin acima)
+  [$("cx-dinheiro"), $("cx-conta")].forEach(input => {
+    input.disabled = !admin;
+    input.readOnly = !admin;
+    input.classList.toggle("campo-travado", !admin);
+    input.title = admin ? "" : "Só o Administrador pode alterar o saldo em caixa.";
+  });
 }
 
 function iniciarApp() {
   $("tela-login").style.display = "none";
   $("app").style.display = "flex";
-  $("nome-usuario-logado").textContent = USUARIO_LOGADO + (ehAdmin() ? "" : " · equipe");
+  $("nome-usuario-logado").textContent = USUARIO_LOGADO;
+  $("badge-perfil").textContent = ehAdmin() ? "Administrador" : "Padrão";
   aplicarRestricoesDePerfil();
   carregarCategorias();
   carregarComandas();
   carregarProdutos();
   carregarEstoque();
   carregarSaldoCaixa();
+  carregarResumoInicial();
 }
 
 // tenta retomar sessão salva
@@ -1096,13 +1110,21 @@ $("btn-custos-fixos").onclick = async () => {
   } catch (e) { status.textContent = "❌ " + e.message; status.className = "msg-status erro"; }
 };
 
-$("btn-gerar-resumo").onclick = async () => {
-  const dataInicio = $("rf-data-inicio").value, dataFim = $("rf-data-fim").value;
-  if (!dataInicio || !dataFim) { alert("Selecione o período."); return; }
+// dataInicio pode vir vazia — significa "desde o primeiro registro".
+// dataFim, se vazia, é preenchida com hoje (fuso local, não UTC).
+function dataHojeISO() {
+  const agora = new Date();
+  const ano = agora.getFullYear();
+  const mes = String(agora.getMonth() + 1).padStart(2, "0");
+  const dia = String(agora.getDate()).padStart(2, "0");
+  return `${ano}-${mes}-${dia}`;
+}
+
+async function gerarResumoEExibir(dataInicio, dataFim) {
   const grid = $("resumo-grid");
   grid.innerHTML = `<div class="vazio-lista">Carregando...</div>`;
   try {
-    const r = await chamarAPI("resumo", { dataInicio, dataFim });
+    const r = await chamarAPI("resumo", { dataInicio: dataInicio || "", dataFim: dataFim || dataHojeISO() });
     if (r.status !== "ok") { grid.innerHTML = `<div class="vazio-lista">❌ ${r.mensagem}</div>`; return; }
     grid.innerHTML = `
       <div class="resumo-caixa venda"><div class="rotulo">Vendas</div><div class="valor">${fmt(r.totalVendas)}</div></div>
@@ -1112,6 +1134,25 @@ $("btn-gerar-resumo").onclick = async () => {
       <div class="resumo-caixa entrada"><div class="rotulo">Entradas eventuais</div><div class="valor">${fmt(r.totalEntradas)}</div></div>
       <div class="resumo-caixa destaque"><div class="rotulo">Lucro líquido</div><div class="valor">${fmt(r.lucroLiquido)}</div></div>
     `;
+  } catch (e) {
+    grid.innerHTML = `<div class="vazio-lista">❌ ${e.message}</div>`;
+  }
+}
+
+// Assim que a pessoa entra, já mostra o acumulado do primeiro registro até
+// hoje — não fica esperando ela escolher datas e clicar em nada. O filtro
+// continua liberado (pra todo perfil) caso queira ver um dia específico.
+function carregarResumoInicial() {
+  $("rf-data-fim").value = dataHojeISO();
+  gerarResumoEExibir("", dataHojeISO());
+}
+
+$("btn-gerar-resumo").onclick = () => {
+  const dataInicio = $("rf-data-inicio").value; // vazio = desde o início
+  const dataFim = $("rf-data-fim").value || dataHojeISO();
+  $("rf-data-fim").value = dataFim;
+  gerarResumoEExibir(dataInicio, dataFim);
+};
   } catch (e) {
     grid.innerHTML = `<div class="vazio-lista">❌ ${e.message}</div>`;
   }
