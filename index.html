@@ -547,8 +547,9 @@ $("btn-nova-comanda").onclick = async () => {
   try {
     const resp = await chamarAPI("abrirComanda", { identificacao: identificacao.trim(), usuario: USUARIO_LOGADO });
     if (resp.status === "ok") {
-      await carregarComandas();
-      abrirModalComanda(resp.comandaId);
+      carregarComandas(); // atualiza a grade em segundo plano, sem travar a abertura do modal
+      await popularSelectProdutos();
+      abrirModalComPayload(resp);
     } else {
       alert("❌ " + resp.mensagem);
     }
@@ -558,6 +559,15 @@ $("btn-nova-comanda").onclick = async () => {
 // =====================================================================
 // MODAL DE COMANDA
 // =====================================================================
+// Abre o modal já com os dados que a própria ação (abrir/adicionar/editar/
+// fechar) devolveu, sem precisar de uma 2ª chamada de rede.
+function abrirModalComPayload(payload) {
+  COMANDA_ATUAL = payload;
+  $("overlay-comanda").classList.add("aberto");
+  $("modal-status").textContent = "";
+  renderModalComanda();
+}
+
 async function abrirModalComanda(comandaId) {
   $("overlay-comanda").classList.add("aberto");
   $("modal-status").textContent = "";
@@ -649,9 +659,10 @@ $("btn-add-item-comanda").onclick = async () => {
     const resp = await chamarAPI("adicionarItemComanda", { comandaId: COMANDA_ATUAL.comanda.comandaId, produto, quantidade, usuario: USUARIO_LOGADO });
     if (resp.status === "ok") {
       $("modal-qtd-novo").value = 1;
-      await recarregarComanda(COMANDA_ATUAL.comanda.comandaId);
-      await carregarComandas();
-      await carregarEstoque();
+      COMANDA_ATUAL = resp;
+      renderModalComanda();
+      carregarComandas(); // segundo plano, não trava a comanda aberta
+      carregarEstoque();  // segundo plano
     } else { alert("❌ " + resp.mensagem); }
   } catch (e) { alert("❌ " + e.message); }
 };
@@ -660,9 +671,10 @@ async function ajustarQtdItem(itemId, novaQuantidade) {
   try {
     const resp = await chamarAPI("editarItemComanda", { itemId, quantidade: novaQuantidade, usuario: USUARIO_LOGADO });
     if (resp.status === "ok") {
-      await recarregarComanda(COMANDA_ATUAL.comanda.comandaId);
-      await carregarComandas();
-      await carregarEstoque();
+      COMANDA_ATUAL = resp;
+      renderModalComanda();
+      carregarComandas();
+      carregarEstoque();
     } else { alert("❌ " + resp.mensagem); }
   } catch (e) { alert("❌ " + e.message); }
 }
@@ -672,9 +684,10 @@ async function removerItem(itemId) {
   try {
     const resp = await chamarAPI("removerItemComanda", { itemId, usuario: USUARIO_LOGADO });
     if (resp.status === "ok") {
-      await recarregarComanda(COMANDA_ATUAL.comanda.comandaId);
-      await carregarComandas();
-      await carregarEstoque();
+      COMANDA_ATUAL = resp;
+      renderModalComanda();
+      carregarComandas();
+      carregarEstoque();
     } else { alert("❌ " + resp.mensagem); }
   } catch (e) { alert("❌ " + e.message); }
 }
@@ -708,8 +721,9 @@ $("btn-confirmar-fechamento").onclick = async () => {
   try {
     const resp = await chamarAPI("fecharComanda", { comandaId: COMANDA_ATUAL.comanda.comandaId, formaPagamento: forma, troco, usuario: USUARIO_LOGADO });
     if (resp.status === "ok") {
-      await recarregarComanda(COMANDA_ATUAL.comanda.comandaId);
-      await carregarComandas();
+      COMANDA_ATUAL = resp;
+      renderModalComanda();
+      carregarComandas();
     } else { alert("❌ " + resp.mensagem); }
   } catch (e) { alert("❌ " + e.message); }
 };
@@ -717,7 +731,7 @@ $("btn-confirmar-fechamento").onclick = async () => {
 $("btn-reabrir-comanda").onclick = async () => {
   try {
     const resp = await chamarAPI("reabrirComanda", { comandaId: COMANDA_ATUAL.comanda.comandaId, usuario: USUARIO_LOGADO });
-    if (resp.status === "ok") { await recarregarComanda(COMANDA_ATUAL.comanda.comandaId); await carregarComandas(); }
+    if (resp.status === "ok") { COMANDA_ATUAL = resp; renderModalComanda(); carregarComandas(); }
     else alert("❌ " + resp.mensagem);
   } catch (e) { alert("❌ " + e.message); }
 };
