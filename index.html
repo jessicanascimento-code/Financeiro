@@ -27,12 +27,18 @@
 
   /* ---------- LOGIN ---------- */
   #tela-login{
-    min-height:100vh; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:18px; padding:20px;
+    min-height:100vh; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:6px; padding:20px;
   }
-  #tela-login h1{ font-size:22px; color:var(--amarelo); }
+  .logo-login{
+    width:112px; height:112px; border-radius:50%; object-fit:cover; margin-bottom:8px;
+    filter:drop-shadow(0 10px 24px rgba(255,122,26,.35)); border:2px solid rgba(255,122,26,.5);
+  }
+  #tela-login h1{ font-size:20px; color:var(--amarelo); letter-spacing:.3px; margin-bottom:18px; }
+  #tela-login .marca-login-nome{ font-size:22px; font-weight:800; color:var(--creme); margin-bottom:2px; }
   .login-card{
     background:var(--preto2); border:1px solid var(--borda); border-radius:var(--radius);
-    padding:24px; width:100%; max-width:320px; display:flex; flex-direction:column; gap:12px;
+    padding:26px; width:100%; max-width:320px; display:flex; flex-direction:column; gap:12px;
+    box-shadow:0 12px 32px rgba(0,0,0,.35);
   }
   .login-card label{ font-size:12.5px; font-weight:600; }
   .login-card select, .login-card input{
@@ -50,11 +56,14 @@
   #app{ display:none; min-height:100vh; flex-direction:column; }
   header{
     display:flex; align-items:center; justify-content:space-between; gap:10px;
-    padding:12px 16px; background:var(--preto2); border-bottom:1px solid var(--borda);
+    padding:10px 16px; background:var(--preto2); border-bottom:1px solid var(--borda);
     position:sticky; top:0; z-index:20;
   }
-  header .marca{ font-weight:800; color:var(--amarelo); font-size:16px; display:flex; align-items:center; gap:8px; }
-  header .marca span.fogo{ font-size:18px; }
+  header .marca{ display:flex; align-items:center; gap:10px; }
+  header .logo-mini{ width:38px; height:38px; border-radius:50%; object-fit:cover; border:1.5px solid rgba(255,122,26,.5); flex-shrink:0; }
+  header .marca-textos{ display:flex; flex-direction:column; line-height:1.2; }
+  header .marca-nome{ font-weight:800; color:var(--amarelo); font-size:15px; }
+  header .marca-sub{ font-size:10px; color:var(--muted); text-transform:uppercase; letter-spacing:.6px; }
   header .usuario-atual{ font-size:12px; color:var(--muted); display:flex; align-items:center; gap:8px; }
   header .usuario-atual button{
     background:transparent; border:1px solid var(--borda); color:var(--muted); border-radius:8px; padding:5px 9px; font-size:11.5px;
@@ -62,11 +71,11 @@
 
   nav.abas{
     display:flex; gap:4px; padding:8px 12px; background:var(--preto2); border-bottom:1px solid var(--borda);
-    overflow-x:auto; position:sticky; top:53px; z-index:19;
+    overflow-x:auto; position:sticky; top:59px; z-index:19;
   }
   nav.abas button{
     background:transparent; border:none; color:var(--muted); padding:9px 14px; border-radius:10px;
-    font-size:13px; font-weight:700; white-space:nowrap;
+    font-size:13px; font-weight:700; white-space:nowrap; transition:background .12s, color .12s;
   }
   nav.abas button.ativa{ background:rgba(255,122,26,.15); color:var(--amarelo); }
 
@@ -83,23 +92,26 @@
   .filtros-status button.ativa{ background:rgba(255,122,26,.15); color:var(--amarelo); border-color:var(--laranja); }
 
   /* ---------- GRID DE COMANDAS ---------- */
-  .grid-comandas{ display:grid; grid-template-columns:repeat(auto-fill, minmax(160px,1fr)); gap:12px; }
+  .grid-comandas{ display:grid; grid-template-columns:repeat(auto-fill, minmax(180px,1fr)); gap:14px; }
   .card-comanda{
     background:var(--preto2); border:1.5px solid var(--borda); border-radius:var(--radius);
-    padding:14px; cursor:pointer; display:flex; flex-direction:column; gap:6px; position:relative; transition:transform .1s;
+    padding:16px; cursor:pointer; display:flex; flex-direction:column; gap:8px;
+    box-shadow:0 6px 18px rgba(0,0,0,.25); transition:transform .12s, box-shadow .12s;
   }
+  .card-comanda:hover{ transform:translateY(-2px); box-shadow:0 10px 24px rgba(0,0,0,.35); }
   .card-comanda:active{ transform:scale(.97); }
   .card-comanda.aberta{ border-color:rgba(255,122,26,.5); }
   .card-comanda.fechada{ border-color:rgba(47,191,113,.5); }
-  .card-comanda .id{ font-size:15px; font-weight:800; }
+  .card-topo{ display:flex; align-items:flex-start; justify-content:space-between; gap:8px; }
+  .card-comanda .id{ font-size:15px; font-weight:800; line-height:1.25; word-break:break-word; }
   .status-pill{
-    position:absolute; top:10px; right:10px; font-size:9px; font-weight:800; text-transform:uppercase;
-    padding:3px 7px; border-radius:8px;
+    font-size:9px; font-weight:800; text-transform:uppercase; white-space:nowrap; flex-shrink:0;
+    padding:4px 8px; border-radius:8px; margin-top:1px;
   }
   .status-pill.Aberta{ background:rgba(255,122,26,.2); color:var(--laranja); }
   .status-pill.Fechada{ background:rgba(47,191,113,.2); color:var(--verde); }
   .status-pill.Cancelada{ background:rgba(255,255,255,.08); color:var(--muted); }
-  .card-comanda .total{ font-size:18px; font-weight:800; color:var(--amarelo); }
+  .card-comanda .total{ font-size:19px; font-weight:800; color:var(--amarelo); }
   .card-comanda .meta{ font-size:11px; color:var(--muted); }
 
   .btn-nova-comanda{
@@ -215,7 +227,9 @@
 
 <!-- ================= LOGIN ================= -->
 <div id="tela-login">
-  <h1>🔥 Brasero 96 — Financeiro</h1>
+  <img src="logo.png" alt="Brasero 96" class="logo-login">
+  <div class="marca-login-nome">Brasero 96</div>
+  <h1>Sistema Financeiro</h1>
   <div class="login-card">
     <label>Quem está usando?</label>
     <select id="l-usuario">
@@ -237,7 +251,13 @@
 <!-- ================= APP ================= -->
 <div id="app">
   <header>
-    <div class="marca"><span class="fogo">🔥</span> Brasero 96</div>
+    <div class="marca">
+      <img src="logo.png" alt="Brasero 96" class="logo-mini">
+      <div class="marca-textos">
+        <span class="marca-nome">Brasero 96</span>
+        <span class="marca-sub">Sistema Financeiro</span>
+      </div>
+    </div>
     <div class="usuario-atual"><span id="nome-usuario-logado"></span><button id="btn-sair">Sair</button></div>
   </header>
 
@@ -528,8 +548,10 @@ async function carregarComandas() {
       const card = document.createElement("div");
       card.className = "card-comanda " + c.status.toLowerCase();
       card.innerHTML = `
-        <span class="status-pill ${c.status}">${c.status}</span>
-        <div class="id">${c.identificacao}</div>
+        <div class="card-topo">
+          <div class="id">${c.identificacao}</div>
+          <span class="status-pill ${c.status}">${c.status}</span>
+        </div>
         <div class="total">${fmt(c.valorTotal)}</div>
         <div class="meta">${c.totalItens} espeto(s) · aberta ${c.abertaEm.toString().split(" ")[1] || ""}</div>
       `;
