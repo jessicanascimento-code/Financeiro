@@ -360,7 +360,7 @@
             <label>Dinheiro em espécie (R$)</label>
             <div class="saldo-caixa-linha">
               <input type="number" id="cx-dinheiro" step="1">
-              <button class="btn-mini salvar" id="btn-salvar-dinheiro">Salvar</button>
+              <button class="btn-mini salvar somente-admin" id="btn-salvar-dinheiro">Salvar</button>
             </div>
             <div class="saldo-caixa-meta" id="cx-dinheiro-meta"></div>
           </div>
@@ -368,7 +368,7 @@
             <label>Saldo em conta (R$)</label>
             <div class="saldo-caixa-linha">
               <input type="number" id="cx-conta" step="1">
-              <button class="btn-mini salvar" id="btn-salvar-conta">Salvar</button>
+              <button class="btn-mini salvar somente-admin" id="btn-salvar-conta">Salvar</button>
             </div>
             <div class="saldo-caixa-meta" id="cx-conta-meta"></div>
           </div>
@@ -389,11 +389,11 @@
       </div>
       <div class="resumo-grid" id="resumo-grid"></div>
 
-      <div class="secao-titulo-financeiro">
+      <div class="secao-titulo-financeiro somente-admin">
         <h3>📝 Lançamentos</h3>
         <div class="linha-divisoria"></div>
       </div>
-      <div class="grid-duas-colunas">
+      <div class="grid-duas-colunas somente-admin">
         <div class="card-form">
           <h3>Lançar saída</h3>
           <label>Categoria</label>
@@ -419,7 +419,7 @@
         </div>
       </div>
 
-      <div class="card-form">
+      <div class="card-form somente-admin">
         <h3>Custos fixos do dia</h3>
         <p style="font-size:12px; color:var(--muted);">Lança de uma vez todos os itens do cardápio marcados como categoria "Custo Fixo Diário".</p>
         <button class="btn-mini salvar" style="width:100%;" id="btn-custos-fixos">Lançar custos fixos de hoje</button>
@@ -498,9 +498,12 @@ const $ = (id) => document.getElementById(id);
 const fmt = (v) => "R$ " + (Number(v) || 0).toFixed(2).replace(".", ",");
 
 let USUARIO_LOGADO = "";
+let PERFIL_USUARIO = "Padrão"; // "Admin" ou "Padrão" — vem do login e controla o que aparece na tela
 let PRODUTOS_CACHE = [];
 let COMANDA_ATUAL = null; // objeto retornado por obterComanda
 let FILTRO_STATUS_ATUAL = "Aberta";
+
+function ehAdmin() { return PERFIL_USUARIO === "Admin"; }
 
 // =====================================================================
 // JSONP helper (com 1 retentativa automática, útil em evento com rede instável)
@@ -509,7 +512,9 @@ let contadorJsonp = 0;
 function chamarAPIUmaVez(acao, params, timeoutMs) {
   return new Promise((resolve, reject) => {
     const nomeCallback = "jsonpCb_" + (contadorJsonp++) + "_" + Date.now();
-    const query = new URLSearchParams(Object.assign({ acao: acao, callback: nomeCallback }, params || {}));
+    // "usuario" vai sempre junto — é o que o servidor usa pra checar permissão
+    // (Admin x Padrão), então nunca deve ser omitido nas chamadas.
+    const query = new URLSearchParams(Object.assign({ acao: acao, callback: nomeCallback, usuario: USUARIO_LOGADO }, params || {}));
     window[nomeCallback] = function (resp) {
       delete window[nomeCallback];
       script.remove();
@@ -554,7 +559,8 @@ $("btn-entrar").onclick = async () => {
     const resp = await chamarAPI("login", { usuario, pin });
     if (resp.status === "ok") {
       USUARIO_LOGADO = resp.usuario;
-      localStorage.setItem("brasero96_fin_usuario", USUARIO_LOGADO);
+      PERFIL_USUARIO = resp.perfil || "Padrão";
+      localStorage.setItem("brasero96_fin_sessao", JSON.stringify({ usuario: USUARIO_LOGADO, perfil: PERFIL_USUARIO }));
       iniciarApp();
     } else {
       $("erro-login").textContent = resp.mensagem || "Não foi possível entrar.";
@@ -565,14 +571,26 @@ $("btn-entrar").onclick = async () => {
 };
 
 $("btn-sair").onclick = () => {
-  localStorage.removeItem("brasero96_fin_usuario");
+  localStorage.removeItem("brasero96_fin_sessao");
+  localStorage.removeItem("brasero96_fin_usuario"); // sessão antiga, se existir
   location.reload();
 };
+
+function aplicarRestricoesDePerfil() {
+  const admin = ehAdmin();
+  // Estoque e Financeiro ficam visíveis pra todo mundo (consulta liberada);
+  // só escondemos os controles de EDIÇÃO dentro delas pra quem é Padrão.
+  document.querySelectorAll('.somente-admin').forEach(el => { el.style.display = admin ? "" : "none"; });
+  // saldo em caixa: Padrão enxerga os valores, mas os campos ficam travados
+  $("cx-dinheiro").disabled = !admin;
+  $("cx-conta").disabled = !admin;
+}
 
 function iniciarApp() {
   $("tela-login").style.display = "none";
   $("app").style.display = "flex";
-  $("nome-usuario-logado").textContent = USUARIO_LOGADO;
+  $("nome-usuario-logado").textContent = USUARIO_LOGADO + (ehAdmin() ? "" : " · equipe");
+  aplicarRestricoesDePerfil();
   carregarCategorias();
   carregarComandas();
   carregarProdutos();
@@ -582,10 +600,20 @@ function iniciarApp() {
 
 // tenta retomar sessão salva
 (function tentarSessaoSalva() {
-  const salvo = localStorage.getItem("brasero96_fin_usuario");
-  if (salvo) {
-    USUARIO_LOGADO = salvo;
-    iniciarApp();
+  const salvoNovo = localStorage.getItem("brasero96_fin_sessao");
+  if (salvoNovo) {
+    try {
+      const sessao = JSON.parse(salvoNovo);
+      USUARIO_LOGADO = sessao.usuario;
+      PERFIL_USUARIO = sessao.perfil || "Padrão";
+      iniciarApp();
+      return;
+    } catch (e) { /* sessão corrompida, cai pro login normal */ }
+  }
+  // compatibilidade com sessão salva antes desta atualização (sem perfil salvo)
+  const salvoAntigo = localStorage.getItem("brasero96_fin_usuario");
+  if (salvoAntigo) {
+    localStorage.removeItem("brasero96_fin_usuario");
   }
 })();
 
@@ -884,9 +912,21 @@ async function carregarEstoque() {
     if (resp.status !== "ok") { lista.innerHTML = `<div class="vazio-lista">❌ ${resp.mensagem}</div>`; return; }
     if (!resp.itens.length) { lista.innerHTML = `<div class="vazio-lista">Nenhum item de estoque cadastrado ainda.</div>`; return; }
     lista.innerHTML = "";
+    const admin = ehAdmin();
     resp.itens.sort((a, b) => a.produto.localeCompare(b.produto)).forEach(it => {
       const linha = document.createElement("div");
       linha.className = "linha-tabela";
+
+      if (!admin) {
+        // Padrão: só consulta a quantidade, sem campo pra editar
+        linha.innerHTML = `
+          <div class="nome-item">${it.produto}<div class="cat-item">${it.categoria}</div></div>
+          <div class="estoque-qtd${it.quantidade <= 0 ? ' baixo' : ''}">${it.quantidade}</div>
+        `;
+        lista.appendChild(linha);
+        return;
+      }
+
       linha.innerHTML = `
         <div class="nome-item">${it.produto}<div class="cat-item">${it.categoria}</div></div>
         <input type="number" class="input-estoque" value="${it.quantidade}">
@@ -919,6 +959,8 @@ function renderCardapio(produtos) {
   const lista = $("lista-cardapio");
   if (!produtos.length) { lista.innerHTML = `<div class="vazio-lista">Nenhum item cadastrado.</div>`; return; }
   lista.innerHTML = "";
+  // Cardápio é editável por Admin e Padrão — só Estoque e Financeiro têm a
+  // edição travada pro perfil Padrão.
   produtos.sort((a, b) => a.categoria.localeCompare(b.categoria) || a.nome.localeCompare(b.nome)).forEach(p => {
     const linha = document.createElement("div");
     linha.className = "linha-tabela";
@@ -942,6 +984,7 @@ function renderCardapio(produtos) {
     lista.appendChild(linha);
   });
 }
+
 
 $("btn-add-produto").onclick = async () => {
   const categoria = $("np-categoria").value.trim();
