@@ -94,6 +94,14 @@
     background:var(--preto2); border:1px solid var(--borda); color:var(--muted); border-radius:9px; padding:7px 12px; font-size:12px; font-weight:700;
   }
   .filtros-status button.ativa{ background:rgba(255,122,26,.15); color:var(--amarelo); border-color:var(--laranja); }
+  .filtro-data-comandas{
+    display:flex; align-items:flex-end; gap:10px; flex-wrap:wrap; margin-top:12px;
+    background:var(--preto2); border:1px solid var(--borda); border-radius:12px; padding:12px 14px;
+  }
+  .filtro-data-comandas label{ font-size:11px; font-weight:700; display:block; margin-bottom:5px; }
+  .filtro-data-comandas input{
+    background:var(--preto); border:1.5px solid var(--borda); border-radius:8px; padding:8px 10px; color:var(--creme); font-size:13px; outline:none;
+  }
 
   /* ---------- GRID DE COMANDAS ---------- */
   .grid-comandas{ display:grid; grid-template-columns:repeat(auto-fill, minmax(180px,1fr)); gap:14px; }
@@ -315,6 +323,11 @@
         <button data-status="Aberta" class="ativa">Abertas</button>
         <button data-status="Fechada">Fechadas hoje</button>
         <button data-status="Todas">Todas</button>
+      </div>
+      <div class="filtro-data-comandas" id="filtro-data-comandas" style="display:none;">
+        <div><label>De</label><input type="date" id="fc-data-inicio"></div>
+        <div><label>Até</label><input type="date" id="fc-data-fim"></div>
+        <button class="btn-mini salvar" id="btn-filtrar-comandas">Filtrar</button>
       </div>
       <div style="height:12px;"></div>
       <div class="grid-comandas" id="grid-comandas"><div class="vazio-lista">Carregando...</div></div>
@@ -651,9 +664,13 @@ document.querySelectorAll(".filtros-status button").forEach(btn => {
     document.querySelectorAll(".filtros-status button").forEach(b => b.classList.remove("ativa"));
     btn.classList.add("ativa");
     FILTRO_STATUS_ATUAL = btn.dataset.status;
+    // o filtro de data por período só faz sentido dentro de "Todas"
+    $("filtro-data-comandas").style.display = FILTRO_STATUS_ATUAL === "Todas" ? "flex" : "none";
     carregarComandas();
   };
 });
+
+$("btn-filtrar-comandas").onclick = () => carregarComandas();
 
 async function carregarComandas() {
   const grid = $("grid-comandas");
@@ -663,6 +680,11 @@ async function carregarComandas() {
     const hoje = new Date();
     const iso = hoje.toISOString().slice(0, 10);
     params.dataInicio = iso; params.dataFim = iso;
+  } else if (FILTRO_STATUS_ATUAL === "Todas") {
+    const dataInicio = $("fc-data-inicio").value;
+    const dataFim = $("fc-data-fim").value;
+    if (dataInicio) params.dataInicio = dataInicio;
+    if (dataFim) params.dataFim = dataFim;
   }
   try {
     const resp = await chamarAPI("listarComandas", params);
@@ -672,13 +694,15 @@ async function carregarComandas() {
     resp.comandas.forEach(c => {
       const card = document.createElement("div");
       card.className = "card-comanda " + c.status.toLowerCase();
+      // abertaEm já vem como "dd/MM/yyyy HH:mm:ss" da planilha
+      const [dataComanda, horaComanda] = c.abertaEm.toString().split(" ");
       card.innerHTML = `
         <div class="card-topo">
           <div class="id">${c.identificacao}</div>
           <span class="status-pill ${c.status}">${c.status}</span>
         </div>
         <div class="total">${fmt(c.valorTotal)}</div>
-        <div class="meta">${c.totalItens} espeto(s) · aberta ${c.abertaEm.toString().split(" ")[1] || ""}</div>
+        <div class="meta">${c.totalItens} espeto(s) · ${dataComanda || ""} ${horaComanda ? horaComanda.slice(0, 5) : ""}</div>
       `;
       card.onclick = () => abrirModalComanda(c.comandaId);
       grid.appendChild(card);
