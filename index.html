@@ -216,11 +216,41 @@
   .msg-status.erro{ color:#ff8a80; }
 
   /* ---------- FINANCEIRO ---------- */
-  .resumo-grid{ display:grid; grid-template-columns:repeat(auto-fit,minmax(140px,1fr)); gap:10px; margin-bottom:16px; }
-  .resumo-caixa{ background:var(--preto2); border:1px solid var(--borda); border-radius:12px; padding:14px; }
-  .resumo-caixa .rotulo{ font-size:11px; color:var(--muted); text-transform:uppercase; }
-  .resumo-caixa .valor{ font-size:19px; font-weight:800; margin-top:4px; }
-  .resumo-caixa.destaque .valor{ color:var(--amarelo); }
+  .resumo-grid{ display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:12px; margin-bottom:20px; }
+  .resumo-caixa{
+    background:var(--preto2); border:1px solid var(--borda); border-top:3px solid var(--borda); border-radius:12px;
+    padding:14px 16px; box-shadow:0 4px 14px rgba(0,0,0,.2);
+  }
+  .resumo-caixa .rotulo{ font-size:10.5px; color:var(--muted); text-transform:uppercase; letter-spacing:.4px; }
+  .resumo-caixa .valor{ font-size:20px; font-weight:800; margin-top:5px; }
+  .resumo-caixa.venda{ border-top-color:var(--laranja); }
+  .resumo-caixa.saida{ border-top-color:#ff8a80; }
+  .resumo-caixa.entrada{ border-top-color:var(--azul); }
+  .resumo-caixa.destaque{ border-top-color:var(--amarelo); background:linear-gradient(180deg, rgba(255,196,46,.08), var(--preto2)); }
+  .resumo-caixa.destaque .valor{ color:var(--amarelo); font-size:22px; }
+
+  .secao-titulo-financeiro{ display:flex; align-items:center; gap:8px; margin:26px 0 12px; }
+  .secao-titulo-financeiro:first-child{ margin-top:0; }
+  .secao-titulo-financeiro h3{ font-size:14px; color:var(--amarelo); }
+  .secao-titulo-financeiro .linha-divisoria{ flex:1; height:1px; background:var(--borda); }
+
+  .grid-duas-colunas{ display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+  @media(max-width:700px){ .grid-duas-colunas{ grid-template-columns:1fr; } }
+
+  .saldo-caixa-grid{ display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+  @media(max-width:520px){ .saldo-caixa-grid{ grid-template-columns:1fr; } }
+  .saldo-caixa-campo label{ font-size:11.5px; font-weight:700; display:block; margin-bottom:5px; }
+  .saldo-caixa-linha{ display:flex; gap:8px; }
+  .saldo-caixa-linha input{
+    flex:1; background:var(--preto); border:1.5px solid var(--borda); border-radius:9px; padding:10px; color:var(--creme); font-size:15px; font-weight:700; outline:none;
+  }
+  .saldo-caixa-linha input:focus{ border-color:var(--laranja); }
+  .saldo-caixa-meta{ font-size:10.5px; color:var(--muted); margin-top:5px; min-height:14px; }
+  .saldo-caixa-total{
+    display:flex; justify-content:space-between; align-items:center; margin-top:16px; padding-top:14px;
+    border-top:1px dashed var(--borda); font-size:15px; font-weight:700; color:var(--muted);
+  }
+  .saldo-caixa-total span:last-child{ font-size:20px; font-weight:800; color:var(--amarelo); }
 </style>
 </head>
 <body>
@@ -317,7 +347,39 @@
 
     <!-- ---------- FINANCEIRO ---------- -->
     <section class="secao" id="secao-financeiro">
-      <div class="linha-topo"><h2>Resumo do período</h2></div>
+      <div class="linha-topo"><h2>Financeiro</h2></div>
+
+      <div class="secao-titulo-financeiro">
+        <h3>💰 Saldo em caixa</h3>
+        <div class="linha-divisoria"></div>
+      </div>
+      <div class="card-form">
+        <p style="font-size:12px; color:var(--muted); margin-top:-4px;">Atualize sempre que conferir o dinheiro físico ou o extrato da conta. Fica salvo na planilha, não é calculado automaticamente.</p>
+        <div class="saldo-caixa-grid">
+          <div class="saldo-caixa-campo">
+            <label>Dinheiro em espécie (R$)</label>
+            <div class="saldo-caixa-linha">
+              <input type="number" id="cx-dinheiro" step="1">
+              <button class="btn-mini salvar" id="btn-salvar-dinheiro">Salvar</button>
+            </div>
+            <div class="saldo-caixa-meta" id="cx-dinheiro-meta"></div>
+          </div>
+          <div class="saldo-caixa-campo">
+            <label>Saldo em conta (R$)</label>
+            <div class="saldo-caixa-linha">
+              <input type="number" id="cx-conta" step="1">
+              <button class="btn-mini salvar" id="btn-salvar-conta">Salvar</button>
+            </div>
+            <div class="saldo-caixa-meta" id="cx-conta-meta"></div>
+          </div>
+        </div>
+        <div class="saldo-caixa-total"><span>Total em caixa</span><span id="cx-total">R$ 0,00</span></div>
+      </div>
+
+      <div class="secao-titulo-financeiro">
+        <h3>📊 Resumo do período</h3>
+        <div class="linha-divisoria"></div>
+      </div>
       <div class="card-form">
         <div class="grid2">
           <div><label>De</label><input type="date" id="rf-data-inicio"></div>
@@ -327,28 +389,34 @@
       </div>
       <div class="resumo-grid" id="resumo-grid"></div>
 
-      <div class="card-form">
-        <h3>Lançar saída</h3>
-        <label>Categoria</label>
-        <select id="sd-categoria"></select>
-        <label>Descrição</label>
-        <input type="text" id="sd-descricao">
-        <label>Valor (R$)</label>
-        <input type="number" id="sd-valor" step="0.5">
-        <button class="btn-mini salvar" style="width:100%; margin-top:10px;" id="btn-registrar-saida">Registrar saída</button>
-        <div class="msg-status" id="status-saida"></div>
+      <div class="secao-titulo-financeiro">
+        <h3>📝 Lançamentos</h3>
+        <div class="linha-divisoria"></div>
       </div>
+      <div class="grid-duas-colunas">
+        <div class="card-form">
+          <h3>Lançar saída</h3>
+          <label>Categoria</label>
+          <select id="sd-categoria"></select>
+          <label>Descrição</label>
+          <input type="text" id="sd-descricao">
+          <label>Valor (R$)</label>
+          <input type="number" id="sd-valor" step="0.5">
+          <button class="btn-mini salvar" style="width:100%; margin-top:10px;" id="btn-registrar-saida">Registrar saída</button>
+          <div class="msg-status" id="status-saida"></div>
+        </div>
 
-      <div class="card-form">
-        <h3>Lançar entrada eventual</h3>
-        <label>Categoria</label>
-        <select id="en-categoria"></select>
-        <label>Descrição</label>
-        <input type="text" id="en-descricao">
-        <label>Valor (R$)</label>
-        <input type="number" id="en-valor" step="0.5">
-        <button class="btn-mini salvar" style="width:100%; margin-top:10px;" id="btn-registrar-entrada">Registrar entrada</button>
-        <div class="msg-status" id="status-entrada"></div>
+        <div class="card-form">
+          <h3>Lançar entrada eventual</h3>
+          <label>Categoria</label>
+          <select id="en-categoria"></select>
+          <label>Descrição</label>
+          <input type="text" id="en-descricao">
+          <label>Valor (R$)</label>
+          <input type="number" id="en-valor" step="0.5">
+          <button class="btn-mini salvar" style="width:100%; margin-top:10px;" id="btn-registrar-entrada">Registrar entrada</button>
+          <div class="msg-status" id="status-entrada"></div>
+        </div>
       </div>
 
       <div class="card-form">
@@ -423,7 +491,7 @@
 // CONFIG
 // =====================================================================
 const CONFIG = {
-  API_URL: "https://script.google.com/macros/s/AKfycbyosNv8uvAq-x5GBKSbqgkXn6ZShtC0LwJ_XO3BXbXLx7GkyGWDNvAkSx5pFnRjmLz9ig/exec"
+  API_URL: "https://script.google.com/macros/s/COLE_AQUI_A_URL_DO_SEU_APPS_SCRIPT/exec"
 };
 
 const $ = (id) => document.getElementById(id);
@@ -509,6 +577,7 @@ function iniciarApp() {
   carregarComandas();
   carregarProdutos();
   carregarEstoque();
+  carregarSaldoCaixa();
 }
 
 // tenta retomar sessão salva
@@ -897,6 +966,47 @@ $("btn-add-produto").onclick = async () => {
 };
 
 // =====================================================================
+// SALDO EM CAIXA (digitado manualmente)
+// =====================================================================
+function atualizarTotalCaixaExibido() {
+  const dinheiro = parseFloat($("cx-dinheiro").value) || 0;
+  const conta = parseFloat($("cx-conta").value) || 0;
+  $("cx-total").textContent = fmt(dinheiro + conta);
+}
+$("cx-dinheiro").oninput = atualizarTotalCaixaExibido;
+$("cx-conta").oninput = atualizarTotalCaixaExibido;
+
+async function carregarSaldoCaixa() {
+  try {
+    const resp = await chamarAPI("obterSaldoCaixa", {});
+    if (resp.status !== "ok") return;
+    $("cx-dinheiro").value = resp.dinheiro || 0;
+    $("cx-conta").value = resp.conta || 0;
+    atualizarTotalCaixaExibido();
+    $("cx-dinheiro-meta").textContent = resp.dinheiroAtualizadoEm ? `Atualizado em ${resp.dinheiroAtualizadoEm}${resp.dinheiroAtualizadoPor ? " por " + resp.dinheiroAtualizadoPor : ""}` : "Ainda não informado";
+    $("cx-conta-meta").textContent = resp.contaAtualizadoEm ? `Atualizado em ${resp.contaAtualizadoEm}${resp.contaAtualizadoPor ? " por " + resp.contaAtualizadoPor : ""}` : "Ainda não informado";
+  } catch (e) { /* silencioso — não é crítico pra abertura do app */ }
+}
+
+$("btn-salvar-dinheiro").onclick = async () => {
+  const valor = parseFloat($("cx-dinheiro").value) || 0;
+  try {
+    const resp = await chamarAPI("atualizarSaldoCaixa", { campo: "dinheiro", valor, usuario: USUARIO_LOGADO });
+    if (resp.status === "ok") { $("cx-dinheiro-meta").textContent = `Atualizado em ${resp.dinheiroAtualizadoEm} por ${resp.dinheiroAtualizadoPor}`; }
+    else alert("❌ " + resp.mensagem);
+  } catch (e) { alert("❌ " + e.message); }
+};
+
+$("btn-salvar-conta").onclick = async () => {
+  const valor = parseFloat($("cx-conta").value) || 0;
+  try {
+    const resp = await chamarAPI("atualizarSaldoCaixa", { campo: "conta", valor, usuario: USUARIO_LOGADO });
+    if (resp.status === "ok") { $("cx-conta-meta").textContent = `Atualizado em ${resp.contaAtualizadoEm} por ${resp.contaAtualizadoPor}`; }
+    else alert("❌ " + resp.mensagem);
+  } catch (e) { alert("❌ " + e.message); }
+};
+
+// =====================================================================
 // FINANCEIRO (saídas / entradas / custos fixos / resumo)
 // =====================================================================
 async function carregarCategorias() {
@@ -952,11 +1062,11 @@ $("btn-gerar-resumo").onclick = async () => {
     const r = await chamarAPI("resumo", { dataInicio, dataFim });
     if (r.status !== "ok") { grid.innerHTML = `<div class="vazio-lista">❌ ${r.mensagem}</div>`; return; }
     grid.innerHTML = `
-      <div class="resumo-caixa"><div class="rotulo">Vendas</div><div class="valor">${fmt(r.totalVendas)}</div></div>
-      <div class="resumo-caixa"><div class="rotulo">Custo das vendas</div><div class="valor">${fmt(r.totalCustoVendas)}</div></div>
-      <div class="resumo-caixa"><div class="rotulo">Lucro das vendas</div><div class="valor">${fmt(r.totalLucroVendas)}</div></div>
-      <div class="resumo-caixa"><div class="rotulo">Saídas</div><div class="valor">${fmt(r.totalSaidas)}</div></div>
-      <div class="resumo-caixa"><div class="rotulo">Entradas eventuais</div><div class="valor">${fmt(r.totalEntradas)}</div></div>
+      <div class="resumo-caixa venda"><div class="rotulo">Vendas</div><div class="valor">${fmt(r.totalVendas)}</div></div>
+      <div class="resumo-caixa venda"><div class="rotulo">Custo das vendas</div><div class="valor">${fmt(r.totalCustoVendas)}</div></div>
+      <div class="resumo-caixa venda"><div class="rotulo">Lucro das vendas</div><div class="valor">${fmt(r.totalLucroVendas)}</div></div>
+      <div class="resumo-caixa saida"><div class="rotulo">Saídas</div><div class="valor">${fmt(r.totalSaidas)}</div></div>
+      <div class="resumo-caixa entrada"><div class="rotulo">Entradas eventuais</div><div class="valor">${fmt(r.totalEntradas)}</div></div>
       <div class="resumo-caixa destaque"><div class="rotulo">Lucro líquido</div><div class="valor">${fmt(r.lucroLiquido)}</div></div>
     `;
   } catch (e) {
