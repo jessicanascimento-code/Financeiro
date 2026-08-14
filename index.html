@@ -500,6 +500,7 @@
         <input type="number" id="modal-valor-recebido" step="1">
         <div class="troco-info" id="modal-troco-info"></div>
       </div>
+      <div id="bloco-juros" class="troco-info" style="display:none;"></div>
       <button class="btn-fechar-comanda" style="width:100%; margin-top:10px;" id="btn-confirmar-fechamento">Confirmar fechamento</button>
     </div>
 
@@ -523,7 +524,7 @@
 // CONFIG
 // =====================================================================
 const CONFIG = {
-  API_URL: "https://script.google.com/macros/s/AKfycbxrQmd-4WAkZBJfw8O35SMmqc_4qk4sLbjG4TU0wjT-_IIVV-2PH6B_Oir-2E96nhTTSA/exec"
+  API_URL: "https://script.google.com/macros/s/AKfycbyhOCv3RrKNNmbhhnA13X5O12ZpPjoT4KGnkrP-ccO7c4SzCxH2qZyqBhoCHSK_B3LFoQ/exec"
 };
 
 const $ = (id) => document.getElementById(id);
@@ -945,7 +946,7 @@ function renderModalComanda() {
     $("btn-abrir-pagamento").style.display = "none";
     $("btn-reabrir-comanda").style.display = "block";
     $("btn-editar-pagamento").style.display = "block";
-    $("info-pagamento-atual").innerHTML = `<div class="info-pagamento-atual">✓ Fechada — ${c.formaPagamento}${c.troco ? " · Troco: " + fmt(c.troco) : ""} (${c.fechadaEm})</div>`;
+    $("info-pagamento-atual").innerHTML = `<div class="info-pagamento-atual">✓ Fechada — ${c.formaPagamento}${c.troco ? " · Troco: " + fmt(c.troco) : ""}${c.juros ? " · Juros cartão: " + fmt(c.juros) + " · Cobrado: " + fmt(c.valorCobrado) : ""} (${c.fechadaEm})</div>`;
   } else if (cancelada) {
     $("btn-abrir-pagamento").style.display = "none";
     $("btn-reabrir-comanda").style.display = "block";
@@ -1102,15 +1103,17 @@ function removerItem(itemId, linhaPlanilha) {
 }
 
 // abrir/fechar caixa de pagamento
-$("btn-abrir-pagamento").onclick = () => { $("box-pagamento").classList.add("aberto"); atualizarTroco(); };
+$("btn-abrir-pagamento").onclick = () => { $("box-pagamento").classList.add("aberto"); atualizarTroco(); atualizarJuros(); };
 $("btn-editar-pagamento").onclick = () => {
   $("box-pagamento").classList.add("aberto");
   $("modal-forma-pagamento").value = COMANDA_ATUAL.comanda.formaPagamento || "Dinheiro";
   atualizarTroco();
+  atualizarJuros();
 };
 $("modal-forma-pagamento").onchange = () => {
   $("bloco-troco").style.display = $("modal-forma-pagamento").value === "Dinheiro" ? "block" : "none";
   atualizarTroco();
+  atualizarJuros();
 };
 $("modal-valor-recebido").oninput = atualizarTroco;
 
@@ -1123,16 +1126,39 @@ function atualizarTroco() {
   $("modal-troco-info").textContent = recebido > 0 ? (troco >= 0 ? "Troco: " + fmt(troco) : "Faltam " + fmt(-troco)) : "";
 }
 
+// Juros automático do cartão de crédito: R$0,50 a cada bloco de R$10 do
+// valor da comanda (arredondando pra cima). Mesma fórmula usada no servidor
+// em calcularJurosCartaoCredito() no Codigo.gs — se mudar uma, muda a outra.
+function calcularJurosCartao(forma, valorTotal) {
+  if (forma !== "Cartão de Crédito") return 0;
+  if (!valorTotal || valorTotal <= 0) return 0;
+  const blocos = Math.ceil((valorTotal - 0.001) / 10);
+  return Math.round(blocos * 0.5 * 100) / 100;
+}
+
+function atualizarJuros() {
+  const forma = $("modal-forma-pagamento").value;
+  const bloco = $("bloco-juros");
+  const total = COMANDA_ATUAL ? COMANDA_ATUAL.valorTotal : 0;
+  const juros = calcularJurosCartao(forma, total);
+  if (juros <= 0) { bloco.style.display = "none"; bloco.textContent = ""; return; }
+  bloco.style.display = "block";
+  bloco.innerHTML = `💳 Juros do cartão de crédito: <b>${fmt(juros)}</b> · Total a cobrar: <b>${fmt(total + juros)}</b>`;
+}
+
 $("btn-confirmar-fechamento").onclick = () => {
   const forma = $("modal-forma-pagamento").value;
   const recebido = parseFloat($("modal-valor-recebido").value) || 0;
   const troco = forma === "Dinheiro" ? Math.max(0, recebido - COMANDA_ATUAL.valorTotal) : 0;
+  const juros = calcularJurosCartao(forma, COMANDA_ATUAL.valorTotal);
   const comandaId = COMANDA_ATUAL.comanda.comandaId;
 
   // fecha local na hora
   COMANDA_ATUAL.comanda.status = "Fechada";
   COMANDA_ATUAL.comanda.formaPagamento = forma;
   COMANDA_ATUAL.comanda.troco = troco;
+  COMANDA_ATUAL.comanda.juros = juros;
+  COMANDA_ATUAL.comanda.valorCobrado = COMANDA_ATUAL.valorTotal + juros;
   COMANDA_ATUAL.comanda.fechadaEm = agoraBR();
   COMANDA_ATUAL.comanda.usuarioFechamento = USUARIO_LOGADO;
   renderModalComanda();
@@ -1394,6 +1420,7 @@ async function gerarResumoEExibir(dataInicio, dataFim) {
       <div class="resumo-caixa venda"><div class="rotulo">Vendas</div><div class="valor">${fmt(r.totalVendas)}</div></div>
       <div class="resumo-caixa venda"><div class="rotulo">Custo das vendas</div><div class="valor">${fmt(r.totalCustoVendas)}</div></div>
       <div class="resumo-caixa venda"><div class="rotulo">Lucro das vendas</div><div class="valor">${fmt(r.totalLucroVendas)}</div></div>
+      ${r.totalJuros > 0 ? `<div class="resumo-caixa entrada"><div class="rotulo">Juros de cartão</div><div class="valor">${fmt(r.totalJuros)}</div></div>` : ""}
       <div class="resumo-caixa saida"><div class="rotulo">Saídas</div><div class="valor">${fmt(r.totalSaidas)}</div></div>
       <div class="resumo-caixa entrada"><div class="rotulo">Entradas eventuais</div><div class="valor">${fmt(r.totalEntradas)}</div></div>
       <div class="resumo-caixa destaque"><div class="rotulo">Lucro líquido</div><div class="valor">${fmt(r.lucroLiquido)}</div></div>
