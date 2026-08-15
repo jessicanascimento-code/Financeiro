@@ -282,6 +282,8 @@
   .card-form h3{ font-size:14px; color:var(--amarelo); margin-bottom:10px; }
   .grid2{ display:grid; grid-template-columns:1fr 1fr; gap:10px; }
   .card-form label{ font-size:11.5px; font-weight:700; display:block; margin:8px 0 4px; }
+  .checkbox-linha{ display:flex !important; align-items:center; gap:8px; cursor:pointer; }
+  .checkbox-linha input[type=checkbox]{ width:16px; height:16px; accent-color:var(--laranja); }
   .card-form input, .card-form select, .card-form textarea{
     width:100%; background:var(--preto); border:1.5px solid var(--borda); border-radius:9px; padding:9px 10px; color:var(--creme); font-size:13.5px; outline:none;
   }
@@ -559,10 +561,14 @@
               <option value="Pix">Pix</option>
               <option value="Cartão de Crédito">Cartão de Crédito</option>
             </select>
+            <label class="checkbox-linha">
+              <input type="checkbox" id="sd-ja-paga" checked>
+              <span>Já foi paga?</span>
+            </label>
             <div id="sd-bloco-vencimento" style="display:none;">
               <label>Vencimento</label>
               <input type="date" id="sd-vencimento">
-              <p style="font-size:11px; color:var(--muted); margin:4px 0 0;">Fica registrado como pendente e só entra nos totais depois de marcado como pago em "Contas a pagar".</p>
+              <p style="font-size:11px; color:var(--muted); margin:4px 0 0;">Fica registrado como pendente e só entra nos totais depois de marcado como pago em "Contas a pagar" (vale pra qualquer categoria ou forma de pagamento).</p>
             </div>
             <button class="btn-mini salvar" style="width:100%; margin-top:10px;" id="btn-registrar-saida">Registrar saída</button>
             <div class="msg-status" id="status-saida"></div>
@@ -1604,25 +1610,28 @@ async function carregarCategorias() {
   }
 }
 
-$("sd-forma-pagamento").onchange = () => {
-  $("sd-bloco-vencimento").style.display = $("sd-forma-pagamento").value === "Cartão de Crédito" ? "block" : "none";
+$("sd-ja-paga").onchange = () => {
+  $("sd-bloco-vencimento").style.display = $("sd-ja-paga").checked ? "none" : "block";
 };
 
 $("btn-registrar-saida").onclick = async () => {
   const categoria = $("sd-categoria").value, descricao = $("sd-descricao").value, valor = $("sd-valor").value;
   const formaPagamento = $("sd-forma-pagamento").value;
+  const jaPaga = $("sd-ja-paga").checked;
   const vencimento = $("sd-vencimento").value;
+  const statusPagamento = jaPaga ? "Pago" : "Pendente";
   const status = $("status-saida");
-  if (formaPagamento === "Cartão de Crédito" && !vencimento) {
-    status.textContent = "Informe o vencimento pra pagamento em crédito."; status.className = "msg-status erro"; return;
+  if (!jaPaga && !vencimento) {
+    status.textContent = "Informe o vencimento pra saída pendente."; status.className = "msg-status erro"; return;
   }
   status.textContent = "Salvando...";
   try {
-    const resp = await chamarAPI("registrarSaida", { categoria, descricao, valor, formaPagamento, vencimento, usuario: USUARIO_LOGADO });
+    const resp = await chamarAPI("registrarSaida", { categoria, descricao, valor, formaPagamento, statusPagamento, vencimento, usuario: USUARIO_LOGADO });
     if (resp.status === "ok") {
-      status.textContent = "✓ Saída registrada." + (formaPagamento === "Cartão de Crédito" ? " Fica pendente até marcar como paga." : "");
+      status.textContent = "✓ Saída registrada." + (!jaPaga ? " Fica pendente até marcar como paga." : "");
       status.className = "msg-status ok";
       $("sd-descricao").value = ""; $("sd-valor").value = ""; $("sd-vencimento").value = "";
+      $("sd-ja-paga").checked = true; $("sd-bloco-vencimento").style.display = "none";
       carregarContasAPagar();
       gerarResumoEExibir($("rf-data-inicio").value, $("rf-data-fim").value);
     } else { status.textContent = "❌ " + resp.mensagem; status.className = "msg-status erro"; }
@@ -1708,12 +1717,12 @@ async function gerarResumoEExibir(dataInicio, dataFim) {
   const dIni = dataInicio || "", dFim = dataFim || dataHojeISO();
 
   try {
-    const [r, resumoDia] = await Promise.all([
-      chamarAPI("resumo", { dataInicio: dIni, dataFim: dFim }),
-      chamarAPI("resumoDiario", { dataInicio: dIni, dataFim: dFim })
-    ]);
+    // 1 chamada só (o servidor calcula os totais e a quebra por dia juntos,
+    // numa única passada pelas abas — antes eram 2 chamadas independentes,
+    // cada uma relendo tudo de novo, o que deixava bem mais lento).
+    const r = await chamarAPI("resumoCompleto", { dataInicio: dIni, dataFim: dFim });
     if (r.status !== "ok") { gridPrincipal.innerHTML = `<div class="vazio-lista">❌ ${r.mensagem}</div>`; return; }
-    DIAS_RESUMO_CACHE = resumoDia.status === "ok" ? resumoDia.dias : [];
+    DIAS_RESUMO_CACHE = r.dias || [];
 
     // Tooltips (aparecem ao passar o mouse) explicando o cálculo, com os
     // números reais desse período.
