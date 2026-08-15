@@ -241,13 +241,35 @@
   }
   .linha-tabela .nome-item{ flex:1; min-width:120px; font-size:13.5px; font-weight:700; }
   .linha-tabela .cat-item{ font-size:10.5px; color:var(--muted); text-transform:uppercase; }
-  .linha-tabela input[type=number], .linha-tabela input[type=text]{
+  .linha-tabela input[type=number], .linha-tabela input[type=text], .linha-tabela select{
     width:80px; background:var(--preto); border:1.5px solid var(--borda); border-radius:8px; padding:7px 8px; color:var(--creme); font-size:13px; outline:none;
   }
-  .linha-tabela .estoque-qtd{ font-size:15px; font-weight:800; }
-  .linha-tabela .estoque-qtd.baixo{ color:#ff8a80; }
-  .linha-tabela .estoque-qtd.critico{ color:#c2410c; } /* laranja escuro — 3 unidades ou menos */
-  .linha-tabela .estoque-qtd.zerado{ color:#ff3b30; font-weight:900; } /* vermelho — zerado ou negativo */
+
+  /* cabeçalho de colunas (Estoque) */
+  .cabecalho-tabela{
+    display:flex; align-items:center; gap:8px; padding:0 12px; margin-bottom:2px; flex-wrap:wrap;
+  }
+  .cabecalho-tabela span{
+    font-size:10px; font-weight:800; text-transform:uppercase; letter-spacing:.4px; color:var(--muted);
+  }
+  .cabecalho-tabela .col-nome{ flex:1; min-width:120px; }
+  .cabecalho-tabela .col-caixa{ width:64px; text-align:center; }
+  .cabecalho-tabela .col-input{ width:80px; text-align:center; }
+  .cabecalho-tabela .col-botao{ width:70px; }
+
+  /* cada quantidade numa caixinha sutil, fácil de bater o olho */
+  .estoque-caixa{
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    width:64px; padding:6px 4px; border-radius:9px; background:var(--preto); border:1px solid var(--borda);
+  }
+  .estoque-caixa .rotulo-mini{ font-size:8.5px; text-transform:uppercase; color:var(--muted); letter-spacing:.3px; }
+  .estoque-caixa .valor-mini{ font-size:15px; font-weight:800; color:var(--creme); }
+  .estoque-caixa.baixo .valor-mini{ color:#ff8a80; }
+  .estoque-caixa.critico{ background:rgba(194,65,12,.15); border-color:rgba(194,65,12,.5); }
+  .estoque-caixa.critico .valor-mini{ color:#f0793a; }
+  .estoque-caixa.zerado{ background:rgba(255,59,48,.15); border-color:rgba(255,59,48,.6); }
+  .estoque-caixa.zerado .valor-mini{ color:#ff3b30; font-weight:900; }
+
   .btn-mini{ background:var(--preto); border:1px solid var(--borda); color:var(--creme); border-radius:8px; padding:7px 10px; font-size:12px; font-weight:700; }
   .btn-mini.salvar{ background:rgba(47,191,113,.15); color:var(--verde); border-color:rgba(47,191,113,.4); }
   .toggle-ativo{
@@ -284,6 +306,21 @@
   .resumo-caixa.emcaixa{ border-top-color:var(--azul); background:linear-gradient(180deg, rgba(58,160,232,.1), var(--preto2)); }
   .resumo-caixa.emcaixa .valor{ color:var(--azul); font-size:22px; }
   .resumo-grid-principal{ margin-bottom:8px; }
+  .resumo-grid-principal .resumo-caixa{ cursor:pointer; transition:transform .12s, box-shadow .12s; }
+  .resumo-grid-principal .resumo-caixa:hover{ transform:translateY(-2px); box-shadow:0 8px 20px rgba(0,0,0,.3); }
+  .resumo-grid-principal .resumo-caixa.aberto{ outline:2px solid var(--laranja); }
+  .resumo-grid-principal .resumo-caixa .rotulo::after{ content:" ▾"; opacity:.6; font-size:9px; }
+
+  .detalhe-card-financeiro{
+    background:var(--preto2); border:1px solid var(--laranja); border-radius:12px; padding:14px 16px; margin:-6px 0 20px;
+    max-height:260px; overflow-y:auto;
+  }
+  .detalhe-card-financeiro .detalhe-titulo{ font-size:12.5px; font-weight:800; color:var(--amarelo); margin-bottom:8px; }
+  .detalhe-card-financeiro table{ width:100%; border-collapse:collapse; font-size:12.5px; }
+  .detalhe-card-financeiro th{ text-align:left; color:var(--muted); font-size:10.5px; text-transform:uppercase; padding:4px 6px; border-bottom:1px solid var(--borda); }
+  .detalhe-card-financeiro td{ padding:6px; border-bottom:1px solid var(--borda); }
+  .detalhe-card-financeiro td.valor{ text-align:right; font-weight:700; color:var(--creme); white-space:nowrap; }
+  .detalhe-card-financeiro .vazio-lista{ padding:10px 0; }
 
   .secao-titulo-financeiro{ display:flex; align-items:center; gap:8px; margin:26px 0 12px; }
   .secao-titulo-financeiro:first-child{ margin-top:0; }
@@ -368,8 +405,8 @@
       </div>
 
       <div class="sub-abas">
-        <button data-subaba="lista" class="ativa">Comandas</button>
-        <button data-subaba="resumo-dia">📊 Resumo do dia</button>
+        <button data-subaba="comandas-lista" class="ativa">Comandas</button>
+        <button data-subaba="comandas-resumo">📊 Resumo do dia</button>
       </div>
 
       <div class="sub-secao ativa" id="subsecao-comandas-lista">
@@ -404,7 +441,14 @@
     <!-- ---------- ESTOQUE ---------- -->
     <section class="secao" id="secao-estoque">
       <div class="linha-topo"><h2>Estoque</h2><button class="btn-mini" id="btn-atualizar-estoque">🔄 Atualizar</button></div>
-      <p style="font-size:12px; color:var(--muted); margin-top:-6px;">"Qtd Vendido" e "Qtd Disponível" são calculados automaticamente a cada item incluído numa comanda. "Qtd Total" é o que você define manualmente.</p>
+      <p style="font-size:12px; color:var(--muted); margin-top:-6px;">"Vendido" e "Disponível" são calculados automaticamente a cada item incluído numa comanda. "Qtd Total" é o que você define manualmente.</p>
+      <div class="cabecalho-tabela" id="cabecalho-estoque">
+        <span class="col-nome">Produto</span>
+        <span class="col-caixa">Vendido</span>
+        <span class="col-input">Qtd Total</span>
+        <span class="col-botao"></span>
+        <span class="col-caixa">Disponível</span>
+      </div>
       <div class="tabela-cards" id="lista-estoque"><div class="vazio-lista">Carregando...</div></div>
     </section>
 
@@ -451,6 +495,7 @@
       </div>
 
       <div class="resumo-grid resumo-grid-principal" id="resumo-grid-principal"></div>
+      <div class="detalhe-card-financeiro" id="detalhe-card-financeiro" style="display:none;"></div>
 
       <div class="sub-abas">
         <button data-subaba="fin-resumo" class="ativa">Resumo</button>
@@ -610,7 +655,7 @@
 // CONFIG
 // =====================================================================
 const CONFIG = {
-  API_URL: "https://script.google.com/macros/s/AKfycbzoTQwjAbHJ0TIBkkAFre031Fwr3Czh1QD2ddqhwpXS06_85KfdK8x91OJ0Bsikl6BVrw/exec"
+  API_URL: "https://script.google.com/macros/s/AKfycbyn2D8_Ukux3AmjNpHGwHM6U1pW_KygIoNL-6Z2Ba5T6HMa1iF1tjQSMGaxpJUhK6xOWQ/exec"
 };
 
 const $ = (id) => document.getElementById(id);
@@ -871,7 +916,7 @@ document.querySelectorAll(".sub-abas").forEach(grupo => {
       botoes.forEach(b => b.classList.remove("ativa"));
       btn.classList.add("ativa");
       secoes.forEach(s => s.classList.toggle("ativa", s.id === `subsecao-${btn.dataset.subaba}`));
-      if (btn.dataset.subaba === "resumo-dia") carregarResumoDia();
+      if (btn.dataset.subaba === "comandas-resumo") carregarResumoDia();
       if (btn.dataset.subaba === "fin-detalhes") carregarContasAPagar();
     };
   });
@@ -1382,6 +1427,9 @@ function classeEstoque(qtdDisponivel) {
   return "";
 }
 
+// opções de 0 a 50 pro select de Qtd Total no estoque
+const OPCOES_QTD_ESTOQUE = Array.from({ length: 51 }, (_, i) => i);
+
 async function carregarEstoque() {
   const lista = $("lista-estoque");
   lista.innerHTML = `<div class="vazio-lista">Carregando...</div>`;
@@ -1391,6 +1439,8 @@ async function carregarEstoque() {
     if (!resp.itens.length) { lista.innerHTML = `<div class="vazio-lista">Nenhum item de estoque cadastrado ainda.</div>`; return; }
     lista.innerHTML = "";
     const admin = ehAdmin();
+    $("cabecalho-estoque").style.display = "flex";
+    if (!admin) $("cabecalho-estoque").querySelector(".col-input").textContent = "";
     ESTOQUE_MAP = {};
     resp.itens.sort((a, b) => a.produto.localeCompare(b.produto)).forEach(it => {
       ESTOQUE_MAP[it.produto] = it.qtdDisponivel;
@@ -1402,10 +1452,10 @@ async function carregarEstoque() {
         // Padrão: só consulta, sem campo pra editar
         linha.innerHTML = `
           <div class="nome-item">${it.produto}<div class="cat-item">${it.categoria}</div></div>
-          <div style="font-size:11px; color:var(--muted); text-align:right;">
-            Total ${it.qtdTotal} · Vendido ${it.qtdVendido}
-          </div>
-          <div class="estoque-qtd ${classeCor}">${it.qtdDisponivel}</div>
+          <div class="estoque-caixa"><div class="rotulo-mini">Vendido</div><div class="valor-mini">${it.qtdVendido}</div></div>
+          <div class="estoque-caixa"><div class="rotulo-mini">Total</div><div class="valor-mini">${it.qtdTotal}</div></div>
+          <div style="width:70px;"></div>
+          <div class="estoque-caixa ${classeCor}"><div class="rotulo-mini">Disponível</div><div class="valor-mini">${it.qtdDisponivel}</div></div>
         `;
         lista.appendChild(linha);
         return;
@@ -1413,10 +1463,12 @@ async function carregarEstoque() {
 
       linha.innerHTML = `
         <div class="nome-item">${it.produto}<div class="cat-item">${it.categoria}</div></div>
-        <div style="font-size:11px; color:var(--muted);">Vendido: <b style="color:var(--creme);">${it.qtdVendido}</b></div>
-        <input type="number" class="input-estoque" value="${it.qtdTotal}" title="Qtd Total">
+        <div class="estoque-caixa"><div class="rotulo-mini">Vendido</div><div class="valor-mini">${it.qtdVendido}</div></div>
+        <select class="input-estoque">
+          ${OPCOES_QTD_ESTOQUE.map(n => `<option value="${n}" ${n === it.qtdTotal ? "selected" : ""}>${n}</option>`).join("")}
+        </select>
         <button class="btn-mini salvar">Salvar</button>
-        <div class="estoque-qtd ${classeCor}" title="Qtd Disponível">${it.qtdDisponivel}</div>
+        <div class="estoque-caixa ${classeCor}"><div class="rotulo-mini">Disponível</div><div class="valor-mini">${it.qtdDisponivel}</div></div>
       `;
       linha.querySelector("button").onclick = async () => {
         const novoTotal = parseFloat(linha.querySelector(".input-estoque").value) || 0;
@@ -1644,22 +1696,43 @@ function dataHojeISO() {
   return `${ano}-${mes}-${dia}`;
 }
 
+let DIAS_RESUMO_CACHE = [];
+let CARD_ABERTO_ATUAL = null;
+
 async function gerarResumoEExibir(dataInicio, dataFim) {
   const gridPrincipal = $("resumo-grid-principal");
   const gridSecundario = $("resumo-grid-secundario");
   gridPrincipal.innerHTML = `<div class="vazio-lista">Carregando...</div>`;
-  try {
-    const r = await chamarAPI("resumo", { dataInicio: dataInicio || "", dataFim: dataFim || dataHojeISO() });
-    if (r.status !== "ok") { gridPrincipal.innerHTML = `<div class="vazio-lista">❌ ${r.mensagem}</div>`; return; }
+  $("detalhe-card-financeiro").style.display = "none";
+  CARD_ABERTO_ATUAL = null;
+  const dIni = dataInicio || "", dFim = dataFim || dataHojeISO();
 
-    // Visão "clean": só os 5 números que realmente importam de cara.
+  try {
+    const [r, resumoDia] = await Promise.all([
+      chamarAPI("resumo", { dataInicio: dIni, dataFim: dFim }),
+      chamarAPI("resumoDiario", { dataInicio: dIni, dataFim: dFim })
+    ]);
+    if (r.status !== "ok") { gridPrincipal.innerHTML = `<div class="vazio-lista">❌ ${r.mensagem}</div>`; return; }
+    DIAS_RESUMO_CACHE = resumoDia.status === "ok" ? resumoDia.dias : [];
+
+    // Tooltips (aparecem ao passar o mouse) explicando o cálculo, com os
+    // números reais desse período.
+    const tituloLucroVendas = `Lucro das Vendas = Total de Vendas − Custo das Vendas\n${fmt(r.totalVendas)} − ${fmt(r.totalCustoVendas)} = ${fmt(r.totalLucroVendas)}`;
+    const tituloLucroLiquido = `Lucro Líquido = Lucro das Vendas + Juros de cartão + Entradas − Saídas\n${fmt(r.totalLucroVendas)} + ${fmt(r.totalJuros)} + ${fmt(r.totalEntradas)} − ${fmt(r.totalSaidas)} = ${fmt(r.lucroLiquido)}`;
+    const tituloCaixa = `Valor em Caixa = Vendas + Juros + Entradas − Custo das Vendas − Saídas\n${fmt(r.totalVendas)} + ${fmt(r.totalJuros)} + ${fmt(r.totalEntradas)} − ${fmt(r.totalCustoVendas)} − ${fmt(r.totalSaidas)} = ${fmt(r.valorEmCaixa)}`;
+
+    // Visão "clean": só os 5 números que realmente importam de cara. Cada
+    // card tem data-metric (usado pro clique abrir o detalhamento por dia).
     gridPrincipal.innerHTML = `
-      <div class="resumo-caixa venda"><div class="rotulo">Total de Vendas</div><div class="valor">${fmt(r.totalVendas)}</div></div>
-      <div class="resumo-caixa emcaixa"><div class="rotulo">Valor em Caixa</div><div class="valor">${fmt(r.valorEmCaixa)}</div></div>
-      <div class="resumo-caixa venda"><div class="rotulo">Custo das Vendas</div><div class="valor">${fmt(r.totalCustoVendas)}</div></div>
-      <div class="resumo-caixa venda"><div class="rotulo">Lucro das Vendas</div><div class="valor">${fmt(r.totalLucroVendas)}</div></div>
-      <div class="resumo-caixa destaque"><div class="rotulo">Lucro Líquido</div><div class="valor">${fmt(r.lucroLiquido)}</div></div>
+      <div class="resumo-caixa venda" data-metric="vendas" title="Some tudo que foi vendido pelas comandas no período."><div class="rotulo">Total de Vendas</div><div class="valor">${fmt(r.totalVendas)}</div></div>
+      <div class="resumo-caixa emcaixa" data-metric="caixa" title="${tituloCaixa}"><div class="rotulo">Valor em Caixa</div><div class="valor">${fmt(r.valorEmCaixa)}</div></div>
+      <div class="resumo-caixa venda" data-metric="custo" title="Saídas pagas em 'Reposição de Estoque Espetos' e 'Custo Fixo Diário'."><div class="rotulo">Custo das Vendas</div><div class="valor">${fmt(r.totalCustoVendas)}</div></div>
+      <div class="resumo-caixa venda" data-metric="lucroVendas" title="${tituloLucroVendas}"><div class="rotulo">Lucro das Vendas</div><div class="valor">${fmt(r.totalLucroVendas)}</div></div>
+      <div class="resumo-caixa destaque" data-metric="lucroLiquido" title="${tituloLucroLiquido}"><div class="rotulo">Lucro Líquido</div><div class="valor">${fmt(r.lucroLiquido)}</div></div>
     `;
+    gridPrincipal.querySelectorAll(".resumo-caixa").forEach(card => {
+      card.onclick = () => alternarDetalheCard(card.dataset.metric, card);
+    });
 
     // O resto (Saídas, Entradas, Juros, pendências) fica na sub-aba "Resumo"
     // dentro de Detalhes — não polui a visão principal.
@@ -1672,6 +1745,44 @@ async function gerarResumoEExibir(dataInicio, dataFim) {
   } catch (e) {
     gridPrincipal.innerHTML = `<div class="vazio-lista">❌ ${e.message}</div>`;
   }
+}
+
+// Mostra/esconde o detalhamento dia-a-dia de um card. Clicar de novo no
+// mesmo card fecha; clicar em outro troca o conteúdo.
+const CONFIG_METRICA = {
+  vendas: { titulo: "Total de Vendas por dia", coluna: "vendas" },
+  caixa: { titulo: "Saldo de caixa por dia (entradas − saídas)", coluna: "valorEmCaixa" },
+  custo: { titulo: "Custo das Vendas por dia", coluna: "custoVendas" },
+  lucroVendas: { titulo: "Lucro das Vendas por dia", coluna: "lucroVendas" },
+  lucroLiquido: { titulo: "Lucro Líquido por dia", coluna: "lucroLiquido" }
+};
+
+function alternarDetalheCard(metric, card) {
+  const painel = $("detalhe-card-financeiro");
+  document.querySelectorAll(".resumo-grid-principal .resumo-caixa").forEach(c => c.classList.remove("aberto"));
+
+  if (CARD_ABERTO_ATUAL === metric) {
+    painel.style.display = "none";
+    CARD_ABERTO_ATUAL = null;
+    return;
+  }
+  CARD_ABERTO_ATUAL = metric;
+  card.classList.add("aberto");
+  const cfg = CONFIG_METRICA[metric];
+  if (!DIAS_RESUMO_CACHE.length) {
+    painel.innerHTML = `<div class="vazio-lista">Nenhum dado no período.</div>`;
+  } else {
+    painel.innerHTML = `
+      <div class="detalhe-titulo">${cfg.titulo}</div>
+      <table>
+        <thead><tr><th>Data</th><th style="text-align:right;">Valor</th></tr></thead>
+        <tbody>
+          ${DIAS_RESUMO_CACHE.map(d => `<tr><td>${d.data}</td><td class="valor">${fmt(d[cfg.coluna])}</td></tr>`).join("")}
+        </tbody>
+      </table>
+    `;
+  }
+  painel.style.display = "block";
 }
 
 // Assim que a pessoa entra, já mostra o acumulado do primeiro registro até
