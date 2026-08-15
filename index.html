@@ -661,7 +661,7 @@
 // CONFIG
 // =====================================================================
 const CONFIG = {
-  API_URL: "https://script.google.com/macros/s/AKfycbzbYj8lLQhuxEnTX307CBq17HBHGyLP_uDywZ6MMXI11VuFis0ESlRGN9OrizCYpr-WMQ/exec"
+  API_URL: "https://script.google.com/macros/s/AKfycbw_aaU9Kx8ZIz6uBHsVbhmY92yJ90y637lEH_ccvwPUz5ooddHz-BRh9B8I_Ejqt0i8fQ/exec"
 };
 
 const $ = (id) => document.getElementById(id);
@@ -1729,7 +1729,7 @@ async function gerarResumoEExibir(dataInicio, dataFim, forcarAtualizacao) {
     // Tooltips (aparecem ao passar o mouse) explicando o cálculo, com os
     // números reais desse período.
     const tituloLucroVendas = `Lucro das Vendas = Total de Vendas − Custo das Vendas\n${fmt(r.totalVendas)} − ${fmt(r.totalCustoVendas)} = ${fmt(r.totalLucroVendas)}`;
-    const tituloLucroLiquido = `Lucro Líquido = Lucro das Vendas + Juros de cartão + Entradas − Saídas\n${fmt(r.totalLucroVendas)} + ${fmt(r.totalJuros)} + ${fmt(r.totalEntradas)} − ${fmt(r.totalSaidas)} = ${fmt(r.lucroLiquido)}`;
+    const tituloLucroLiquido = `Lucro Líquido = Lucro das Vendas + Juros de cartão − Saídas\n${fmt(r.totalLucroVendas)} + ${fmt(r.totalJuros)} − ${fmt(r.totalSaidas)} = ${fmt(r.lucroLiquido)}`;
     const tituloCaixa = `Valor em Caixa = Vendas + Juros + Entradas − Custo das Vendas − Saídas\n${fmt(r.totalVendas)} + ${fmt(r.totalJuros)} + ${fmt(r.totalEntradas)} − ${fmt(r.totalCustoVendas)} − ${fmt(r.totalSaidas)} = ${fmt(r.valorEmCaixa)}`;
 
     // Visão "clean": só os 5 números que realmente importam de cara. Cada
@@ -1748,10 +1748,10 @@ async function gerarResumoEExibir(dataInicio, dataFim, forcarAtualizacao) {
     // O resto (Saídas, Entradas, Juros, pendências) fica na sub-aba "Resumo"
     // dentro de Detalhes — não polui a visão principal.
     gridSecundario.innerHTML = `
-      <div class="resumo-caixa saida"><div class="rotulo">Saídas (pagas)</div><div class="valor">${fmt(r.totalSaidas)}</div></div>
+      <div class="resumo-caixa saida"><div class="rotulo">Saídas pagas</div><div class="valor">${fmt(r.totalSaidasPagas)}</div></div>
+      <div class="resumo-caixa saida"><div class="rotulo">Saídas pendentes</div><div class="valor">${fmt(r.totalSaidasPendentes)}</div></div>
       <div class="resumo-caixa entrada"><div class="rotulo">Entradas eventuais</div><div class="valor">${fmt(r.totalEntradas)}</div></div>
       ${r.totalJuros > 0 ? `<div class="resumo-caixa entrada"><div class="rotulo">Juros de cartão</div><div class="valor">${fmt(r.totalJuros)}</div></div>` : ""}
-      ${r.totalSaidasPendentes > 0 ? `<div class="resumo-caixa saida"><div class="rotulo">Saídas pendentes (crédito)</div><div class="valor">${fmt(r.totalSaidasPendentes)}</div></div>` : ""}
     `;
   } catch (e) {
     gridPrincipal.innerHTML = `<div class="vazio-lista">❌ ${e.message}</div>`;
