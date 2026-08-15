@@ -661,7 +661,7 @@
 // CONFIG
 // =====================================================================
 const CONFIG = {
-  API_URL: "https://script.google.com/macros/s/AKfycbzsUsTuBfvIlB8nTy7Zn2N5a7n2M3QxFv8EPAItGLjsPr0Jl2Q-4MdiCQvb0YhMvvlRQg/exec"
+  API_URL: "https://script.google.com/macros/s/AKfycbyRYvYlv_hDEB-38jw5M5qy3gNCiTS4lsSic-eJi2-9rPrWKaSAx99Rq_ZNMppCQYFSkA/exec"
 };
 
 const $ = (id) => document.getElementById(id);
@@ -1633,7 +1633,7 @@ $("btn-registrar-saida").onclick = async () => {
       $("sd-descricao").value = ""; $("sd-valor").value = ""; $("sd-vencimento").value = "";
       $("sd-ja-paga").checked = true; $("sd-bloco-vencimento").style.display = "none";
       carregarContasAPagar();
-      gerarResumoEExibir($("rf-data-inicio").value, $("rf-data-fim").value);
+      gerarResumoEExibir($("rf-data-inicio").value, $("rf-data-fim").value, true);
     } else { status.textContent = "❌ " + resp.mensagem; status.className = "msg-status erro"; }
   } catch (e) { status.textContent = "❌ " + e.message; status.className = "msg-status erro"; }
 };
@@ -1647,7 +1647,7 @@ $("btn-registrar-entrada").onclick = async () => {
     if (resp.status === "ok") {
       status.textContent = "✓ Entrada registrada."; status.className = "msg-status ok";
       $("en-descricao").value = ""; $("en-valor").value = "";
-      gerarResumoEExibir($("rf-data-inicio").value, $("rf-data-fim").value);
+      gerarResumoEExibir($("rf-data-inicio").value, $("rf-data-fim").value, true);
     } else { status.textContent = "❌ " + resp.mensagem; status.className = "msg-status erro"; }
   } catch (e) { status.textContent = "❌ " + e.message; status.className = "msg-status erro"; }
 };
@@ -1659,7 +1659,7 @@ $("btn-custos-fixos").onclick = async () => {
     const resp = await chamarAPI("registrarCustosFixos", { usuario: USUARIO_LOGADO });
     if (resp.status === "ok") {
       status.textContent = "✓ Lançado: " + (resp.itens.join(", ") || "nenhum item de custo fixo cadastrado."); status.className = "msg-status ok";
-      gerarResumoEExibir($("rf-data-inicio").value, $("rf-data-fim").value);
+      gerarResumoEExibir($("rf-data-inicio").value, $("rf-data-fim").value, true);
     } else { status.textContent = "❌ " + resp.mensagem; status.className = "msg-status erro"; }
   } catch (e) { status.textContent = "❌ " + e.message; status.className = "msg-status erro"; }
 };
@@ -1686,7 +1686,7 @@ async function carregarContasAPagar() {
         if (!confirm(`Confirmar pagamento de ${fmt(r.valor)} (${r.categoria})?`)) return;
         await chamarAPI("marcarSaidaComoPaga", { linha: r.linha, usuario: USUARIO_LOGADO });
         carregarContasAPagar();
-        gerarResumoEExibir($("rf-data-inicio").value, $("rf-data-fim").value);
+        gerarResumoEExibir($("rf-data-inicio").value, $("rf-data-fim").value, true);
       };
       lista.appendChild(linha);
     });
@@ -1708,7 +1708,7 @@ function dataHojeISO() {
 let DIAS_RESUMO_CACHE = [];
 let CARD_ABERTO_ATUAL = null;
 
-async function gerarResumoEExibir(dataInicio, dataFim) {
+async function gerarResumoEExibir(dataInicio, dataFim, forcarAtualizacao) {
   const gridPrincipal = $("resumo-grid-principal");
   const gridSecundario = $("resumo-grid-secundario");
   gridPrincipal.innerHTML = `<div class="vazio-lista">Carregando...</div>`;
@@ -1718,9 +1718,11 @@ async function gerarResumoEExibir(dataInicio, dataFim) {
 
   try {
     // 1 chamada só (o servidor calcula os totais e a quebra por dia juntos,
-    // numa única passada pelas abas — antes eram 2 chamadas independentes,
-    // cada uma relendo tudo de novo, o que deixava bem mais lento).
-    const r = await chamarAPI("resumoCompleto", { dataInicio: dIni, dataFim: dFim });
+    // numa única passada pelas abas). O resultado fica em cache por 45s no
+    // servidor — reabrir a aba ou trocar de sub-aba usa esse cache e carrega
+    // na hora; só forçamos ignorar o cache logo depois de registrar algo
+    // novo (saída/entrada/pagamento), pra nunca mostrar número desatualizado.
+    const r = await chamarAPI("resumoCompleto", { dataInicio: dIni, dataFim: dFim, forcar: forcarAtualizacao ? "1" : "" });
     if (r.status !== "ok") { gridPrincipal.innerHTML = `<div class="vazio-lista">❌ ${r.mensagem}</div>`; return; }
     DIAS_RESUMO_CACHE = r.dias || [];
 
@@ -1806,7 +1808,7 @@ $("btn-gerar-resumo").onclick = () => {
   const dataInicio = $("rf-data-inicio").value; // vazio = desde o início
   const dataFim = $("rf-data-fim").value || dataHojeISO();
   $("rf-data-fim").value = dataFim;
-  gerarResumoEExibir(dataInicio, dataFim);
+  gerarResumoEExibir(dataInicio, dataFim, true); // clique manual = sempre busca fresco
 };
 </script>
 </body>
