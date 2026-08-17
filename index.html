@@ -1421,12 +1421,17 @@ $("btn-add-item-comanda").onclick = () => {
   const itemId = gerarId("I");
   const valorUnitario = produto.preco;
   // custo local (otimista) — se for combo, soma os custos dos componentes
-  // escolhidos; o servidor recalcula do mesmo jeito ao sincronizar.
+  // escolhidos; o servidor recalcula do mesmo jeito ao sincronizar (inclusive
+  // vinagrete/farofa como fração do lote do dia, não o lote inteiro — mesma
+  // proporção 50ml/1L e 50g/1kg usada no Codigo.gs; se mudar lá, muda aqui também).
+  const FRACAO_PORCAO_COMBO = 50 / 1000;
   let custoUnitario = produto.custo || 0;
   if (ehCombo) {
     const custoDe = (nome) => { const p = PRODUTOS_CACHE.find(x => x.nome === nome); return p ? (p.custo || 0) : 0; };
     const baiao = PRODUTOS_CACHE.find(p => p.tipo === "Baião");
     custoUnitario = custoDe(comboEspeto1) + custoDe(comboEspeto2) + custoDe(comboRefri) + (baiao ? baiao.custo : 0);
+    if (comboVinagrete === "SIM") custoUnitario += custoDe("Vinagrete") * FRACAO_PORCAO_COMBO;
+    if (comboFarofa === "SIM") custoUnitario += custoDe("Farofa") * FRACAO_PORCAO_COMBO;
   }
   const valorTotal = quantidade * valorUnitario;
   const custoTotal = quantidade * custoUnitario;
