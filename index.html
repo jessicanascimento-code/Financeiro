@@ -1374,12 +1374,13 @@ async function popularSelectProdutos() {
 
 function popularSelectsCombo() {
   const espetos = PRODUTOS_CACHE.filter(p => p.tipo === "Espeto");
-  const bebidas = PRODUTOS_CACHE.filter(p => p.tipo === "Bebida");
+  // só refrigerante entra na escolha do combo — cerveja e água ficam de fora
+  const refrigerantes = PRODUTOS_CACHE.filter(p => p.tipo === "Bebida" && p.refrigerante);
   const opcoesEspeto = espetos.map(p => `<option value="${p.nome}">${p.nome}</option>`).join("");
-  const opcoesBebida = bebidas.map(p => `<option value="${p.nome}">${p.nome}</option>`).join("");
+  const opcoesRefri = refrigerantes.map(p => `<option value="${p.nome}">${p.nome}</option>`).join("");
   $("combo-espeto1").innerHTML = opcoesEspeto;
   $("combo-espeto2").innerHTML = opcoesEspeto;
-  $("combo-refri").innerHTML = opcoesBebida;
+  $("combo-refri").innerHTML = opcoesRefri;
 }
 
 $("modal-select-produto").onchange = atualizarVisibilidadeCombo;
