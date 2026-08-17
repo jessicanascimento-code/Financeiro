@@ -371,6 +371,11 @@
   .secao-titulo-financeiro:first-child{ margin-top:0; }
   .secao-titulo-financeiro h3{ font-size:14px; color:var(--amarelo); }
   .secao-titulo-financeiro .linha-divisoria{ flex:1; height:1px; background:var(--borda); }
+  .btn-toggle-secao{
+    background:var(--preto2); border:1px solid var(--borda); color:var(--amarelo); border-radius:8px;
+    width:26px; height:26px; font-size:15px; font-weight:800; line-height:1; flex-shrink:0;
+    display:flex; align-items:center; justify-content:center;
+  }
 
   .grid-duas-colunas{ display:grid; grid-template-columns:1fr 1fr; gap:16px; }
   @media(max-width:700px){ .grid-duas-colunas{ grid-template-columns:1fr; } }
@@ -573,7 +578,9 @@
         <div class="secao-titulo-financeiro">
           <h3>💰 Saldo em caixa</h3>
           <div class="linha-divisoria"></div>
+          <button class="btn-toggle-secao" id="btn-toggle-saldo-caixa" title="Esconder/mostrar">−</button>
         </div>
+        <div id="bloco-saldo-caixa">
         <div class="card-form">
           <p style="font-size:12px; color:var(--muted); margin-top:-4px;">Atualize sempre que conferir o dinheiro físico ou o extrato da conta. Fica salvo na planilha, não é calculado automaticamente.</p>
           <div class="saldo-caixa-grid">
@@ -595,6 +602,7 @@
             </div>
           </div>
           <div class="saldo-caixa-total"><span>Total em caixa (informado)</span><span id="cx-total">R$ 0,00</span></div>
+        </div>
         </div>
 
         <div class="secao-titulo-financeiro">
@@ -1834,6 +1842,15 @@ function atualizarTotalCaixaExibido() {
 }
 $("cx-dinheiro").oninput = atualizarTotalCaixaExibido;
 $("cx-conta").oninput = atualizarTotalCaixaExibido;
+
+// Esconde/mostra o bloco de saldo em caixa — útil pra tirar print só dos
+// cards + lista de contas a pagar, sem os campos de digitação no meio.
+$("btn-toggle-saldo-caixa").onclick = () => {
+  const bloco = $("bloco-saldo-caixa");
+  const escondido = bloco.style.display === "none";
+  bloco.style.display = escondido ? "" : "none";
+  $("btn-toggle-saldo-caixa").textContent = escondido ? "−" : "+";
+};
 
 async function carregarSaldoCaixa() {
   try {
