@@ -395,6 +395,43 @@
     border-top:1px dashed var(--borda); font-size:15px; font-weight:700; color:var(--muted);
   }
   .saldo-caixa-total span:last-child{ font-size:20px; font-weight:800; color:var(--amarelo); }
+
+  /* ---------- RELATÓRIO SEMANAL (folha estilo documento, sempre clara) ---------- */
+  .relatorio-folha{
+    background:#fff; color:#1a1a1a; border-radius:10px; padding:32px; max-width:800px; margin:20px auto 0;
+    box-shadow:0 10px 30px rgba(0,0,0,.4);
+  }
+  .relatorio-folha h1, .relatorio-folha h2, .relatorio-folha h3{ color:#1a1a1a; }
+  .relatorio-cabecalho{ display:flex; align-items:center; gap:14px; border-bottom:3px solid var(--laranja); padding-bottom:16px; margin-bottom:18px; }
+  .relatorio-cabecalho img{ width:56px; height:56px; border-radius:50%; object-fit:cover; }
+  .relatorio-cabecalho .titulos h1{ font-size:18px; margin-bottom:2px; }
+  .relatorio-cabecalho .titulos .subtitulo{ font-size:12.5px; color:#666; }
+  .relatorio-periodo{ font-size:12px; color:#666; margin-bottom:20px; }
+  .relatorio-periodo b{ color:#1a1a1a; }
+  .relatorio-cards{ display:grid; grid-template-columns:repeat(auto-fit,minmax(130px,1fr)); gap:10px; margin-bottom:22px; }
+  .relatorio-card{ border:1px solid #e2ddd6; border-top:3px solid var(--laranja); border-radius:8px; padding:10px 12px; }
+  .relatorio-card .rotulo{ font-size:9.5px; text-transform:uppercase; letter-spacing:.3px; color:#888; }
+  .relatorio-card .valor{ font-size:16.5px; font-weight:800; color:#1a1a1a; margin-top:3px; }
+  .relatorio-card.destaque{ border-top-color:var(--amarelo); background:#fffaf0; }
+  .relatorio-secao-titulo{
+    font-size:13.5px; font-weight:800; color:var(--vermelho); text-transform:uppercase; letter-spacing:.3px;
+    margin:24px 0 8px; padding-bottom:6px; border-bottom:1px solid #eee;
+  }
+  .relatorio-folha table{ width:100%; border-collapse:collapse; font-size:12.5px; margin-bottom:6px; }
+  .relatorio-folha th{ text-align:left; background:#f7f4f0; padding:6px 8px; font-size:10px; text-transform:uppercase; color:#666; }
+  .relatorio-folha td{ padding:6px 8px; border-bottom:1px solid #eee; color:#333; }
+  .relatorio-folha td.valor{ text-align:right; font-weight:700; white-space:nowrap; color:#1a1a1a; }
+  .relatorio-folha .total-linha td{ font-weight:800; border-top:2px solid #ddd; border-bottom:none; color:#1a1a1a; }
+  .relatorio-vazio{ font-size:12px; color:#999; font-style:italic; padding:6px 8px; }
+  .relatorio-assinaturas{ display:flex; gap:40px; margin-top:44px; }
+  .relatorio-assinaturas div{ flex:1; text-align:center; border-top:1px solid #333; padding-top:6px; font-size:11px; color:#555; }
+  .relatorio-rodape{ margin-top:26px; padding-top:12px; border-top:1px solid #eee; font-size:10.5px; color:#999; text-align:center; }
+
+  @media print{
+    .no-print, nav.abas, header, .indicador-sync{ display:none !important; }
+    body, #app, main, .secao{ background:#fff !important; padding:0 !important; margin:0 !important; }
+    .relatorio-folha{ box-shadow:none; margin:0; max-width:100%; }
+  }
 </style>
 </head>
 <body>
@@ -443,6 +480,7 @@
     <button data-aba="estoque">Estoque</button>
     <button data-aba="cardapio">Cardápio</button>
     <button data-aba="financeiro">Financeiro</button>
+    <button data-aba="relatorio">📄 Relatório</button>
   </nav>
 
   <main>
@@ -680,6 +718,30 @@
       </div>
     </section>
 
+    <!-- ---------- RELATÓRIO SEMANAL ---------- -->
+    <section class="secao" id="secao-relatorio">
+      <div class="linha-topo no-print"><h2>Relatório Semanal</h2></div>
+      <div class="card-form no-print">
+        <p style="font-size:12px; color:var(--muted); margin-top:-4px;">Já vem preenchido com a semana anterior completa (segunda a domingo) — ajuste as datas se quiser outro período.</p>
+        <div class="grid2">
+          <div><label>De</label><input type="date" id="rs-data-inicio"></div>
+          <div><label>Até</label><input type="date" id="rs-data-fim"></div>
+        </div>
+        <label>Observações (opcional)</label>
+        <textarea id="rs-observacoes" rows="3" placeholder="Ex: R$210 retidos no PicPay, ainda não repassados/contabilizados..." style="width:100%; background:var(--preto); border:1.5px solid var(--borda); border-radius:9px; padding:9px 10px; color:var(--creme); font-size:13.5px; outline:none; resize:vertical; font-family:'Inter',sans-serif;"></textarea>
+        <p style="font-size:11px; color:var(--muted); margin:4px 0 0;">Qualquer coisa que só você sabe (dinheiro em outra conta, acerto pendente, etc.) — entra destacado no relatório.</p>
+        <div class="grid2" style="margin-top:10px;">
+          <div><label>Nome de quem assina</label><input type="text" id="rs-assinante" placeholder="Ex: Jessica Nascimento"></div>
+          <div><label>Sócios (separe por vírgula)</label><input type="text" id="rs-socios" placeholder="Ex: Thiago Xavier, Diêgo Xavier"></div>
+        </div>
+        <div style="display:flex; gap:10px; margin-top:12px; flex-wrap:wrap;">
+          <button class="btn-primario" style="flex:1; min-width:160px;" id="btn-gerar-relatorio">Gerar relatório</button>
+          <button class="btn-mini salvar" id="btn-imprimir-relatorio" style="display:none;">🖨️ Imprimir / Salvar PDF</button>
+        </div>
+      </div>
+      <div id="relatorio-container"></div>
+    </section>
+
   </main>
 </div>
 
@@ -760,7 +822,7 @@
 // CONFIG
 // =====================================================================
 const CONFIG = {
-  API_URL: "https://script.google.com/macros/s/AKfycbxmpJa10bss-CRkndzkshFsvRMVsQF9wmjihNplc8R7AdaCgvoQRG0JIMvji8yYelHG1g/exec"
+  API_URL: "https://script.google.com/macros/s/AKfycbxoDI0gBBgIjWQyH6Fm8d-orlgMW4ON1FtAwXmijwisjCd4EMVS6NnfMk7c85ymk90wVg/exec"
 };
 
 const $ = (id) => document.getElementById(id);
@@ -2114,6 +2176,180 @@ $("btn-gerar-resumo").onclick = () => {
   $("rf-data-fim").value = dataFim;
   gerarResumoEExibir(dataInicio, dataFim, true); // clique manual = sempre busca fresco
 };
+
+// =====================================================================
+// RELATÓRIO SEMANAL DE PRESTAÇÃO DE CONTAS
+// =====================================================================
+function paraISO(d) {
+  const p = (n) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
+}
+function paraBR(iso) {
+  if (!iso) return "";
+  const [a, m, d] = iso.split("-");
+  return `${d}/${m}/${a}`;
+}
+
+// Toda segunda-feira, o período natural pra prestar contas é a semana
+// anterior inteira (segunda a domingo) — já vem pronto assim, mas dá pra
+// trocar as datas antes de gerar.
+function calcularSemanaAnterior() {
+  const hoje = new Date();
+  const diaSemana = hoje.getDay(); // 0=domingo, 1=segunda, ...
+  const diasDesdeSegundaAtual = diaSemana === 0 ? 6 : diaSemana - 1;
+  const segundaAtual = new Date(hoje);
+  segundaAtual.setDate(hoje.getDate() - diasDesdeSegundaAtual);
+  const segundaAnterior = new Date(segundaAtual);
+  segundaAnterior.setDate(segundaAtual.getDate() - 7);
+  const domingoAnterior = new Date(segundaAtual);
+  domingoAnterior.setDate(segundaAtual.getDate() - 1);
+  return { inicio: paraISO(segundaAnterior), fim: paraISO(domingoAnterior) };
+}
+
+// preenche as datas com a semana anterior assim que a pessoa abre a aba
+// (só na primeira vez, sem sobrescrever se ela já tiver mexido) — e traz de
+// volta o nome de quem assina / sócios da última vez, salvos no aparelho.
+let DATAS_RELATORIO_PREENCHIDAS = false;
+document.querySelector('nav.abas button[data-aba="relatorio"]').addEventListener("click", () => {
+  if (DATAS_RELATORIO_PREENCHIDAS) return;
+  const semana = calcularSemanaAnterior();
+  $("rs-data-inicio").value = semana.inicio;
+  $("rs-data-fim").value = semana.fim;
+  $("rs-assinante").value = localStorage.getItem("brasero96_relatorio_assinante") || USUARIO_LOGADO;
+  $("rs-socios").value = localStorage.getItem("brasero96_relatorio_socios") || "";
+  DATAS_RELATORIO_PREENCHIDAS = true;
+});
+
+$("btn-gerar-relatorio").onclick = async () => {
+  const dataInicio = $("rs-data-inicio").value;
+  const dataFim = $("rs-data-fim").value;
+  if (!dataInicio || !dataFim) { alert("Escolha o período do relatório."); return; }
+  const observacoes = $("rs-observacoes").value.trim();
+  const assinante = $("rs-assinante").value.trim() || USUARIO_LOGADO;
+  const socios = $("rs-socios").value.split(",").map(s => s.trim()).filter(Boolean);
+  localStorage.setItem("brasero96_relatorio_assinante", assinante);
+  localStorage.setItem("brasero96_relatorio_socios", $("rs-socios").value);
+
+  const container = $("relatorio-container");
+  container.innerHTML = `<div class="vazio-lista">Carregando...</div>`;
+  $("btn-imprimir-relatorio").style.display = "none";
+  try {
+    const r = await chamarAPI("relatorioSemanal", { dataInicio, dataFim });
+    if (r.status !== "ok") { container.innerHTML = `<div class="vazio-lista">❌ ${r.mensagem}</div>`; return; }
+    container.innerHTML = montarHtmlRelatorio(r, dataInicio, dataFim, observacoes, assinante, socios);
+    $("btn-imprimir-relatorio").style.display = "inline-block";
+  } catch (e) {
+    container.innerHTML = `<div class="vazio-lista">❌ ${e.message}</div>`;
+  }
+};
+
+$("btn-imprimir-relatorio").onclick = () => window.print();
+
+function linhaOuVazio(linhasHtml, colspan, textoVazio) {
+  return linhasHtml.length ? linhasHtml.join("") : `<tr><td colspan="${colspan}" class="relatorio-vazio">${textoVazio}</td></tr>`;
+}
+
+function montarHtmlRelatorio(r, dataInicioIso, dataFimIso, observacoes, assinante, socios) {
+  const res = r.resumo;
+  const icones = { "Espeto": "🍢", "Bebida": "🥤", "Baião": "🍚", "Combo": "🍱" };
+  const ordemTipos = ["Espeto", "Bebida", "Baião", "Combo"];
+
+  const linhasVendasPorTipo = ordemTipos
+    .filter(t => (r.porTipo[t] && (r.porTipo[t].quantidade > 0 || r.porTipo[t].valor > 0)))
+    .map(t => `<tr><td>${icones[t] || ""} ${t}</td><td class="valor">${r.porTipo[t].quantidade}</td><td class="valor">${fmt(r.porTipo[t].valor)}</td></tr>`);
+
+  const linhasContasPagas = r.saidasPagasPeriodo.map(s => `
+    <tr>
+      <td>${(s.data || "").toString().split(" ")[0]}</td>
+      <td>${s.categoria}</td>
+      <td>${s.descricao || "—"}</td>
+      <td>${s.formaPagamento || "—"}</td>
+      <td class="valor">${fmt(s.valor)}</td>
+    </tr>
+  `);
+  const totalContasPagas = r.saidasPagasPeriodo.reduce((soma, s) => soma + s.valor, 0);
+
+  const linhasContasPendentes = r.contasPendentes.map(c => `
+    <tr>
+      <td>${c.categoria}</td>
+      <td>${c.descricao || "—"}</td>
+      <td>${c.vencimento || "—"}</td>
+      <td class="valor">${fmt(c.valor)}</td>
+    </tr>
+  `);
+  const totalContasPendentes = r.contasPendentes.reduce((soma, c) => soma + c.valor, 0);
+
+  const agora = new Date();
+  const geradoEm = `${String(agora.getDate()).padStart(2, "0")}/${String(agora.getMonth() + 1).padStart(2, "0")}/${agora.getFullYear()} às ${String(agora.getHours()).padStart(2, "0")}:${String(agora.getMinutes()).padStart(2, "0")}`;
+
+  return `
+    <div class="relatorio-folha">
+      <div class="relatorio-cabecalho">
+        <img src="logo.png" alt="Brasero 96">
+        <div class="titulos">
+          <h1>Brasero 96 — Relatório Semanal de Prestação de Contas</h1>
+          <div class="subtitulo">Documento gerado automaticamente pelo Sistema Financeiro</div>
+        </div>
+      </div>
+      <div class="relatorio-periodo">Período: <b>${paraBR(dataInicioIso)} a ${paraBR(dataFimIso)}</b> · Gerado em ${geradoEm} por <b>${USUARIO_LOGADO}</b></div>
+
+      <div class="relatorio-secao-titulo">Resumo Financeiro do Período</div>
+      <div class="relatorio-cards">
+        <div class="relatorio-card"><div class="rotulo">Total de Vendas</div><div class="valor">${fmt(res.totalVendas)}</div></div>
+        <div class="relatorio-card"><div class="rotulo">Custo das Vendas</div><div class="valor">${fmt(res.totalCustoVendas)}</div></div>
+        <div class="relatorio-card"><div class="rotulo">Lucro das Vendas</div><div class="valor">${fmt(res.totalLucroVendas)}</div></div>
+        <div class="relatorio-card destaque"><div class="rotulo">Lucro Líquido</div><div class="valor">${fmt(res.lucroLiquido)}</div></div>
+        <div class="relatorio-card"><div class="rotulo">Valor em Caixa</div><div class="valor">${fmt(res.valorEmCaixa)}</div></div>
+      </div>
+
+      <div class="relatorio-secao-titulo">Vendas por Tipo (no período)</div>
+      <p style="font-size:11px; color:#888; margin:0 0 8px;">As quantidades de Espeto, Bebida e Baião já incluem o que saiu dentro dos combos vendidos (cada combo = 2 espetos + 1 bebida + 1 baião); o faturamento desses componentes fica todo contabilizado na linha "Combo", sem duplicar.</p>
+      <table>
+        <thead><tr><th>Tipo</th><th style="text-align:right;">Qtd.</th><th style="text-align:right;">Faturamento</th></tr></thead>
+        <tbody>${linhaOuVazio(linhasVendasPorTipo, 3, "Nenhuma venda registrada no período.")}</tbody>
+      </table>
+      <p style="font-size:11.5px; color:#666; margin:6px 0 0;">🍢 Espetos vendidos (acumulado geral desde o início do sistema, avulsos + combos): <b>${r.espetosAcumulado}</b></p>
+
+      <div class="relatorio-secao-titulo">Contas Pagas no Período</div>
+      <table>
+        <thead><tr><th>Data</th><th>Categoria</th><th>Descrição</th><th>Pagamento</th><th style="text-align:right;">Valor</th></tr></thead>
+        <tbody>
+          ${linhaOuVazio(linhasContasPagas, 5, "Nenhuma saída paga registrada no período.")}
+          ${r.saidasPagasPeriodo.length ? `<tr class="total-linha"><td colspan="4">Total pago no período</td><td class="valor">${fmt(totalContasPagas)}</td></tr>` : ""}
+        </tbody>
+      </table>
+
+      <div class="relatorio-secao-titulo">Contas a Pagar (Pendentes até hoje)</div>
+      <table>
+        <thead><tr><th>Categoria</th><th>Descrição</th><th>Vencimento</th><th style="text-align:right;">Valor</th></tr></thead>
+        <tbody>
+          ${linhaOuVazio(linhasContasPendentes, 4, "Nenhuma conta pendente 🎉")}
+          ${r.contasPendentes.length ? `<tr class="total-linha"><td colspan="3">Total pendente</td><td class="valor">${fmt(totalContasPendentes)}</td></tr>` : ""}
+        </tbody>
+      </table>
+
+      <div class="relatorio-secao-titulo">Saldo em Caixa Informado (situação atual)</div>
+      <table>
+        <tbody>
+          <tr><td>Dinheiro em espécie</td><td class="valor">${fmt(r.saldoCaixa.dinheiro)}</td></tr>
+          <tr><td>Saldo em conta</td><td class="valor">${fmt(r.saldoCaixa.conta)}</td></tr>
+          <tr class="total-linha"><td>Total em caixa</td><td class="valor">${fmt(r.saldoCaixa.total)}</td></tr>
+        </tbody>
+      </table>
+
+      ${observacoes ? `
+      <div class="relatorio-secao-titulo">Observações</div>
+      <div style="background:#fff8ec; border:1px solid #f0d9a8; border-radius:8px; padding:10px 12px; font-size:12.5px; color:#7a4d00; white-space:pre-wrap;">⚠️ ${observacoes}</div>
+      ` : ""}
+
+      <div class="relatorio-assinaturas">
+        <div>${assinante || "Jessica Nascimento"}</div>
+        ${(socios && socios.length ? socios : ["Sócio(a)", "Sócio(a)"]).map(nome => `<div>${nome}</div>`).join("")}
+      </div>
+      <div class="relatorio-rodape">Relatório gerado automaticamente pelo Sistema Financeiro Brasero 96 — valores extraídos diretamente do controle de comandas, saídas e entradas.</div>
+    </div>
+  `;
+}
 </script>
 </body>
 </html>
