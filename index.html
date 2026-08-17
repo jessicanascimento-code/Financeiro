@@ -64,6 +64,11 @@
   header .marca-textos{ display:flex; flex-direction:column; line-height:1.2; }
   header .marca-nome{ font-weight:800; color:var(--amarelo); font-size:15px; }
   header .marca-sub{ font-size:10px; color:var(--muted); text-transform:uppercase; letter-spacing:.6px; }
+  .badge-versao{
+    display:inline-block; background:rgba(255,122,26,.15); color:var(--laranja); font-weight:800;
+    font-size:9px; padding:2px 7px; border-radius:6px; letter-spacing:.3px; margin-left:4px; vertical-align:middle;
+  }
+  #tela-login .badge-versao{ font-size:11px; padding:3px 9px; }
   header .usuario-atual{ font-size:12px; color:var(--muted); display:flex; align-items:center; gap:8px; }
   .indicador-sync{
     font-size:11px; font-weight:700; padding:4px 9px; border-radius:8px; display:flex; align-items:center; gap:5px;
@@ -440,7 +445,7 @@
 <div id="tela-login">
   <img src="logo.png" alt="Brasero 96" class="logo-login">
   <div class="marca-login-nome">Brasero 96</div>
-  <h1>Sistema Financeiro</h1>
+  <h1>Sistema Financeiro <span class="badge-versao" id="badge-versao-login"></span></h1>
   <div class="login-card">
     <label>Quem está usando?</label>
     <select id="l-usuario">
@@ -466,7 +471,7 @@
       <img src="logo.png" alt="Brasero 96" class="logo-mini">
       <div class="marca-textos">
         <span class="marca-nome">Brasero 96</span>
-        <span class="marca-sub">Sistema Financeiro</span>
+        <span class="marca-sub">Sistema Financeiro <span class="badge-versao" id="badge-versao"></span></span>
       </div>
     </div>
     <div class="usuario-atual">
@@ -819,10 +824,19 @@
 
 <script>
 // =====================================================================
+// VERSÃO DO APP — muda esse número a cada atualização publicada, assim dá
+// pra conferir na hora (na tela de login e no cabeçalho) se o que está no
+// ar é realmente a versão mais nova ou se o GitHub Pages ainda está
+// servindo uma versão antiga em cache.
+// =====================================================================
+const VERSAO_APP = "5.1";
+document.querySelectorAll(".badge-versao").forEach(el => el.textContent = "v" + VERSAO_APP);
+
+// =====================================================================
 // CONFIG
 // =====================================================================
 const CONFIG = {
-  API_URL: "https://script.google.com/macros/s/AKfycbxoDI0gBBgIjWQyH6Fm8d-orlgMW4ON1FtAwXmijwisjCd4EMVS6NnfMk7c85ymk90wVg/exec"
+  API_URL: "https://script.google.com/macros/s/AKfycbxz6h_GmuF6ZH4Saefz91LAWmtXSTZjBCJl9i_GNzh5SwTfd6gfN_Aebj0Rch_rZIvveQ/exec"
 };
 
 const $ = (id) => document.getElementById(id);
