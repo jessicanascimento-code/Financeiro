@@ -996,6 +996,11 @@
       </div>
     </div>
 
+    <label class="checkbox-linha" style="margin-top:10px;">
+      <input type="checkbox" id="modal-taxa-entrega" onchange="alternarTaxaEntregaModal()">
+      <span>🛵 Taxa de entrega (+R$3,00)</span>
+    </label>
+
     <div class="total-comanda"><span>Total</span><span id="modal-total">R$ 0,00</span></div>
 
     <div class="pagamento-box" id="box-pagamento">
@@ -1128,14 +1133,14 @@
 // ar é realmente a versão mais nova ou se o GitHub Pages ainda está
 // servindo uma versão antiga em cache.
 // =====================================================================
-const VERSAO_APP = "6.4";
+const VERSAO_APP = "6.6";
 document.querySelectorAll(".badge-versao").forEach(el => el.textContent = "v" + VERSAO_APP);
 
 // =====================================================================
 // CONFIG
 // =====================================================================
 const CONFIG = {
-  API_URL: "https://script.google.com/macros/s/AKfycbyDSoYUZ1dONfGW7-MQPpcG0WoRYaZK2G57x1543kXeHwNhHol8X7YWrNfKlDLjRAKrkw/exec"
+  API_URL: "https://script.google.com/macros/s/AKfycbzqUrG8O0xID3uDSymCdrULB4mJ5KyAUlZJE2K7F0gFpqcArj-N0BLUZdxsGygfwGYYcQ/exec"
 };
 
 const $ = (id) => document.getElementById(id);
@@ -1476,6 +1481,23 @@ document.addEventListener("click", () => {
 });
 
 // ---------- Detalhes do Pacote (clique no card) ----------
+// Formata data + horário do evento num único texto legível: "10/09/2026 -
+// 13h às 17h" (fim = início + 4h, mesma duração padrão usada no convite de
+// agenda). Se não tiver horário cadastrado, mostra só a data.
+function formatarDataHoraEvento(dataEvento, horarioEvento) {
+  const dataBR = paraBR(dataEvento);
+  if (!horarioEvento) return dataBR;
+  const [h, m] = horarioEvento.split(":").map(Number);
+  const formatarHora = (totalMin) => {
+    const hh = Math.floor(totalMin / 60) % 24;
+    const mm = totalMin % 60;
+    return mm > 0 ? `${hh}h${String(mm).padStart(2, "0")}` : `${hh}h`;
+  };
+  const inicioMin = (h || 0) * 60 + (m || 0);
+  const fimMin = inicioMin + 4 * 60;
+  return `${dataBR} - ${formatarHora(inicioMin)} às ${formatarHora(fimMin)}`;
+}
+
 async function abrirDetalhesPacote(pacoteId) {
   $("overlay-detalhes-pacote").classList.add("aberto");
   $("detalhes-pacote-container").innerHTML = `<div class="vazio-lista">Carregando...</div>`;
@@ -1492,7 +1514,7 @@ async function abrirDetalhesPacote(pacoteId) {
         <div class="caixa-preco-pacote">
           <div class="linha-preco-pacote"><span>Cliente</span><b>${p.cliente}</b></div>
           <div class="linha-preco-pacote"><span>Tipo</span><b>${p.tipoPacote}</b></div>
-          <div class="linha-preco-pacote"><span>Data / Horário</span><b>${paraBR(p.dataEvento)} ${p.horarioEvento || ""}</b></div>
+          <div class="linha-preco-pacote"><span>Data / Horário</span><b>${formatarDataHoraEvento(p.dataEvento, p.horarioEvento)}</b></div>
           <div class="linha-preco-pacote"><span>Local</span><b>${p.local || "—"}</b></div>
           <div class="linha-preco-pacote"><span>Qtd. pessoas</span><b>${p.qtdPessoas}</b></div>
         </div>
@@ -1515,14 +1537,26 @@ async function abrirDetalhesPacote(pacoteId) {
           <div class="linha-preco-pacote"><span>Status do restante</span><b>${p.statusRestante === "Recebido" ? "✅ Recebido" + (p.dataRecebimentoRestante ? " em " + paraBR(p.dataRecebimentoRestante) : "") : "⏳ Pendente"}</b></div>
         </div>
 
+        <button class="btn-mini salvar" style="width:100%; margin-top:14px; background:rgba(58,160,232,.15); color:var(--azul); border-color:rgba(58,160,232,.4);" id="btn-reemitir-comprovante">🖨️ Gerar comprovante em PDF</button>
         ${admin && p.valorRestante > 0 ? `
-          <button class="btn-mini salvar" style="width:100%; margin-top:14px;" id="btn-toggle-restante-pacote">
+          <button class="btn-mini salvar" style="width:100%; margin-top:8px;" id="btn-toggle-restante-pacote">
             ${p.statusRestante === "Recebido" ? "↩️ Marcar restante como pendente" : "✅ Marcar restante como recebido"}
           </button>
         ` : ""}
         <div class="msg-status" id="detalhes-pacote-status"></div>
       </div>
     `;
+
+    $("btn-reemitir-comprovante").onclick = () => {
+      abrirComprovantePacote({
+        cliente: p.cliente, tipoPacote: p.tipoPacote, dataEvento: p.dataEvento, horarioEvento: p.horarioEvento,
+        local: p.local, qtdPessoas: p.qtdPessoas, sabores: p.sabores, acompanhamentos,
+        valorCheio: p.valorCheio, descontoValor: p.descontoValor, descontoPercentual: p.descontoPercentual,
+        valorFinal: p.valorFinal, formaPagamentoInicial: p.formaPagamentoInicial,
+        valorPagoEntrada: p.valorPagoEntrada, valorRestante: p.statusRestante === "Recebido" ? 0 : p.valorRestante,
+        dataPagamentoEntrada: p.dataPagamentoEntrada
+      });
+    };
 
     if (admin && p.valorRestante > 0) {
       $("btn-toggle-restante-pacote").onclick = async () => {
@@ -1782,6 +1816,11 @@ function renderModalComanda() {
   $("modal-badge-status").textContent = c.status;
   $("modal-badge-status").className = "badge-status status-pill " + c.status;
 
+  // Sincroniza a checkbox de taxa de entrega com o que realmente está na
+  // comanda (sem disparar o próprio handler de novo).
+  const temTaxaEntrega = itens.some(it => it.produto === "Taxa de Entrega");
+  $("modal-taxa-entrega").checked = temTaxaEntrega;
+
   $("modal-lista-itens").innerHTML = itens.length ? itens.map(it => {
     const detalheCombo = it.comboEspeto1
       ? `<div class="combo-detalhe">🍱 ${it.comboEspeto1} + ${it.comboEspeto2} + ${it.comboRefri}${it.comboVinagrete === "SIM" ? " + Vinagrete" : ""}${it.comboFarofa === "SIM" ? " + Farofa" : ""} + Baião</div>`
@@ -1959,6 +1998,73 @@ $("btn-add-item-comanda").onclick = () => {
     }
   );
 };
+
+// Taxa de entrega: liga/desliga um item fixo "Taxa de Entrega" (R$3,00,
+// sem custo) na comanda — reaproveita o mesmo fluxo de add/remover item
+// normal, só que sem precisar escolher no dropdown nem confirmar remoção.
+function alternarTaxaEntregaModal() {
+  if (!COMANDA_ATUAL) return;
+  const ligar = $("modal-taxa-entrega").checked;
+  const comandaId = COMANDA_ATUAL.comanda.comandaId;
+  const existente = COMANDA_ATUAL.itens.find(it => it.produto === "Taxa de Entrega");
+
+  if (ligar && !existente) {
+    const itemId = gerarId("I");
+    const valorUnitario = 3, custoUnitario = 0, quantidade = 1;
+    const item = {
+      linha: null, itemId, comandaId, produto: "Taxa de Entrega", categoria: "Taxa",
+      quantidade, valorUnitario, valorTotal: valorUnitario, custoUnitario, custoTotal: 0, removido: false,
+      adicionadoEm: agoraBR(), usuario: USUARIO_LOGADO
+    };
+    COMANDA_ATUAL.itens.push(item);
+    COMANDA_ATUAL.valorTotal += valorUnitario;
+    COMANDA_ATUAL.comanda.valorTotal = COMANDA_ATUAL.valorTotal;
+    renderModalComanda();
+
+    enfileirar("adicionarItemComanda", { comandaId, itemId, produto: "Taxa de Entrega", quantidade },
+      (resp) => {
+        const alvo = COMANDA_ATUAL && COMANDA_ATUAL.itens.find(it => it.itemId === itemId);
+        if (alvo) alvo.linha = resp.item.linha;
+        if (COMANDA_ATUAL && COMANDA_ATUAL.comanda.comandaId === comandaId) {
+          COMANDA_ATUAL.comanda = resp.comanda;
+          COMANDA_ATUAL.valorTotal = resp.valorTotal;
+          COMANDA_ATUAL.custoTotal = resp.custoTotal;
+          COMANDA_ATUAL.totalQuantidade = resp.totalQuantidade;
+          renderModalComanda();
+        }
+        carregarComandas();
+      },
+      (msg) => {
+        if (COMANDA_ATUAL && COMANDA_ATUAL.comanda.comandaId === comandaId) {
+          COMANDA_ATUAL.itens = COMANDA_ATUAL.itens.filter(it => it.itemId !== itemId);
+          COMANDA_ATUAL.valorTotal -= valorUnitario;
+          COMANDA_ATUAL.comanda.valorTotal = COMANDA_ATUAL.valorTotal;
+          renderModalComanda();
+        }
+        alert("❌ Não foi possível adicionar a taxa de entrega: " + msg);
+      }
+    );
+  } else if (!ligar && existente) {
+    COMANDA_ATUAL.itens = COMANDA_ATUAL.itens.filter(it => it.itemId !== existente.itemId);
+    COMANDA_ATUAL.valorTotal -= existente.valorTotal;
+    COMANDA_ATUAL.comanda.valorTotal = COMANDA_ATUAL.valorTotal;
+    renderModalComanda();
+
+    enfileirar("removerItemComanda", { itemId: existente.itemId, linha: existente.linha },
+      (resp) => {
+        if (COMANDA_ATUAL && COMANDA_ATUAL.comanda.comandaId === comandaId) {
+          COMANDA_ATUAL.comanda = resp.comanda;
+          COMANDA_ATUAL.valorTotal = resp.valorTotal;
+          COMANDA_ATUAL.custoTotal = resp.custoTotal;
+          COMANDA_ATUAL.totalQuantidade = resp.totalQuantidade;
+          renderModalComanda();
+        }
+        carregarComandas();
+      },
+      (msg) => { alert("❌ Não foi possível remover a taxa de entrega: " + msg); recarregarComanda(comandaId); }
+    );
+  }
+}
 
 function ajustarQtdItem(itemId, linhaPlanilha, novaQuantidade) {
   if (!COMANDA_ATUAL) return;
@@ -2362,8 +2468,7 @@ function abrirComprovantePacote(d) {
       <div class="relatorio-secao-titulo">Dados do evento</div>
       <table>
         <tbody>
-          <tr><td>Data</td><td class="valor">${paraBR(d.dataEvento)}</td></tr>
-          <tr><td>Horário</td><td class="valor">${d.horarioEvento || "a combinar"}</td></tr>
+          <tr><td>Data e horário</td><td class="valor">${formatarDataHoraEvento(d.dataEvento, d.horarioEvento)}</td></tr>
           <tr><td>Local</td><td class="valor">${d.local || "a combinar"}</td></tr>
           <tr><td>Quantidade de pessoas</td><td class="valor">${d.qtdPessoas}</td></tr>
         </tbody>
