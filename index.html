@@ -155,6 +155,13 @@
   .card-comanda:active{ transform:scale(.97); }
   .card-comanda.aberta{ border-color:rgba(255,122,26,.5); }
   .card-comanda.fechada{ border-color:rgba(47,191,113,.5); }
+  .card-comanda.card-pacote{ border-color:rgba(58,160,232,.5); background:linear-gradient(180deg, rgba(58,160,232,.06), var(--preto2)); }
+  .badge-pacote{
+    display:inline-block; background:rgba(58,160,232,.18); color:var(--azul); font-size:9.5px; font-weight:800;
+    text-transform:uppercase; letter-spacing:.3px; padding:3px 8px; border-radius:6px; margin-bottom:6px; align-self:flex-start;
+  }
+  .meta-pendente{ font-size:10.5px; color:var(--amarelo); margin-top:2px; }
+  .meta-recebido{ font-size:10.5px; color:var(--verde); margin-top:2px; }
   .card-topo{ display:flex; align-items:flex-start; justify-content:space-between; gap:8px; }
   .card-comanda .id{ font-size:15px; font-weight:800; line-height:1.25; word-break:break-word; }
   .status-pill{
@@ -728,12 +735,14 @@
         <div class="secao-titulo-financeiro">
           <h3>📋 Contas a pagar (pendentes)</h3>
           <div class="linha-divisoria"></div>
+          <button class="btn-toggle-secao" id="btn-historico-pagar" title="Ver histórico completo (pagas também)" style="font-size:11px; width:auto; padding:0 8px;">Ver histórico</button>
         </div>
         <div class="tabela-cards" id="lista-contas-pagar"><div class="vazio-lista">Carregando...</div></div>
 
         <div class="secao-titulo-financeiro">
           <h3>📥 Contas a receber (pacotes)</h3>
           <div class="linha-divisoria"></div>
+          <button class="btn-toggle-secao" id="btn-historico-receber" title="Ver histórico completo (recebidas também)" style="font-size:11px; width:auto; padding:0 8px;">Ver histórico</button>
         </div>
         <div class="tabela-cards" id="lista-contas-receber"><div class="vazio-lista">Carregando...</div></div>
 
@@ -923,6 +932,17 @@
   </main>
 </div>
 
+<!-- ================= DETALHES DO PACOTE (clicando no card) ================= -->
+<div class="overlay" id="overlay-detalhes-pacote">
+  <div class="modal" style="max-width:520px;">
+    <div class="modal-topo">
+      <div><span class="titulo-comanda"><span>📦 Detalhes do Pacote</span></span></div>
+      <button class="btn-fechar-x" id="btn-fechar-detalhes-pacote">✕</button>
+    </div>
+    <div id="detalhes-pacote-container"></div>
+  </div>
+</div>
+
 <!-- ================= COMPROVANTE DE PACOTE (pra imprimir/enviar ao cliente) ================= -->
 <div class="overlay" id="overlay-comprovante">
   <div class="modal" style="max-width:620px;">
@@ -1108,14 +1128,14 @@
 // ar é realmente a versão mais nova ou se o GitHub Pages ainda está
 // servindo uma versão antiga em cache.
 // =====================================================================
-const VERSAO_APP = "6.3";
+const VERSAO_APP = "6.4";
 document.querySelectorAll(".badge-versao").forEach(el => el.textContent = "v" + VERSAO_APP);
 
 // =====================================================================
 // CONFIG
 // =====================================================================
 const CONFIG = {
-  API_URL: "https://script.google.com/macros/s/AKfycbxmT9DOJ-XGUB2IFBK8eVF1kT6qWkejNnPFr5v2i1SL9wUuz-yRFFyJb6pJhXG0RDxpMg/exec"
+  API_URL: "https://script.google.com/macros/s/AKfycbyDSoYUZ1dONfGW7-MQPpcG0WoRYaZK2G57x1543kXeHwNhHol8X7YWrNfKlDLjRAKrkw/exec"
 };
 
 const $ = (id) => document.getElementById(id);
@@ -1403,10 +1423,26 @@ $("btn-filtrar-comandas").onclick = () => carregarComandas();
 
 function montarCardComanda(c, totalItens) {
   const card = document.createElement("div");
-  card.className = "card-comanda " + c.status.toLowerCase();
+  card.className = "card-comanda " + c.status.toLowerCase() + (c.ehPacote ? " card-pacote" : "");
   card.dataset.comandaId = c.comandaId;
   // abertaEm já vem como "dd/MM/yyyy HH:mm:ss"
   const [dataComanda, horaComanda] = (c.abertaEm || "").toString().split(" ");
+
+  if (c.ehPacote) {
+    card.innerHTML = `
+      <div class="badge-pacote">📦 Pacote — ${c.tipoPacote}</div>
+      <div class="card-topo">
+        <div class="id">${c.identificacao}</div>
+        <span class="status-pill ${c.status}">${c.status}</span>
+      </div>
+      <div class="total">${fmt(c.valorTotal)}</div>
+      <div class="meta">${c.totalItens} pessoas · Evento em ${dataComanda || ""}</div>
+      ${c.statusRestante === "Pendente" ? `<div class="meta-pendente">⏳ ${fmt(c.valorRestante)} a receber</div>` : `<div class="meta-recebido">✅ Quitado</div>`}
+    `;
+    card.onclick = () => abrirDetalhesPacote(c.comandaId);
+    return card;
+  }
+
   card.innerHTML = `
     <button class="btn-menu-comanda" title="Opções">⋮</button>
     <div class="menu-comanda">
@@ -1438,6 +1474,79 @@ function montarCardComanda(c, totalItens) {
 document.addEventListener("click", () => {
   document.querySelectorAll(".menu-comanda.aberto").forEach(m => m.classList.remove("aberto"));
 });
+
+// ---------- Detalhes do Pacote (clique no card) ----------
+async function abrirDetalhesPacote(pacoteId) {
+  $("overlay-detalhes-pacote").classList.add("aberto");
+  $("detalhes-pacote-container").innerHTML = `<div class="vazio-lista">Carregando...</div>`;
+  try {
+    const resp = await chamarAPI("obterPacote", { pacoteId });
+    if (resp.status !== "ok") { $("detalhes-pacote-container").innerHTML = `<div class="vazio-lista">❌ ${resp.mensagem}</div>`; return; }
+    const p = resp.pacote;
+    const admin = ehAdmin();
+    const linhasSabores = p.sabores.map(s => `<div class="linha-preco-pacote"><span>${s.produto}</span><b>${s.quantidade}</b></div>`).join("");
+    const acompanhamentos = [p.baiao === "SIM" ? "Baião de Dois" : null, p.vinagrete === "SIM" ? "Vinagrete" : null, p.farofa === "SIM" ? "Farofa" : null].filter(Boolean);
+
+    $("detalhes-pacote-container").innerHTML = `
+      <div class="card-form sem-moldura">
+        <div class="caixa-preco-pacote">
+          <div class="linha-preco-pacote"><span>Cliente</span><b>${p.cliente}</b></div>
+          <div class="linha-preco-pacote"><span>Tipo</span><b>${p.tipoPacote}</b></div>
+          <div class="linha-preco-pacote"><span>Data / Horário</span><b>${paraBR(p.dataEvento)} ${p.horarioEvento || ""}</b></div>
+          <div class="linha-preco-pacote"><span>Local</span><b>${p.local || "—"}</b></div>
+          <div class="linha-preco-pacote"><span>Qtd. pessoas</span><b>${p.qtdPessoas}</b></div>
+        </div>
+
+        <label style="margin-top:14px;">Sabores</label>
+        <div class="caixa-preco-pacote">${linhasSabores || '<div class="linha-preco-pacote"><span>Nenhum sabor registrado</span></div>'}</div>
+        <p style="font-size:11.5px; color:var(--muted); margin:6px 0 0;">Acompanhamentos: ${acompanhamentos.length ? acompanhamentos.join(", ") : "nenhum"}</p>
+
+        <label style="margin-top:14px;">Valores</label>
+        <div class="caixa-preco-pacote">
+          <div class="linha-preco-pacote"><span>Valor cheio</span><b>${fmt(p.valorCheio)}</b></div>
+          <div class="linha-preco-pacote"><span>Desconto</span><b>${fmt(p.descontoValor)} (${p.descontoPercentual}%)</b></div>
+          <div class="linha-preco-pacote total"><span>Valor final</span><span>${fmt(p.valorFinal)}</span></div>
+        </div>
+
+        <label style="margin-top:14px;">Pagamento</label>
+        <div class="caixa-preco-pacote">
+          <div class="linha-preco-pacote"><span>Pago em ${paraBR(p.dataPagamentoEntrada)}</span><b>${fmt(p.valorPagoEntrada)}</b></div>
+          <div class="linha-preco-pacote"><span>Restante</span><b>${fmt(p.valorRestante)}</b></div>
+          <div class="linha-preco-pacote"><span>Status do restante</span><b>${p.statusRestante === "Recebido" ? "✅ Recebido" + (p.dataRecebimentoRestante ? " em " + paraBR(p.dataRecebimentoRestante) : "") : "⏳ Pendente"}</b></div>
+        </div>
+
+        ${admin && p.valorRestante > 0 ? `
+          <button class="btn-mini salvar" style="width:100%; margin-top:14px;" id="btn-toggle-restante-pacote">
+            ${p.statusRestante === "Recebido" ? "↩️ Marcar restante como pendente" : "✅ Marcar restante como recebido"}
+          </button>
+        ` : ""}
+        <div class="msg-status" id="detalhes-pacote-status"></div>
+      </div>
+    `;
+
+    if (admin && p.valorRestante > 0) {
+      $("btn-toggle-restante-pacote").onclick = async () => {
+        const novoStatus = p.statusRestante === "Recebido" ? "Pendente" : "Recebido";
+        const status = $("detalhes-pacote-status");
+        status.textContent = "Salvando...";
+        try {
+          const r = await chamarAPI("marcarRestantePacoteComoRecebido", { linha: p.linha, novoStatus, usuario: USUARIO_LOGADO });
+          if (r.status === "ok") {
+            status.textContent = "✓ Atualizado!"; status.className = "msg-status ok";
+            carregarComandas();
+            carregarContasAReceber();
+            gerarResumoEExibir($("rf-data-inicio").value, $("rf-data-fim").value, true);
+            abrirDetalhesPacote(pacoteId);
+          } else { status.textContent = "❌ " + r.mensagem; status.className = "msg-status erro"; }
+        } catch (e) { status.textContent = "❌ " + e.message; status.className = "msg-status erro"; }
+      };
+    }
+  } catch (e) {
+    $("detalhes-pacote-container").innerHTML = `<div class="vazio-lista">❌ ${e.message}</div>`;
+  }
+}
+$("btn-fechar-detalhes-pacote").onclick = () => { $("overlay-detalhes-pacote").classList.remove("aberto"); };
+$("overlay-detalhes-pacote").addEventListener("click", (e) => { if (e.target.id === "overlay-detalhes-pacote") $("overlay-detalhes-pacote").classList.remove("aberto"); });
 
 async function excluirComandaComConfirmacao(comandaId, identificacao) {
   if (!confirm(`Excluir definitivamente a comanda "${identificacao}"? Isso remove tudo da planilha (diferente de Cancelar) e não pode ser desfeito.`)) return;
@@ -2169,6 +2278,7 @@ $("btn-fechar-modal-pacote").onclick = () => { $("overlay-pacote").classList.rem
 $("overlay-pacote").addEventListener("click", (e) => { if (e.target.id === "overlay-pacote") $("overlay-pacote").classList.remove("aberto"); });
 
 $("btn-confirmar-pacote").onclick = async () => {
+  if ($("btn-confirmar-pacote").disabled) return; // trava contra duplo clique/duplo envio
   const status = $("pacote-status");
   const cliente = $("pac-cliente").value.trim();
   const dataEvento = $("pac-data-evento").value;
@@ -2199,6 +2309,9 @@ $("btn-confirmar-pacote").onclick = async () => {
     $("pac-farofa").checked ? "Farofa" : null
   ].filter(Boolean);
 
+  $("btn-confirmar-pacote").disabled = true;
+  const textoOriginalBotao = $("btn-confirmar-pacote").textContent;
+  $("btn-confirmar-pacote").textContent = "Salvando...";
   status.textContent = "Salvando...";
   status.className = "msg-status";
   try {
@@ -2213,6 +2326,7 @@ $("btn-confirmar-pacote").onclick = async () => {
       status.textContent = "✓ Pacote registrado!" + (resp.agendaCriada ? " Convite de agenda enviado." : (resp.agendaErro ? " (⚠️ agenda não enviada: " + resp.agendaErro + ")" : ""));
       status.className = "msg-status ok";
       carregarContasAReceber();
+      carregarComandas();
       gerarResumoEExibir($("rf-data-inicio").value, $("rf-data-fim").value, true);
       abrirComprovantePacote({
         cliente, tipoPacote, dataEvento, horarioEvento: $("pac-horario-evento").value, local: $("pac-local").value,
@@ -2223,6 +2337,7 @@ $("btn-confirmar-pacote").onclick = async () => {
       $("overlay-pacote").classList.remove("aberto");
     } else { status.textContent = "❌ " + resp.mensagem; status.className = "msg-status erro"; }
   } catch (e) { status.textContent = "❌ " + e.message; status.className = "msg-status erro"; }
+  finally { $("btn-confirmar-pacote").disabled = false; $("btn-confirmar-pacote").textContent = textoOriginalBotao; }
 };
 
 // Comprovante pra imprimir/salvar em PDF e mandar pro cliente — só
@@ -2604,24 +2719,26 @@ $("btn-custos-fixos").onclick = async () => {
 
 // ---------- Contas a pagar (pendentes — visível pra todo mundo, mas só
 // Admin marca como paga) ----------
+let VER_HISTORICO_PAGAR = false;
 async function carregarContasAPagar() {
   const lista = $("lista-contas-pagar");
   lista.innerHTML = `<div class="vazio-lista">Carregando...</div>`;
   try {
-    const resp = await chamarAPI("listarSaidas", { somentePendentes: "1" });
+    const resp = await chamarAPI("listarSaidas", VER_HISTORICO_PAGAR ? {} : { somentePendentes: "1" });
     if (resp.status !== "ok") { lista.innerHTML = `<div class="vazio-lista">❌ ${resp.mensagem}</div>`; return; }
-    if (!resp.registros.length) { lista.innerHTML = `<div class="vazio-lista">Nenhuma conta pendente 🎉</div>`; return; }
+    if (!resp.registros.length) { lista.innerHTML = `<div class="vazio-lista">${VER_HISTORICO_PAGAR ? "Nenhuma saída registrada ainda." : "Nenhuma conta pendente 🎉"}</div>`; return; }
     lista.innerHTML = "";
     const admin = ehAdmin();
     resp.registros.forEach(r => {
       const linha = document.createElement("div");
       linha.className = "linha-tabela";
+      const pendente = r.statusPagamento === "Pendente";
       linha.innerHTML = `
-        <div class="nome-item">${r.categoria} — ${r.descricao || "sem descrição"}<div class="cat-item">Vence ${r.vencimento || "?"}</div></div>
-        <div style="font-weight:800; color:var(--amarelo);">${fmt(r.valor)}</div>
-        ${admin ? `<button class="btn-mini salvar">Marcar como pago</button>` : ""}
+        <div class="nome-item">${r.categoria} — ${r.descricao || "sem descrição"}<div class="cat-item">${pendente ? "Vence " + (r.vencimento || "?") : "Pago em " + (r.dataHora || "").toString().split(" ")[0]}</div></div>
+        <div style="font-weight:800; color:${pendente ? "var(--amarelo)" : "var(--verde)"};">${fmt(r.valor)} ${pendente ? "" : "✅"}</div>
+        ${admin && pendente ? `<button class="btn-mini salvar">Marcar como pago</button>` : ""}
       `;
-      if (admin) {
+      if (admin && pendente) {
         linha.querySelector("button").onclick = async () => {
           if (!confirm(`Confirmar pagamento de ${fmt(r.valor)} (${r.categoria})?`)) return;
           await chamarAPI("marcarSaidaComoPaga", { linha: r.linha, usuario: USUARIO_LOGADO });
@@ -2635,32 +2752,40 @@ async function carregarContasAPagar() {
     lista.innerHTML = `<div class="vazio-lista">❌ ${e.message}</div>`;
   }
 }
+$("btn-historico-pagar").onclick = () => {
+  VER_HISTORICO_PAGAR = !VER_HISTORICO_PAGAR;
+  $("btn-historico-pagar").textContent = VER_HISTORICO_PAGAR ? "Ver só pendentes" : "Ver histórico";
+  carregarContasAPagar();
+};
 
 // "Contas a Receber" (pacotes de serviço com o restante ainda pendente) —
 // mesma ideia da Contas a Pagar, só que ao contrário: dinheiro que ainda
 // vamos receber. Visível pra todo mundo; "Marcar como recebido" só Admin.
+let VER_HISTORICO_RECEBER = false;
 async function carregarContasAReceber() {
   const lista = $("lista-contas-receber");
   lista.innerHTML = `<div class="vazio-lista">Carregando...</div>`;
   try {
-    const resp = await chamarAPI("listarContasAReceber", {});
+    const resp = await chamarAPI("listarContasAReceber", VER_HISTORICO_RECEBER ? { verTodos: "1" } : {});
     if (resp.status !== "ok") { lista.innerHTML = `<div class="vazio-lista">❌ ${resp.mensagem}</div>`; return; }
-    if (!resp.registros.length) { lista.innerHTML = `<div class="vazio-lista">Nenhum valor a receber pendente 🎉</div>`; return; }
+    if (!resp.registros.length) { lista.innerHTML = `<div class="vazio-lista">${VER_HISTORICO_RECEBER ? "Nenhum pacote registrado ainda." : "Nenhum valor a receber pendente 🎉"}</div>`; return; }
     lista.innerHTML = "";
     const admin = ehAdmin();
     resp.registros.forEach(r => {
       const linha = document.createElement("div");
       linha.className = "linha-tabela";
+      const pendente = r.statusRestante !== "Recebido";
       linha.innerHTML = `
-        <div class="nome-item">${r.cliente} — ${r.tipoPacote}<div class="cat-item">Evento em ${paraBR(r.dataEvento) || r.dataEvento}</div></div>
-        <div style="font-weight:800; color:var(--azul);">${fmt(r.valorRestante)}</div>
-        ${admin ? `<button class="btn-mini salvar">Marcar como recebido</button>` : ""}
+        <div class="nome-item">${r.cliente} — ${r.tipoPacote}<div class="cat-item">${pendente ? "Evento em " + (paraBR(r.dataEvento) || r.dataEvento) : "Recebido em " + (paraBR(r.dataRecebimentoRestante) || r.dataRecebimentoRestante)}</div></div>
+        <div style="font-weight:800; color:${pendente ? "var(--azul)" : "var(--verde)"};">${fmt(r.valorRestante)} ${pendente ? "" : "✅"}</div>
+        ${admin && pendente ? `<button class="btn-mini salvar">Marcar como recebido</button>` : ""}
       `;
-      if (admin) {
+      if (admin && pendente) {
         linha.querySelector("button").onclick = async () => {
           if (!confirm(`Confirmar recebimento de ${fmt(r.valorRestante)} de ${r.cliente}?`)) return;
-          await chamarAPI("marcarRestantePacoteComoRecebido", { linha: r.linha, usuario: USUARIO_LOGADO });
+          await chamarAPI("marcarRestantePacoteComoRecebido", { linha: r.linha, novoStatus: "Recebido", usuario: USUARIO_LOGADO });
           carregarContasAReceber();
+          carregarComandas();
           gerarResumoEExibir($("rf-data-inicio").value, $("rf-data-fim").value, true);
         };
       }
@@ -2670,6 +2795,11 @@ async function carregarContasAReceber() {
     lista.innerHTML = `<div class="vazio-lista">❌ ${e.message}</div>`;
   }
 }
+$("btn-historico-receber").onclick = () => {
+  VER_HISTORICO_RECEBER = !VER_HISTORICO_RECEBER;
+  $("btn-historico-receber").textContent = VER_HISTORICO_RECEBER ? "Ver só pendentes" : "Ver histórico";
+  carregarContasAReceber();
+};
 
 // dataInicio pode vir vazia — significa "desde o primeiro registro".
 // dataFim, se vazia, é preenchida com hoje (fuso local, não UTC).
