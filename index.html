@@ -1048,6 +1048,7 @@
       <label><input type="checkbox" id="pac-farofa" checked onchange="atualizarCustoEstimadoPacote()"> Farofa</label>
     </div>
     <div class="total-espetos-pacote">Custo dos acompanhamentos (pra <b id="pac-qtd-pessoas-ref">20</b> pessoas): <b id="pac-custo-acompanhamentos">R$ 0,00</b></div>
+    <div class="total-espetos-pacote">Carvão (proporcional aos espetos) + Gasolina (fixo R$100): <b id="pac-custo-carvao-gasolina">R$ 0,00</b></div>
 
     <label style="margin-top:14px;">Preço e desconto</label>
     <label>Valor cheio (R$)</label>
@@ -1107,14 +1108,14 @@
 // ar é realmente a versão mais nova ou se o GitHub Pages ainda está
 // servindo uma versão antiga em cache.
 // =====================================================================
-const VERSAO_APP = "6.2";
+const VERSAO_APP = "6.3";
 document.querySelectorAll(".badge-versao").forEach(el => el.textContent = "v" + VERSAO_APP);
 
 // =====================================================================
 // CONFIG
 // =====================================================================
 const CONFIG = {
-  API_URL: "https://script.google.com/macros/s/AKfycbzWybylMppeEgLr4uTVPAS0KQnWdZh7ZGNpMq8yX3wR0ZhmVGKsrWVH5uwVHpFtaiCXfQ/exec"
+  API_URL: "https://script.google.com/macros/s/AKfycbxmT9DOJ-XGUB2IFBK8eVF1kT6qWkejNnPFr5v2i1SL9wUuz-yRFFyJb6pJhXG0RDxpMg/exec"
 };
 
 const $ = (id) => document.getElementById(id);
@@ -1123,6 +1124,7 @@ const fmt = (v) => "R$ " + (Number(v) || 0).toFixed(2).replace(".", ",");
 let USUARIO_LOGADO = "";
 let PERFIL_USUARIO = "Padrão"; // "Admin" ou "Padrão" — vem do login e controla o que aparece na tela
 let PRODUTOS_CACHE = [];
+let PRODUTOS_CACHE_TODOS = []; // inclui inativos também — usado pra achar custo de itens como Vinagrete/Farofa, que não ficam visíveis pra venda avulsa mas ainda têm custo cadastrado
 let COMANDA_ATUAL = null; // objeto retornado por obterComanda
 let FILTRO_STATUS_ATUAL = "Aberta";
 
@@ -1789,8 +1791,8 @@ $("btn-add-item-comanda").onclick = () => {
   const FRACAO_PORCAO_COMBO = 50 / 1000;
   let custoUnitario = produto.custo || 0;
   if (ehCombo) {
-    const custoDe = (nome) => { const p = PRODUTOS_CACHE.find(x => x.nome === nome); return p ? (p.custo || 0) : 0; };
-    const baiao = PRODUTOS_CACHE.find(p => p.tipo === "Baião");
+    const custoDe = (nome) => { const p = PRODUTOS_CACHE_TODOS.find(x => x.nome === nome); return p ? (p.custo || 0) : 0; };
+    const baiao = PRODUTOS_CACHE_TODOS.find(p => p.tipo === "Baião");
     custoUnitario = custoDe(comboEspeto1) + custoDe(comboEspeto2) + custoDe(comboRefri) + (baiao ? baiao.custo : 0);
     if (comboVinagrete === "SIM") custoUnitario += custoDe("Vinagrete") * FRACAO_PORCAO_COMBO;
     if (comboFarofa === "SIM") custoUnitario += custoDe("Farofa") * FRACAO_PORCAO_COMBO;
@@ -2046,7 +2048,8 @@ function popularSaboresPacote() {
 function atualizarResumoPacote() {
   const custoEspetos = parseFloat($("pac-custo-espetos").dataset.valor) || 0;
   const custoAcompanhamentos = parseFloat($("pac-custo-acompanhamentos").dataset.valor) || 0;
-  const custoTotal = custoEspetos + custoAcompanhamentos;
+  const custoCarvaoGasolina = parseFloat($("pac-custo-carvao-gasolina").dataset.valor) || 0;
+  const custoTotal = custoEspetos + custoAcompanhamentos + custoCarvaoGasolina;
   const faturamento = parseFloat($("pac-txt-final").dataset.valor) || 0;
   const lucro = faturamento - custoTotal;
 
@@ -2076,14 +2079,24 @@ function atualizarCustoEstimadoPacote() {
   const qtdPessoas = parseInt($("pac-qtd-pessoas").value) || 0;
   $("pac-qtd-pessoas-ref").textContent = qtdPessoas;
   const FRACAO_PORCAO = 50 / 1000;
-  const custoDeProduto = (nome) => { const p = PRODUTOS_CACHE.find(x => x.nome === nome); return p ? (p.custo || 0) : 0; };
-  const baiaoProd = PRODUTOS_CACHE.find(p => p.tipo === "Baião");
+  const custoDeProduto = (nome) => { const p = PRODUTOS_CACHE_TODOS.find(x => x.nome === nome); return p ? (p.custo || 0) : 0; };
+  const baiaoProd = PRODUTOS_CACHE_TODOS.find(p => p.tipo === "Baião");
   let custoAcompanhamentos = 0;
   if ($("pac-baiao").checked && baiaoProd) custoAcompanhamentos += qtdPessoas * baiaoProd.custo;
   if ($("pac-vinagrete").checked) custoAcompanhamentos += qtdPessoas * custoDeProduto("Vinagrete") * FRACAO_PORCAO;
   if ($("pac-farofa").checked) custoAcompanhamentos += qtdPessoas * custoDeProduto("Farofa") * FRACAO_PORCAO;
   $("pac-custo-acompanhamentos").textContent = fmt(custoAcompanhamentos);
   $("pac-custo-acompanhamentos").dataset.valor = custoAcompanhamentos;
+
+  // Carvão (1,5 saco pra cada 150 espetos, R$13/saco) e gasolina (R$100 fixo
+  // por evento) — mesma regra usada pelo servidor ao salvar o pacote.
+  const CUSTO_SACO_CARVAO = 13;
+  const ESPETOS_POR_SACOS_CARVAO = 150;
+  const SACOS_CARVAO_POR_REFERENCIA = 1.5;
+  const CUSTO_GASOLINA = 100;
+  const custoCarvao = (totalEspetos / ESPETOS_POR_SACOS_CARVAO) * SACOS_CARVAO_POR_REFERENCIA * CUSTO_SACO_CARVAO;
+  $("pac-custo-carvao-gasolina").textContent = fmt(custoCarvao + CUSTO_GASOLINA);
+  $("pac-custo-carvao-gasolina").dataset.valor = custoCarvao + CUSTO_GASOLINA;
 
   atualizarResumoPacote();
 }
@@ -2369,6 +2382,7 @@ $("btn-salvar-estoque-tudo").onclick = async () => {
 async function carregarProdutos() {
   const resp = await chamarAPI("listarProdutos", { incluirInativos: "1" });
   if (resp.status === "ok") {
+    PRODUTOS_CACHE_TODOS = resp.produtos;
     PRODUTOS_CACHE = resp.produtos.filter(p => p.ativo);
     renderCardapio(resp.produtos);
   }
