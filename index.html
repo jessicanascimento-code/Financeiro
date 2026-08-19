@@ -241,6 +241,14 @@
   }
   .aviso-calendario b{ color:var(--creme); }
 
+  .caixa-termo-adesao{
+    background:rgba(255,196,46,.1); border:1.5px solid rgba(255,196,46,.5); border-radius:10px; padding:12px;
+    margin-top:14px; font-size:12px; line-height:1.5;
+  }
+  .caixa-termo-adesao .checkbox-linha{ align-items:flex-start !important; }
+  .caixa-termo-adesao input[type=checkbox]{ margin-top:2px; width:16px; height:16px; accent-color:var(--amarelo); flex-shrink:0; }
+  .caixa-termo-adesao a{ color:var(--amarelo); font-weight:700; text-decoration:underline; }
+
   /* ---------- INDICADORES (Comandas) ---------- */
   .indicadores-grid{ display:grid; grid-template-columns:repeat(auto-fit,minmax(170px,1fr)); gap:14px; }
   .indicador-card{
@@ -1120,6 +1128,13 @@
       📅 Cada marcado recebe um <b>convite por e-mail</b> do Google Agenda — precisa <b>aceitar</b> pra entrar na agenda pessoal (o sistema não consegue pular essa etapa, é privacidade do próprio Google). O e-mail <b>pixbrasero96@gmail.com</b> sempre recebe também, automaticamente.
     </div>
 
+    <div class="caixa-termo-adesao">
+      <label class="checkbox-linha">
+        <input type="checkbox" id="pac-aceite-termo">
+        <span>Confirmo que o cliente leu e concordou com o <a href="https://jessicanascimento-code.github.io/Financeiro/Termo_Adesao_Brasero96.pdf" target="_blank" rel="noopener">Termo de Adesão e Aceite de Serviços</a> ao efetuar o pagamento da entrada.</span>
+      </label>
+    </div>
+
     <button class="btn-fechar-comanda" style="width:100%; margin-top:16px; background:linear-gradient(90deg,#1d6fa5,var(--azul));" id="btn-confirmar-pacote">Confirmar venda do pacote</button>
     <div class="msg-status" id="pacote-status"></div>
     </div>
@@ -1133,14 +1148,14 @@
 // ar é realmente a versão mais nova ou se o GitHub Pages ainda está
 // servindo uma versão antiga em cache.
 // =====================================================================
-const VERSAO_APP = "6.6";
+const VERSAO_APP = "6.7";
 document.querySelectorAll(".badge-versao").forEach(el => el.textContent = "v" + VERSAO_APP);
 
 // =====================================================================
 // CONFIG
 // =====================================================================
 const CONFIG = {
-  API_URL: "https://script.google.com/macros/s/AKfycbx6KQVsiMwSopUkpIMaAO8I55HGitqIGiBlih0pCm3umRLsII0r6Y6oaUdy-FDdFmEFaw/exec"
+  API_URL: "https://script.google.com/macros/s/AKfycbyweEegSOjZ-5s_yd5yTjWVi8ViB2OvX6fNNShkaUouMA220msMlgA7c7ZfukDx1TsPgw/exec"
 };
 
 const $ = (id) => document.getElementById(id);
@@ -1532,10 +1547,15 @@ async function abrirDetalhesPacote(pacoteId) {
 
         <label style="margin-top:14px;">Pagamento</label>
         <div class="caixa-preco-pacote">
-          <div class="linha-preco-pacote"><span>Pago em ${paraBR(p.dataPagamentoEntrada)}</span><b>${fmt(p.valorPagoEntrada)}</b></div>
+          <div class="linha-preco-pacote"><span>Pago em ${paraBRFlexivel(p.dataPagamentoEntrada)}</span><b>${fmt(p.valorPagoEntrada)}</b></div>
           <div class="linha-preco-pacote"><span>Restante</span><b>${fmt(p.valorRestante)}</b></div>
-          <div class="linha-preco-pacote"><span>Status do restante</span><b>${p.statusRestante === "Recebido" ? "✅ Recebido" + (p.dataRecebimentoRestante ? " em " + paraBR(p.dataRecebimentoRestante) : "") : "⏳ Pendente"}</b></div>
+          <div class="linha-preco-pacote"><span>Status do restante</span><b>${p.statusRestante === "Recebido" ? "✅ Recebido" + (p.dataRecebimentoRestante ? " em " + paraBRFlexivel(p.dataRecebimentoRestante) : "") : "⏳ Pendente"}</b></div>
         </div>
+
+        <p style="font-size:11.5px; color:${p.termoAceito === "SIM" ? "var(--verde)" : "#ff8a80"}; margin:10px 0 0;">
+          ${p.termoAceito === "SIM" ? "✅ Termo de Adesão aceito" + (p.dataAceiteTermo ? " em " + paraBRFlexivel(p.dataAceiteTermo) : "") : "⚠️ Termo de Adesão não confirmado neste pacote"}
+          — <a href="${LINK_TERMO_ADESAO}" target="_blank" rel="noopener" style="color:inherit; text-decoration:underline;">ver documento</a>
+        </p>
 
         <button class="btn-mini salvar" style="width:100%; margin-top:14px; background:rgba(58,160,232,.15); color:var(--azul); border-color:rgba(58,160,232,.4);" id="btn-reemitir-comprovante">🖨️ Gerar comprovante em PDF</button>
         ${admin && p.valorRestante > 0 ? `
@@ -1554,7 +1574,7 @@ async function abrirDetalhesPacote(pacoteId) {
         valorCheio: p.valorCheio, descontoValor: p.descontoValor, descontoPercentual: p.descontoPercentual,
         valorFinal: p.valorFinal, formaPagamentoInicial: p.formaPagamentoInicial,
         valorPagoEntrada: p.valorPagoEntrada, valorRestante: p.statusRestante === "Recebido" ? 0 : p.valorRestante,
-        dataPagamentoEntrada: p.dataPagamentoEntrada
+        dataPagamentoEntrada: p.dataPagamentoEntrada, dataAceiteTermo: p.dataAceiteTermo
       });
     };
 
@@ -2243,6 +2263,7 @@ $("overlay-comanda").addEventListener("click", (e) => { if (e.target.id === "ove
 // VENDA DE PACOTE (Rodízio / Personalizado)
 // =====================================================================
 let FATOR_PAGAMENTO_PACOTE = 0.5;
+const LINK_TERMO_ADESAO = "https://jessicanascimento-code.github.io/Financeiro/Termo_Adesao_Brasero96.pdf";
 
 function popularSaboresPacote() {
   const espetos = PRODUTOS_CACHE.filter(p => p.tipo === "Espeto");
@@ -2369,6 +2390,7 @@ function resetarModalPacote() {
   $("pac-tipo-rodizio").click();
   FATOR_PAGAMENTO_PACOTE = 0.5; $("pac-pagamento-50").classList.add("ativo"); $("pac-pagamento-100").classList.remove("ativo");
   document.querySelectorAll(".pac-convidado").forEach(c => { c.checked = c.value === "Jessica Nascimento"; });
+  $("pac-aceite-termo").checked = false;
   $("pacote-status").textContent = "";
   popularSaboresPacote();
   atualizarCustoEstimadoPacote();
@@ -2393,6 +2415,7 @@ $("btn-confirmar-pacote").onclick = async () => {
   if (!cliente) { status.textContent = "Informe o nome do cliente."; status.className = "msg-status erro"; return; }
   if (!dataEvento) { status.textContent = "Informe a data do evento."; status.className = "msg-status erro"; return; }
   if (valorCheio <= 0) { status.textContent = "Informe o valor do pacote."; status.className = "msg-status erro"; return; }
+  if (!$("pac-aceite-termo").checked) { status.textContent = "Confirme que o cliente aceitou o Termo de Adesão antes de continuar."; status.className = "msg-status erro"; return; }
 
   const tipoPacote = $("pac-tipo-rodizio").classList.contains("ativo") ? "Rodízio" : "Personalizado";
   const sabores = Array.from(document.querySelectorAll("#pac-lista-sabores .linha-sabor-pacote"))
@@ -2426,7 +2449,8 @@ $("btn-confirmar-pacote").onclick = async () => {
       qtdPessoas, sabores: JSON.stringify(sabores),
       baiao: $("pac-baiao").checked ? "SIM" : "NÃO", vinagrete: $("pac-vinagrete").checked ? "SIM" : "NÃO", farofa: $("pac-farofa").checked ? "SIM" : "NÃO",
       valorCheio, descontoValor, valorFinal, formaPagamentoInicial, convidados,
-      dataPagamentoEntrada: $("pac-data-pagamento-entrada").value, usuario: USUARIO_LOGADO
+      dataPagamentoEntrada: $("pac-data-pagamento-entrada").value, usuario: USUARIO_LOGADO,
+      termoAceito: $("pac-aceite-termo").checked ? "SIM" : "NÃO"
     });
     if (resp.status === "ok") {
       status.textContent = "✓ Pacote registrado!" + (resp.agendaCriada ? " Convite de agenda enviado." : (resp.agendaErro ? " (⚠️ agenda não enviada: " + resp.agendaErro + ")" : ""));
@@ -2438,7 +2462,7 @@ $("btn-confirmar-pacote").onclick = async () => {
         cliente, tipoPacote, dataEvento, horarioEvento: $("pac-horario-evento").value, local: $("pac-local").value,
         qtdPessoas, sabores, acompanhamentos, valorCheio, descontoValor, descontoPercentual, valorFinal,
         formaPagamentoInicial, valorPagoEntrada: resp.valorPagoEntrada, valorRestante: resp.valorRestante,
-        dataPagamentoEntrada: $("pac-data-pagamento-entrada").value
+        dataPagamentoEntrada: $("pac-data-pagamento-entrada").value, dataAceiteTermo: resp.dataAceiteTermo
       });
       $("overlay-pacote").classList.remove("aberto");
     } else { status.textContent = "❌ " + resp.mensagem; status.className = "msg-status erro"; }
@@ -2495,10 +2519,16 @@ function abrirComprovantePacote(d) {
       <table>
         <tbody>
           <tr><td>Forma de pagamento inicial</td><td class="valor">${d.formaPagamentoInicial === "100%" ? "100% à vista" : "Sinal de 50%"}</td></tr>
-          <tr><td>Valor pago em ${paraBR(d.dataPagamentoEntrada)}</td><td class="valor">${fmt(d.valorPagoEntrada)}</td></tr>
+          <tr><td>Valor pago em ${paraBRFlexivel(d.dataPagamentoEntrada)}</td><td class="valor">${fmt(d.valorPagoEntrada)}</td></tr>
           ${restanteTexto}
         </tbody>
       </table>
+
+      <div class="relatorio-secao-titulo">Termo de Adesão</div>
+      <div style="background:#fff8ec; border:1px solid #f0d9a8; border-radius:8px; padding:10px 12px; font-size:12px; color:#5a4a1a;">
+        ✅ Ao efetuar o pagamento da entrada${d.dataAceiteTermo ? " em " + paraBRFlexivel(d.dataAceiteTermo) : ""}, o cliente declarou estar de acordo com o
+        <a href="${LINK_TERMO_ADESAO}" target="_blank" rel="noopener" style="color:#8a5a00; font-weight:700;">Termo de Adesão e Aceite de Serviços da Brasero 96</a>.
+      </div>
 
       <div class="relatorio-rodape">Comprovante gerado pelo Sistema Financeiro Brasero 96 — dúvidas, fale com a equipe.</div>
     </div>
@@ -2881,7 +2911,7 @@ async function carregarContasAReceber() {
       linha.className = "linha-tabela";
       const pendente = r.statusRestante !== "Recebido";
       linha.innerHTML = `
-        <div class="nome-item">${r.cliente} — ${r.tipoPacote}<div class="cat-item">${pendente ? "Evento em " + (paraBR(r.dataEvento) || r.dataEvento) : "Recebido em " + (paraBR(r.dataRecebimentoRestante) || r.dataRecebimentoRestante)}</div></div>
+        <div class="nome-item">${r.cliente} — ${r.tipoPacote}<div class="cat-item">${pendente ? "Evento em " + (paraBR(r.dataEvento) || r.dataEvento) : "Recebido em " + paraBRFlexivel(r.dataRecebimentoRestante)}</div></div>
         <div style="font-weight:800; color:${pendente ? "var(--azul)" : "var(--verde)"};">${fmt(r.valorRestante)} ${pendente ? "" : "✅"}</div>
         ${admin && pendente ? `<button class="btn-mini salvar">Marcar como recebido</button>` : ""}
       `;
@@ -3064,6 +3094,17 @@ function paraBR(iso) {
   if (!iso) return "";
   const [a, m, d] = iso.split("-");
   return `${d}/${m}/${a}`;
+}
+
+// Alguns campos (datas de pagamento) vêm ora como "yyyy-mm-dd" (direto do
+// campo de data no formulário), ora já como "dd/MM/yyyy HH:mm:ss" (vindos
+// do servidor, normalizados). Essa função entende os dois formatos e sempre
+// devolve só a data em dd/MM/yyyy, sem quebrar.
+function paraBRFlexivel(valor) {
+  if (!valor) return "";
+  const texto = valor.toString();
+  if (texto.indexOf("/") !== -1) return texto.split(" ")[0]; // já é dd/MM/yyyy [HH:mm:ss]
+  return paraBR(texto);
 }
 
 // Toda segunda-feira, o período natural pra prestar contas é a semana
