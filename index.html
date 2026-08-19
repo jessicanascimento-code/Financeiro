@@ -361,6 +361,19 @@
   .resumo-grid-principal .resumo-caixa.aberto{ outline:2px solid var(--laranja); }
   .resumo-grid-principal .resumo-caixa .rotulo::after{ content:" ▾"; opacity:.6; font-size:9px; }
 
+  /* ---------- BANNER "LIVRE PRA DISTRIBUIR" ---------- */
+  .banner-distribuicao{
+    background:var(--preto2); border:1.5px solid var(--amarelo); border-radius:12px; padding:14px 16px; margin-bottom:20px;
+  }
+  .banner-distribuicao-titulo{ font-size:13px; font-weight:800; color:var(--amarelo); margin-bottom:10px; }
+  .banner-distribuicao-grid{ display:grid; grid-template-columns:repeat(auto-fit,minmax(130px,1fr)); gap:10px; }
+  .banner-distribuicao-grid .item{ background:var(--preto); border:1px solid var(--borda); border-radius:9px; padding:10px 12px; }
+  .banner-distribuicao-grid .item .rotulo{ font-size:9.5px; text-transform:uppercase; color:var(--muted); letter-spacing:.3px; }
+  .banner-distribuicao-grid .item .valor{ font-size:16px; font-weight:800; margin-top:4px; }
+  .banner-distribuicao-grid .item.livre .valor.positivo{ color:var(--verde); }
+  .banner-distribuicao-grid .item.livre .valor.negativo{ color:#ff3b30; }
+  .banner-distribuicao-nota{ font-size:10.5px; color:var(--muted); margin:10px 0 0; }
+
   .detalhe-card-financeiro{
     background:var(--preto2); border:1px solid var(--laranja); border-radius:12px; padding:14px 16px; margin:-6px 0 20px;
     max-height:260px; overflow-y:auto;
@@ -386,7 +399,8 @@
   @media(max-width:700px){ .grid-duas-colunas{ grid-template-columns:1fr; } }
 
   .saldo-caixa-grid{ display:grid; grid-template-columns:1fr 1fr; gap:14px; }
-  @media(max-width:520px){ .saldo-caixa-grid{ grid-template-columns:1fr; } }
+  .saldo-caixa-grid-3{ grid-template-columns:1fr 1fr 1fr; }
+  @media(max-width:520px){ .saldo-caixa-grid, .saldo-caixa-grid-3{ grid-template-columns:1fr; } }
   .saldo-caixa-campo label{ font-size:11.5px; font-weight:700; display:block; margin-bottom:5px; }
   .saldo-caixa-linha{ display:flex; gap:8px; }
   .saldo-caixa-linha input{
@@ -608,6 +622,12 @@
       <div class="resumo-grid resumo-grid-principal" id="resumo-grid-principal"></div>
       <div class="detalhe-card-financeiro" id="detalhe-card-financeiro" style="display:none;"></div>
 
+      <div class="banner-distribuicao" id="banner-distribuicao">
+        <div class="banner-distribuicao-titulo">💡 Antes de distribuir lucro entre os sócios</div>
+        <div class="banner-distribuicao-grid" id="banner-distribuicao-grid"><div class="vazio-lista">Carregando...</div></div>
+        <p class="banner-distribuicao-nota">Esse cálculo usa a posição atual (todo o período, não só as datas filtradas acima) — é "quanto dá pra tirar hoje", não depende do relatório que você está vendo.</p>
+      </div>
+
       <div class="sub-abas">
         <button data-subaba="fin-resumo" class="ativa">Resumo</button>
         <button data-subaba="fin-detalhes">Detalhes</button>
@@ -626,7 +646,7 @@
         <div id="bloco-saldo-caixa">
         <div class="card-form">
           <p style="font-size:12px; color:var(--muted); margin-top:-4px;">Atualize sempre que conferir o dinheiro físico ou o extrato da conta. Fica salvo na planilha, não é calculado automaticamente.</p>
-          <div class="saldo-caixa-grid">
+          <div class="saldo-caixa-grid saldo-caixa-grid-3">
             <div class="saldo-caixa-campo">
               <label>Dinheiro em espécie (R$)</label>
               <div class="saldo-caixa-linha">
@@ -642,6 +662,14 @@
                 <button class="btn-mini salvar somente-admin" id="btn-salvar-conta">Salvar</button>
               </div>
               <div class="saldo-caixa-meta" id="cx-conta-meta"></div>
+            </div>
+            <div class="saldo-caixa-campo">
+              <label>Reserva mínima (R$)</label>
+              <div class="saldo-caixa-linha">
+                <input type="number" id="cx-reserva" step="1">
+                <button class="btn-mini salvar somente-admin" id="btn-salvar-reserva">Salvar</button>
+              </div>
+              <div class="saldo-caixa-meta" id="cx-reserva-meta"></div>
             </div>
           </div>
           <div class="saldo-caixa-total"><span>Total em caixa (informado)</span><span id="cx-total">R$ 0,00</span></div>
@@ -767,6 +795,9 @@
             <div><label>Até</label><input type="date" id="rv-data-fim"></div>
           </div>
           <label class="checkbox-linha"><input type="checkbox" id="rv-todo-periodo"><span>Considerar todo o período (ignora as datas acima)</span></label>
+          <label>Simular ticket médio (opcional)</label>
+          <input type="number" id="rv-ticket-alvo" step="0.5" placeholder="Ex: 27,00">
+          <p style="font-size:11px; color:var(--muted); margin:4px 0 0;">Mostra quanto o faturamento mudaria se o ticket médio por cliente fosse esse valor, mantendo a mesma quantidade de clientes.</p>
           <label>Observações (opcional)</label>
           <textarea id="rv-observacoes" rows="3" placeholder="Alguma observação sobre as vendas desse período..."></textarea>
           <div style="display:flex; gap:10px; margin-top:12px; flex-wrap:wrap;">
@@ -896,14 +927,14 @@
 // ar é realmente a versão mais nova ou se o GitHub Pages ainda está
 // servindo uma versão antiga em cache.
 // =====================================================================
-const VERSAO_APP = "5.6";
+const VERSAO_APP = "5.7";
 document.querySelectorAll(".badge-versao").forEach(el => el.textContent = "v" + VERSAO_APP);
 
 // =====================================================================
 // CONFIG
 // =====================================================================
 const CONFIG = {
-  API_URL: "https://script.google.com/macros/s/AKfycbw-4SLvJQWIncpzkzMl4--l1bDr5X0zqj7_dsE5vMOxYEjFRZqYNWmSKCGyy79qBuJ6JA/exec"
+  API_URL: "https://script.google.com/macros/s/AKfycby8HUagvcW8ur0MKgHTdr3mTtFPDbU2pMKhNunAeqbbD3YA9bal3GcsDFHwfSwowC8Ebw/exec"
 };
 
 const $ = (id) => document.getElementById(id);
@@ -1097,7 +1128,7 @@ function aplicarRestricoesDePerfil() {
   // saldo em caixa: Padrão enxerga os valores, mas não digita nem salva —
   // disabled (não digita) + readOnly (reforço) + botão Salvar escondido (já
   // coberto pela classe somente-admin acima)
-  [$("cx-dinheiro"), $("cx-conta")].forEach(input => {
+  [$("cx-dinheiro"), $("cx-conta"), $("cx-reserva")].forEach(input => {
     input.disabled = !admin;
     input.readOnly = !admin;
     input.classList.toggle("campo-travado", !admin);
@@ -2001,9 +2032,11 @@ async function carregarSaldoCaixa() {
     if (resp.status !== "ok") return;
     $("cx-dinheiro").value = resp.dinheiro || 0;
     $("cx-conta").value = resp.conta || 0;
+    $("cx-reserva").value = resp.reserva || 0;
     atualizarTotalCaixaExibido();
     $("cx-dinheiro-meta").textContent = resp.dinheiroAtualizadoEm ? `Atualizado em ${resp.dinheiroAtualizadoEm}${resp.dinheiroAtualizadoPor ? " por " + resp.dinheiroAtualizadoPor : ""}` : "Ainda não informado";
     $("cx-conta-meta").textContent = resp.contaAtualizadoEm ? `Atualizado em ${resp.contaAtualizadoEm}${resp.contaAtualizadoPor ? " por " + resp.contaAtualizadoPor : ""}` : "Ainda não informado";
+    $("cx-reserva-meta").textContent = resp.reservaAtualizadaEm ? `Atualizado em ${resp.reservaAtualizadaEm}${resp.reservaAtualizadaPor ? " por " + resp.reservaAtualizadaPor : ""}` : "Sugestão: 2 semanas de operação (ex: R$1.000-1.500)";
   } catch (e) { /* silencioso — não é crítico pra abertura do app */ }
 }
 
@@ -2021,6 +2054,15 @@ $("btn-salvar-conta").onclick = async () => {
   try {
     const resp = await chamarAPI("atualizarSaldoCaixa", { campo: "conta", valor, usuario: USUARIO_LOGADO });
     if (resp.status === "ok") { $("cx-conta-meta").textContent = `Atualizado em ${resp.contaAtualizadoEm} por ${resp.contaAtualizadoPor}`; }
+    else alert("❌ " + resp.mensagem);
+  } catch (e) { alert("❌ " + e.message); }
+};
+
+$("btn-salvar-reserva").onclick = async () => {
+  const valor = parseFloat($("cx-reserva").value) || 0;
+  try {
+    const resp = await chamarAPI("atualizarSaldoCaixa", { campo: "reserva", valor, usuario: USUARIO_LOGADO });
+    if (resp.status === "ok") { $("cx-reserva-meta").textContent = `Atualizado em ${resp.reservaAtualizadaEm} por ${resp.reservaAtualizadaPor}`; carregarSaldoLivre(); }
     else alert("❌ " + resp.mensagem);
   } catch (e) { alert("❌ " + e.message); }
 };
@@ -2174,16 +2216,17 @@ async function gerarResumoEExibir(dataInicio, dataFim, forcarAtualizacao) {
 
     // Tooltips (aparecem ao passar o mouse) explicando o cálculo, com os
     // números reais desse período.
-    const tituloLucroVendas = `Lucro das Vendas = Total de Vendas − Custo das Vendas\n${fmt(r.totalVendas)} − ${fmt(r.totalCustoVendas)} = ${fmt(r.totalLucroVendas)}`;
-    const tituloLucroLiquido = `Lucro Líquido = Lucro das Vendas + Juros de cartão − Saídas\n${fmt(r.totalLucroVendas)} + ${fmt(r.totalJuros)} − ${fmt(r.totalSaidas)} = ${fmt(r.lucroLiquido)}`;
-    const tituloCaixa = `Valor em Caixa = Vendas + Juros + Entrada Manual − Custo das Vendas − Saídas\n${fmt(r.totalVendas)} + ${fmt(r.totalJuros)} + ${fmt(r.totalEntradasManual)} − ${fmt(r.totalCustoVendas)} − ${fmt(r.totalSaidas)} = ${fmt(r.valorEmCaixa)}`;
+    const tituloLucroVendas = `Lucro das Vendas = Total de Vendas − Custo do Vendido\n${fmt(r.totalVendas)} − ${fmt(r.totalCustoVendas)} = ${fmt(r.totalLucroVendas)}`;
+    const tituloLucroLiquido = `Lucro Líquido = Lucro das Vendas + Juros − Despesas Operacionais\n${fmt(r.totalLucroVendas)} + ${fmt(r.totalJuros)} − ${fmt(r.totalSaidas)} = ${fmt(r.lucroLiquido)}\n(não inclui compra de estoque, investimentos nem retiradas — veja "Detalhes")`;
+    const tituloCaixa = `Valor em Caixa = Vendas + Juros + Entrada Manual/Aportes − Despesas − Compra de Estoque − Investimentos − Retiradas\n${fmt(r.totalVendas)} + ${fmt(r.totalJuros)} + ${fmt(r.totalEntradasManual + r.totalAportes)} − ${fmt(r.totalSaidas)} − ${fmt(r.totalComprasEstoque)} − ${fmt(r.totalInvestimentos)} − ${fmt(r.totalRetiradas)} = ${fmt(r.valorEmCaixa)}`;
+    const tituloCusto = `Custo do que foi DE FATO VENDIDO nesse período (regime de competência) — não é "quanto foi comprado". Comprar estoque não vira custo na hora; só quando o item é vendido.`;
 
     // Visão "clean": só os 5 números que realmente importam de cara. Cada
     // card tem data-metric (usado pro clique abrir o detalhamento por dia).
     gridPrincipal.innerHTML = `
       <div class="resumo-caixa venda" data-metric="vendas" title="Some tudo que foi vendido pelas comandas no período."><div class="rotulo">Total de Vendas</div><div class="valor">${fmt(r.totalVendas)}</div></div>
       <div class="resumo-caixa emcaixa" data-metric="caixa" title="${tituloCaixa}"><div class="rotulo">Valor em Caixa</div><div class="valor">${fmt(r.valorEmCaixa)}</div></div>
-      <div class="resumo-caixa venda" data-metric="custo" title="Saídas pagas em 'Custo Fixo Diário', 'Reposição de Estoque Espetos/Bebidas' e 'Insumo'."><div class="rotulo">Custo das Vendas</div><div class="valor">${fmt(r.totalCustoVendas)}</div></div>
+      <div class="resumo-caixa venda" data-metric="custo" title="${tituloCusto}"><div class="rotulo">Custo do Vendido</div><div class="valor">${fmt(r.totalCustoVendas)}</div></div>
       <div class="resumo-caixa venda" data-metric="lucroVendas" title="${tituloLucroVendas}"><div class="rotulo">Lucro das Vendas</div><div class="valor">${fmt(r.totalLucroVendas)}</div></div>
       <div class="resumo-caixa destaque" data-metric="lucroLiquido" title="${tituloLucroLiquido}"><div class="rotulo">Lucro Líquido</div><div class="valor">${fmt(r.lucroLiquido)}</div></div>
     `;
@@ -2191,13 +2234,19 @@ async function gerarResumoEExibir(dataInicio, dataFim, forcarAtualizacao) {
       card.onclick = () => alternarDetalheCard(card.dataset.metric, card);
     });
 
-    // O resto (Saídas, Entradas, Juros, pendências) fica na sub-aba "Resumo"
-    // dentro de Detalhes — não polui a visão principal.
+    // O resto fica na sub-aba "Resumo" dentro de Detalhes, já organizado
+    // pelos 4 grupos do dinheiro: despesas operacionais, compra de estoque,
+    // investimentos/materiais duráveis e aportes/retiradas (capital dos
+    // sócios) — não polui a visão principal.
     gridSecundario.innerHTML = `
-      <div class="resumo-caixa saida"><div class="rotulo">Saídas pagas</div><div class="valor">${fmt(r.totalSaidasPagas)}</div></div>
+      <div class="resumo-caixa saida"><div class="rotulo">Despesas Operacionais</div><div class="valor">${fmt(r.totalSaidas)}</div></div>
+      <div class="resumo-caixa saida" title="Reposição de Estoque Espetos/Bebidas — não é despesa, vira estoque"><div class="rotulo">Compra de Estoque</div><div class="valor">${fmt(r.totalComprasEstoque)}</div></div>
+      <div class="resumo-caixa saida" title="Investimento + Compra de Materiais — patrimônio, não é despesa"><div class="rotulo">Investimentos/Materiais</div><div class="valor">${fmt(r.totalInvestimentos)}</div></div>
+      <div class="resumo-caixa saida" title="Retirada Financeira — distribuição aos sócios"><div class="rotulo">Retiradas</div><div class="valor">${fmt(r.totalRetiradas)}</div></div>
       <div class="resumo-caixa saida"><div class="rotulo">Saídas pendentes</div><div class="valor">${fmt(r.totalSaidasPendentes)}</div></div>
+      <div class="resumo-caixa entrada"><div class="rotulo">Entrada Manual</div><div class="valor">${fmt(r.totalEntradasManual)}</div></div>
+      <div class="resumo-caixa entrada" title="Aporte ou empréstimo de sócio"><div class="rotulo">Aportes/Empréstimos</div><div class="valor">${fmt(r.totalAportes)}</div></div>
       <div class="resumo-caixa entrada"><div class="rotulo">Entradas eventuais (total)</div><div class="valor">${fmt(r.totalEntradas)}</div></div>
-      <div class="resumo-caixa entrada"><div class="rotulo">— das quais Entrada Manual</div><div class="valor">${fmt(r.totalEntradasManual)}</div></div>
       ${r.totalJuros > 0 ? `<div class="resumo-caixa entrada"><div class="rotulo">Juros de cartão</div><div class="valor">${fmt(r.totalJuros)}</div></div>` : ""}
     `;
   } catch (e) {
@@ -2210,7 +2259,7 @@ async function gerarResumoEExibir(dataInicio, dataFim, forcarAtualizacao) {
 const CONFIG_METRICA = {
   vendas: { titulo: "Total de Vendas por dia", coluna: "vendas" },
   caixa: { titulo: "Saldo de caixa por dia (entradas − saídas)", coluna: "valorEmCaixa" },
-  custo: { titulo: "Custo das Vendas por dia", coluna: "custoVendas" },
+  custo: { titulo: "Custo do Vendido por dia (regime de competência)", coluna: "custoVendas" },
   lucroVendas: { titulo: "Lucro das Vendas por dia", coluna: "lucroVendas" },
   lucroLiquido: { titulo: "Lucro Líquido por dia", coluna: "lucroLiquido" }
 };
@@ -2250,6 +2299,28 @@ function carregarResumoInicial() {
   $("rf-data-fim").value = dataHojeISO();
   gerarResumoEExibir("", dataHojeISO());
   carregarContasAPagar();
+  carregarSaldoLivre();
+}
+
+// "Livre pra Distribuir": Valor em Caixa (posição atual, sem filtro de
+// data) − Contas Pendentes − Reserva Mínima. É o número que responde
+// literalmente "dá pra tirar quanto de lucro sem sufocar a operação?".
+async function carregarSaldoLivre() {
+  const grid = $("banner-distribuicao-grid");
+  grid.innerHTML = `<div class="vazio-lista">Carregando...</div>`;
+  try {
+    const r = await chamarAPI("obterSaldoLivreDistribuicao", {});
+    if (r.status !== "ok") { grid.innerHTML = `<div class="vazio-lista">❌ ${r.mensagem}</div>`; return; }
+    const positivo = r.livreParaDistribuir >= 0;
+    grid.innerHTML = `
+      <div class="item"><div class="rotulo">Valor em Caixa (total)</div><div class="valor">${fmt(r.valorEmCaixa)}</div></div>
+      <div class="item"><div class="rotulo">(−) Contas Pendentes</div><div class="valor">${fmt(r.saidasPendentes)}</div></div>
+      <div class="item"><div class="rotulo">(−) Reserva Mínima</div><div class="valor">${fmt(r.reservaMinima)}</div></div>
+      <div class="item livre"><div class="rotulo">Livre pra Distribuir</div><div class="valor ${positivo ? 'positivo' : 'negativo'}">${fmt(r.livreParaDistribuir)}</div></div>
+    `;
+  } catch (e) {
+    grid.innerHTML = `<div class="vazio-lista">❌ ${e.message}</div>`;
+  }
 }
 
 $("btn-gerar-resumo").onclick = () => {
@@ -2470,6 +2541,7 @@ $("btn-gerar-rel-vendas").onclick = async () => {
   const dataFim = todoPeriodo ? "" : $("rv-data-fim").value;
   if (!todoPeriodo && (!dataInicio || !dataFim)) { alert("Escolha o período ou marque \"Todo o período\"."); return; }
   const observacoes = $("rv-observacoes").value.trim();
+  const ticketAlvo = parseFloat($("rv-ticket-alvo").value) || 0;
   const container = $("rel-vendas-container");
   container.innerHTML = `<div class="vazio-lista">Carregando...</div>`;
   $("btn-imprimir-rel-vendas").style.display = "none";
@@ -2485,6 +2557,35 @@ $("btn-gerar-rel-vendas").onclick = async () => {
         <td class="valor">${fmt(c.valorTotal)}</td>
       </tr>
     `);
+
+    // Simulador de ticket médio: "se o ticket médio fosse X, mantendo os
+    // mesmos clientes, o faturamento seria Y" — não muda dado nenhum, é só
+    // uma projeção de bolso pra ver o impacto de subir o ticket médio.
+    let blocoSimulador = "";
+    if (ticketAlvo > 0 && r.qtdClientes > 0) {
+      const faturamentoProjetado = ticketAlvo * r.qtdClientes;
+      const diferenca = faturamentoProjetado - r.totalVendido;
+      blocoSimulador = `
+        <div class="relatorio-secao-titulo">Simulação: Ticket Médio de ${fmt(ticketAlvo)}</div>
+        <p style="font-size:12px; color:#444; margin:0 0 14px;">
+          Mantendo os mesmos <b>${r.qtdClientes}</b> clientes, se o ticket médio fosse <b>${fmt(ticketAlvo)}</b> (hoje é ${fmt(r.ticketMedioPorCliente)}),
+          o faturamento do período passaria de <b>${fmt(r.totalVendido)}</b> pra <b>${fmt(faturamentoProjetado)}</b>
+          — ${diferenca >= 0 ? "um acréscimo de" : "uma redução de"} <b style="color:${diferenca >= 0 ? '#2fbf71' : '#e0231a'};">${fmt(Math.abs(diferenca))}</b>.
+        </p>
+      `;
+    }
+
+    // Sexta x Sábado (ou qualquer outro dia trabalhado) — pra comparar
+    // desempenho comercial entre os dias da semana.
+    const linhasDiaSemana = (r.porDiaSemana || []).map(d => `
+      <tr>
+        <td>${d.diaSemana}</td>
+        <td style="text-align:right;">${d.qtdClientes}</td>
+        <td class="valor">${fmt(d.totalVendido)}</td>
+        <td class="valor">${fmt(d.ticketMedio)}</td>
+      </tr>
+    `);
+
     container.innerHTML = `
       <div class="relatorio-folha">
         ${blocoCabecalhoRelatorio("Relatório de Vendas", textoPeriodo(dataInicio, dataFim, todoPeriodo), observacoes)}
@@ -2497,6 +2598,14 @@ $("btn-gerar-rel-vendas").onclick = async () => {
           <div class="relatorio-card"><div class="rotulo">Itens Vendidos</div><div class="valor">${r.totalItensVendidos}</div></div>
         </div>
         <p style="font-size:11.5px; color:#666; margin:-8px 0 18px;">Dias com venda no período: <b>${r.qtdDiasComVenda}</b>${r.maiorComanda ? ` · Maior comanda: <b>${r.maiorComanda.identificacao}</b> (${fmt(r.maiorComanda.valorTotal)})` : ""}${r.menorComanda ? ` · Menor: <b>${r.menorComanda.identificacao}</b> (${fmt(r.menorComanda.valorTotal)})` : ""}</p>
+
+        ${blocoSimulador}
+
+        <div class="relatorio-secao-titulo">Desempenho por Dia da Semana</div>
+        <table>
+          <thead><tr><th>Dia</th><th style="text-align:right;">Clientes</th><th style="text-align:right;">Faturamento</th><th style="text-align:right;">Ticket Médio</th></tr></thead>
+          <tbody>${linhaOuVazio(linhasDiaSemana, 4, "Sem dados suficientes.")}</tbody>
+        </table>
 
         <div class="relatorio-secao-titulo">Vendas por Comanda/Cliente</div>
         <table>
