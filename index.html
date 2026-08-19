@@ -188,7 +188,46 @@
     background:linear-gradient(90deg,var(--vermelho),var(--laranja)); color:#fff; border:none; border-radius:10px;
     padding:10px 16px; font-weight:700; font-size:13.5px;
   }
+  .btn-vender-pacote{
+    background:linear-gradient(90deg,#1d6fa5,var(--azul)); color:#fff; border:none; border-radius:10px;
+    padding:10px 16px; font-weight:700; font-size:13.5px;
+  }
   .vazio-lista{ color:var(--muted); font-size:13px; text-align:center; padding:30px 0; }
+
+  /* ---------- MODAL VENDA DE PACOTE ---------- */
+  .lista-sabores-pacote{ display:flex; flex-direction:column; gap:6px; margin-top:4px; max-height:260px; overflow-y:auto; }
+  .linha-sabor-pacote{
+    display:flex; align-items:center; justify-content:space-between; gap:10px;
+    background:var(--preto); border:1.5px solid var(--borda); border-radius:9px; padding:8px 10px;
+  }
+  .checkbox-sabor-pacote{ display:flex !important; align-items:center; gap:8px; font-size:13px; font-weight:600; margin:0 !important; cursor:pointer; flex:1; }
+  .checkbox-sabor-pacote input[type=checkbox]{ width:16px; height:16px; accent-color:var(--azul); flex-shrink:0; }
+  .qtd-sabor-pacote{ width:64px; text-align:center; padding:6px 4px; flex-shrink:0; }
+  .total-espetos-pacote{ font-size:12px; color:var(--muted); margin-top:8px; }
+  .total-espetos-pacote b{ color:var(--amarelo); }
+  .toggle-tipo-pacote{ display:flex; gap:8px; margin-bottom:4px; }
+  .toggle-tipo-pacote button{
+    flex:1; background:var(--preto); border:1.5px solid var(--borda); color:var(--muted); border-radius:9px;
+    padding:10px; font-weight:700; font-size:13px; font-family:'Poppins',sans-serif;
+  }
+  .toggle-tipo-pacote button.ativo{ background:rgba(58,160,232,.15); border-color:var(--azul); color:var(--azul); }
+  .pagamento-opcoes-pacote{ display:flex; gap:8px; margin-top:6px; }
+  .pagamento-opcoes-pacote button{
+    flex:1; background:var(--preto); border:1.5px solid var(--borda); color:var(--muted); border-radius:9px;
+    padding:10px; font-weight:700; font-size:12.5px; font-family:'Poppins',sans-serif;
+  }
+  .pagamento-opcoes-pacote button.ativo{ background:rgba(47,191,113,.15); border-color:var(--verde); color:var(--verde); }
+  .caixa-preco-pacote{ background:var(--preto); border:1px dashed var(--borda); border-radius:10px; padding:12px; margin-top:6px; }
+  .linha-preco-pacote{ display:flex; justify-content:space-between; font-size:13px; margin-top:6px; }
+  .linha-preco-pacote:first-child{ margin-top:0; }
+  .linha-preco-pacote b{ color:var(--creme); }
+  .linha-preco-pacote.total{ border-top:1px dashed var(--borda); padding-top:8px; margin-top:8px; font-size:16px; font-weight:800; color:var(--amarelo); }
+  .badge-desconto-pacote{ background:rgba(224,35,26,.15); color:#ff8a80; font-size:11px; font-weight:800; padding:2px 8px; border-radius:6px; }
+  .aviso-calendario{
+    background:rgba(58,160,232,.1); border:1px solid rgba(58,160,232,.4); border-radius:10px; padding:10px 12px;
+    font-size:11.5px; color:var(--azul); margin-top:6px; line-height:1.5;
+  }
+  .aviso-calendario b{ color:var(--creme); }
 
   /* ---------- INDICADORES (Comandas) ---------- */
   .indicadores-grid{ display:grid; grid-template-columns:repeat(auto-fit,minmax(170px,1fr)); gap:14px; }
@@ -508,7 +547,10 @@
     <section class="secao ativa" id="secao-comandas">
       <div class="linha-topo">
         <h2>Comandas</h2>
-        <button class="btn-nova-comanda" id="btn-nova-comanda">+ Nova comanda</button>
+        <div style="display:flex; gap:8px;">
+          <button class="btn-nova-comanda" id="btn-nova-comanda">+ Nova comanda</button>
+          <button class="btn-vender-pacote" id="btn-vender-pacote">📦 Vender pacote</button>
+        </div>
       </div>
 
       <div class="sub-abas">
@@ -682,6 +724,12 @@
         </div>
         <div class="tabela-cards" id="lista-contas-pagar"><div class="vazio-lista">Carregando...</div></div>
 
+        <div class="secao-titulo-financeiro">
+          <h3>📥 Contas a receber (pacotes)</h3>
+          <div class="linha-divisoria"></div>
+        </div>
+        <div class="tabela-cards" id="lista-contas-receber"><div class="vazio-lista">Carregando...</div></div>
+
         <div class="secao-titulo-financeiro somente-admin">
           <h3>📝 Lançamentos</h3>
           <div class="linha-divisoria"></div>
@@ -762,6 +810,7 @@
         <button data-subaba="rel-vendas">Vendas</button>
         <button data-subaba="rel-entradas">Entradas</button>
         <button data-subaba="rel-saidas">Saídas</button>
+        <button data-subaba="rel-pacotes">Pacotes</button>
       </div>
 
       <!-- ---- Relatório Semanal (já existia) ---- -->
@@ -843,6 +892,25 @@
         </div>
         <div id="rel-saidas-container"></div>
       </div>
+
+      <!-- ---- Relatório de Pacotes de Serviço ---- -->
+      <div class="sub-secao" id="subsecao-rel-pacotes">
+        <div class="card-form no-print">
+          <div class="grid2">
+            <div><label>De</label><input type="date" id="rp-data-inicio"></div>
+            <div><label>Até</label><input type="date" id="rp-data-fim"></div>
+          </div>
+          <p style="font-size:11px; color:var(--muted); margin:4px 0 0;">O período aqui se refere à Data do Evento de cada pacote.</p>
+          <label class="checkbox-linha"><input type="checkbox" id="rp-todo-periodo"><span>Considerar todo o período (ignora as datas acima)</span></label>
+          <label>Observações (opcional)</label>
+          <textarea id="rp-observacoes" rows="3" placeholder="Alguma observação sobre os pacotes desse período..."></textarea>
+          <div style="display:flex; gap:10px; margin-top:12px; flex-wrap:wrap;">
+            <button class="btn-primario" style="flex:1; min-width:160px;" id="btn-gerar-rel-pacotes">Gerar relatório de pacotes</button>
+            <button class="btn-mini salvar" id="btn-imprimir-rel-pacotes" style="display:none;">🖨️ Imprimir / Salvar PDF</button>
+          </div>
+        </div>
+        <div id="rel-pacotes-container"></div>
+      </div>
     </section>
 
   </main>
@@ -920,6 +988,84 @@
   </div>
 </div>
 
+<!-- ================= MODAL VENDA DE PACOTE ================= -->
+<div class="overlay" id="overlay-pacote">
+  <div class="modal">
+    <div class="modal-topo">
+      <div><span class="titulo-comanda"><span>📦 Novo Pacote de Serviço</span></span></div>
+      <button class="btn-fechar-x" id="btn-fechar-modal-pacote">✕</button>
+    </div>
+    <p style="font-size:12px; color:var(--muted); margin:0 0 12px;">Rodízio ou pacote personalizado pra evento</p>
+
+    <label style="font-size:11.5px; font-weight:700; display:block; margin-bottom:6px;">Tipo de pacote</label>
+    <div class="toggle-tipo-pacote">
+      <button class="ativo" id="pac-tipo-rodizio">Rodízio</button>
+      <button id="pac-tipo-personalizado">Personalizado</button>
+    </div>
+
+    <label>Nome do cliente</label>
+    <input type="text" id="pac-cliente" placeholder="Ex: Maria Silva — Casamento">
+    <div class="grid2">
+      <div><label>Data do evento</label><input type="date" id="pac-data-evento"></div>
+      <div><label>Horário</label><input type="time" id="pac-horario-evento"></div>
+    </div>
+    <label>Local do evento</label>
+    <input type="text" id="pac-local" placeholder="Endereço ou nome do espaço">
+    <label>Quantidade de pessoas</label>
+    <input type="number" id="pac-qtd-pessoas" value="20" oninput="atualizarCustoEstimadoPacote()">
+
+    <label style="margin-top:14px;">Sabores de espeto (marque e informe a quantidade)</label>
+    <div class="lista-sabores-pacote" id="pac-lista-sabores"></div>
+    <div class="total-espetos-pacote">Total de espetos: <b id="pac-total-espetos">0</b> · Custo estimado dos espetos: <b id="pac-custo-espetos">R$ 0,00</b></div>
+
+    <label style="margin-top:14px;">Acompanhamentos</label>
+    <div class="combo-flags">
+      <label><input type="checkbox" id="pac-baiao" checked onchange="atualizarCustoEstimadoPacote()"> Baião de Dois</label>
+      <label><input type="checkbox" id="pac-vinagrete" checked onchange="atualizarCustoEstimadoPacote()"> Vinagrete</label>
+      <label><input type="checkbox" id="pac-farofa" checked onchange="atualizarCustoEstimadoPacote()"> Farofa</label>
+    </div>
+
+    <label style="margin-top:14px;">Preço e desconto</label>
+    <label>Valor cheio (R$)</label>
+    <input type="number" id="pac-valor-cheio" step="1" oninput="recalcularPrecoPacote('cheio')">
+    <div class="grid2">
+      <div><label>Desconto em R$</label><input type="number" id="pac-desconto-valor" step="1" value="0" oninput="recalcularPrecoPacote('valor')"></div>
+      <div><label>Desconto em %</label><input type="number" id="pac-desconto-percentual" step="0.5" value="0" oninput="recalcularPrecoPacote('percentual')"></div>
+    </div>
+    <div class="caixa-preco-pacote">
+      <div class="linha-preco-pacote"><span>Valor cheio</span><b id="pac-txt-cheio">R$ 0,00</b></div>
+      <div class="linha-preco-pacote"><span>Desconto aplicado</span><b><span class="badge-desconto-pacote" id="pac-txt-percentual">0%</span> — <span id="pac-txt-desconto-valor">R$ 0,00</span></b></div>
+      <div class="linha-preco-pacote total"><span>Valor final</span><span id="pac-txt-final">R$ 0,00</span></div>
+    </div>
+
+    <label style="margin-top:14px;">Forma de pagamento inicial</label>
+    <div class="pagamento-opcoes-pacote">
+      <button class="ativo" id="pac-pagamento-50">Sinal 50%</button>
+      <button id="pac-pagamento-100">100% à vista</button>
+    </div>
+    <label>Data do pagamento da entrada</label>
+    <input type="date" id="pac-data-pagamento-entrada">
+    <div class="caixa-preco-pacote">
+      <div class="linha-preco-pacote"><span>Pago agora (entra como venda já)</span><b id="pac-txt-pago-agora">R$ 0,00</b></div>
+      <div class="linha-preco-pacote"><span>Restante (Contas a Receber, até marcar recebido)</span><b id="pac-txt-restante">R$ 0,00</b></div>
+    </div>
+
+    <label style="margin-top:14px;">Convidar pra agenda do evento</label>
+    <div class="combo-flags" style="flex-wrap:wrap; row-gap:8px;">
+      <label><input type="checkbox" class="pac-convidado" value="Jessica Nascimento" checked> Jessica Nascimento</label>
+      <label><input type="checkbox" class="pac-convidado" value="Jessica Miranda"> Jessica Miranda</label>
+      <label><input type="checkbox" class="pac-convidado" value="Thiago Xavier"> Thiago</label>
+      <label><input type="checkbox" class="pac-convidado" value="Diêgo Xavier"> Diêgo</label>
+    </div>
+    <div class="aviso-calendario">
+      📅 Cada marcado recebe um <b>convite por e-mail</b> do Google Agenda — precisa <b>aceitar</b> pra entrar na agenda pessoal (o sistema não consegue pular essa etapa, é privacidade do próprio Google). O e-mail <b>pixbrasero96@gmail.com</b> sempre recebe também, automaticamente.
+    </div>
+
+    <button class="btn-fechar-comanda" style="width:100%; margin-top:16px; background:linear-gradient(90deg,#1d6fa5,var(--azul));" id="btn-confirmar-pacote">Confirmar venda do pacote</button>
+    <div class="msg-status" id="pacote-status"></div>
+  </div>
+</div>
+
 <script>
 // =====================================================================
 // VERSÃO DO APP — muda esse número a cada atualização publicada, assim dá
@@ -927,14 +1073,14 @@
 // ar é realmente a versão mais nova ou se o GitHub Pages ainda está
 // servindo uma versão antiga em cache.
 // =====================================================================
-const VERSAO_APP = "5.7";
+const VERSAO_APP = "6.0";
 document.querySelectorAll(".badge-versao").forEach(el => el.textContent = "v" + VERSAO_APP);
 
 // =====================================================================
 // CONFIG
 // =====================================================================
 const CONFIG = {
-  API_URL: "https://script.google.com/macros/s/AKfycby8HUagvcW8ur0MKgHTdr3mTtFPDbU2pMKhNunAeqbbD3YA9bal3GcsDFHwfSwowC8Ebw/exec"
+  API_URL: "https://script.google.com/macros/s/AKfycbzWybylMppeEgLr4uTVPAS0KQnWdZh7ZGNpMq8yX3wR0ZhmVGKsrWVH5uwVHpFtaiCXfQ/exec"
 };
 
 const $ = (id) => document.getElementById(id);
@@ -1198,7 +1344,7 @@ document.querySelectorAll(".sub-abas").forEach(grupo => {
       secoes.forEach(s => s.classList.toggle("ativa", s.id === `subsecao-${btn.dataset.subaba}`));
       if (btn.dataset.subaba === "comandas-resumo") carregarResumoDia();
       if (btn.dataset.subaba === "comandas-indicadores") carregarIndicadores();
-      if (btn.dataset.subaba === "fin-detalhes") carregarContasAPagar();
+      if (btn.dataset.subaba === "fin-detalhes") { carregarContasAPagar(); carregarContasAReceber(); }
     };
   });
 });
@@ -1843,6 +1989,153 @@ $("btn-fechar-modal").onclick = () => { $("overlay-comanda").classList.remove("a
 $("overlay-comanda").addEventListener("click", (e) => { if (e.target.id === "overlay-comanda") $("overlay-comanda").classList.remove("aberto"); });
 
 // =====================================================================
+// VENDA DE PACOTE (Rodízio / Personalizado)
+// =====================================================================
+let FATOR_PAGAMENTO_PACOTE = 0.5;
+
+function popularSaboresPacote() {
+  const espetos = PRODUTOS_CACHE.filter(p => p.tipo === "Espeto");
+  $("pac-lista-sabores").innerHTML = espetos.map(p => `
+    <div class="linha-sabor-pacote" data-nome="${p.nome}" data-custo="${p.custo}">
+      <label class="checkbox-sabor-pacote"><input type="checkbox" onchange="atualizarCustoEstimadoPacote()"> ${p.nome}</label>
+      <input type="number" class="qtd-sabor-pacote" value="0" disabled oninput="atualizarCustoEstimadoPacote()">
+    </div>
+  `).join("");
+}
+
+function atualizarCustoEstimadoPacote() {
+  const linhas = Array.from(document.querySelectorAll("#pac-lista-sabores .linha-sabor-pacote"));
+  let totalEspetos = 0, custoEspetos = 0;
+  linhas.forEach(l => {
+    const marcado = l.querySelector('input[type=checkbox]').checked;
+    const qtdInput = l.querySelector(".qtd-sabor-pacote");
+    qtdInput.disabled = !marcado;
+    if (marcado) {
+      const qtd = parseInt(qtdInput.value) || 0;
+      totalEspetos += qtd;
+      custoEspetos += qtd * (parseFloat(l.dataset.custo) || 0);
+    }
+  });
+  $("pac-total-espetos").textContent = totalEspetos;
+
+  const qtdPessoas = parseInt($("pac-qtd-pessoas").value) || 0;
+  const FRACAO_PORCAO = 50 / 1000;
+  const custoDeProduto = (nome) => { const p = PRODUTOS_CACHE.find(x => x.nome === nome); return p ? (p.custo || 0) : 0; };
+  const baiaoProd = PRODUTOS_CACHE.find(p => p.tipo === "Baião");
+  let custoAcompanhamentos = 0;
+  if ($("pac-baiao").checked && baiaoProd) custoAcompanhamentos += qtdPessoas * baiaoProd.custo;
+  if ($("pac-vinagrete").checked) custoAcompanhamentos += qtdPessoas * custoDeProduto("Vinagrete") * FRACAO_PORCAO;
+  if ($("pac-farofa").checked) custoAcompanhamentos += qtdPessoas * custoDeProduto("Farofa") * FRACAO_PORCAO;
+
+  $("pac-custo-espetos").textContent = fmt(custoEspetos + custoAcompanhamentos);
+}
+
+$("pac-tipo-rodizio").onclick = () => { $("pac-tipo-rodizio").classList.add("ativo"); $("pac-tipo-personalizado").classList.remove("ativo"); };
+$("pac-tipo-personalizado").onclick = () => { $("pac-tipo-personalizado").classList.add("ativo"); $("pac-tipo-rodizio").classList.remove("ativo"); };
+
+$("pac-pagamento-50").onclick = () => {
+  $("pac-pagamento-50").classList.add("ativo"); $("pac-pagamento-100").classList.remove("ativo");
+  FATOR_PAGAMENTO_PACOTE = 0.5; recalcularPrecoPacote();
+};
+$("pac-pagamento-100").onclick = () => {
+  $("pac-pagamento-100").classList.add("ativo"); $("pac-pagamento-50").classList.remove("ativo");
+  FATOR_PAGAMENTO_PACOTE = 1; recalcularPrecoPacote();
+};
+
+// Desconto em R$ e em % ficam sincronizados: editar um recalcula o outro.
+// "origem" diz qual campo a pessoa acabou de mexer, pra não entrar em loop.
+function recalcularPrecoPacote(origem) {
+  const cheio = parseFloat($("pac-valor-cheio").value) || 0;
+  let descontoValor = parseFloat($("pac-desconto-valor").value) || 0;
+  let descontoPercentual = parseFloat($("pac-desconto-percentual").value) || 0;
+
+  if (origem === "percentual") {
+    descontoValor = Math.round(cheio * (descontoPercentual / 100) * 100) / 100;
+    $("pac-desconto-valor").value = descontoValor;
+  } else {
+    descontoPercentual = cheio > 0 ? Math.round((descontoValor / cheio) * 1000) / 10 : 0;
+    $("pac-desconto-percentual").value = descontoPercentual;
+  }
+
+  const final = Math.max(0, cheio - descontoValor);
+  $("pac-txt-cheio").textContent = fmt(cheio);
+  $("pac-txt-desconto-valor").textContent = fmt(descontoValor);
+  $("pac-txt-percentual").textContent = descontoPercentual.toFixed(1).replace(".", ",") + "%";
+  $("pac-txt-final").textContent = fmt(final);
+
+  const pagoAgora = Math.round(final * FATOR_PAGAMENTO_PACOTE * 100) / 100;
+  $("pac-txt-pago-agora").textContent = fmt(pagoAgora);
+  $("pac-txt-restante").textContent = fmt(final - pagoAgora);
+}
+
+function resetarModalPacote() {
+  $("pac-cliente").value = ""; $("pac-data-evento").value = ""; $("pac-horario-evento").value = "";
+  $("pac-local").value = ""; $("pac-qtd-pessoas").value = 20;
+  $("pac-valor-cheio").value = ""; $("pac-desconto-valor").value = 0; $("pac-desconto-percentual").value = 0;
+  $("pac-data-pagamento-entrada").value = dataHojeISO();
+  $("pac-baiao").checked = true; $("pac-vinagrete").checked = true; $("pac-farofa").checked = true;
+  $("pac-tipo-rodizio").click();
+  FATOR_PAGAMENTO_PACOTE = 0.5; $("pac-pagamento-50").classList.add("ativo"); $("pac-pagamento-100").classList.remove("ativo");
+  document.querySelectorAll(".pac-convidado").forEach(c => { c.checked = c.value === "Jessica Nascimento"; });
+  $("pacote-status").textContent = "";
+  popularSaboresPacote();
+  atualizarCustoEstimadoPacote();
+  recalcularPrecoPacote();
+}
+
+$("btn-vender-pacote").onclick = async () => {
+  if (!PRODUTOS_CACHE.length) await carregarProdutos();
+  resetarModalPacote();
+  $("overlay-pacote").classList.add("aberto");
+};
+$("btn-fechar-modal-pacote").onclick = () => { $("overlay-pacote").classList.remove("aberto"); };
+$("overlay-pacote").addEventListener("click", (e) => { if (e.target.id === "overlay-pacote") $("overlay-pacote").classList.remove("aberto"); });
+
+$("btn-confirmar-pacote").onclick = async () => {
+  const status = $("pacote-status");
+  const cliente = $("pac-cliente").value.trim();
+  const dataEvento = $("pac-data-evento").value;
+  const valorCheio = parseFloat($("pac-valor-cheio").value) || 0;
+
+  if (!cliente) { status.textContent = "Informe o nome do cliente."; status.className = "msg-status erro"; return; }
+  if (!dataEvento) { status.textContent = "Informe a data do evento."; status.className = "msg-status erro"; return; }
+  if (valorCheio <= 0) { status.textContent = "Informe o valor do pacote."; status.className = "msg-status erro"; return; }
+
+  const tipoPacote = $("pac-tipo-rodizio").classList.contains("ativo") ? "Rodízio" : "Personalizado";
+  const sabores = Array.from(document.querySelectorAll("#pac-lista-sabores .linha-sabor-pacote"))
+    .filter(l => l.querySelector('input[type=checkbox]').checked)
+    .map(l => ({ produto: l.dataset.nome, quantidade: parseInt(l.querySelector(".qtd-sabor-pacote").value) || 0 }))
+    .filter(s => s.quantidade > 0);
+
+  if (!sabores.length) { status.textContent = "Marque pelo menos um sabor com quantidade."; status.className = "msg-status erro"; return; }
+
+  const descontoValor = parseFloat($("pac-desconto-valor").value) || 0;
+  const valorFinal = Math.max(0, valorCheio - descontoValor);
+  const formaPagamentoInicial = $("pac-pagamento-100").classList.contains("ativo") ? "100%" : "50%";
+  const convidados = Array.from(document.querySelectorAll(".pac-convidado"))
+    .filter(c => c.checked).map(c => c.value).join(",");
+
+  status.textContent = "Salvando...";
+  status.className = "msg-status";
+  try {
+    const resp = await chamarAPI("venderPacote", {
+      cliente, tipoPacote, dataEvento, horarioEvento: $("pac-horario-evento").value, local: $("pac-local").value,
+      qtdPessoas: $("pac-qtd-pessoas").value, sabores: JSON.stringify(sabores),
+      baiao: $("pac-baiao").checked ? "SIM" : "NÃO", vinagrete: $("pac-vinagrete").checked ? "SIM" : "NÃO", farofa: $("pac-farofa").checked ? "SIM" : "NÃO",
+      valorCheio, descontoValor, valorFinal, formaPagamentoInicial, convidados,
+      dataPagamentoEntrada: $("pac-data-pagamento-entrada").value, usuario: USUARIO_LOGADO
+    });
+    if (resp.status === "ok") {
+      status.textContent = "✓ Pacote registrado! Entrada de " + fmt(resp.valorPagoEntrada) + " já contabilizada" + (resp.valorRestante > 0 ? ", restante de " + fmt(resp.valorRestante) + " em Contas a Receber." : ".") + (resp.agendaCriada ? " Convite de agenda enviado." : (resp.agendaErro ? " (⚠️ agenda não enviada: " + resp.agendaErro + ")" : ""));
+      status.className = "msg-status ok";
+      carregarContasAReceber();
+      gerarResumoEExibir($("rf-data-inicio").value, $("rf-data-fim").value, true);
+      setTimeout(() => { $("overlay-pacote").classList.remove("aberto"); }, 2200);
+    } else { status.textContent = "❌ " + resp.mensagem; status.className = "msg-status erro"; }
+  } catch (e) { status.textContent = "❌ " + e.message; status.className = "msg-status erro"; }
+};
+
+// =====================================================================
 // ESTOQUE
 // =====================================================================
 $("btn-atualizar-estoque").onclick = carregarEstoque;
@@ -2183,6 +2476,41 @@ async function carregarContasAPagar() {
   }
 }
 
+// "Contas a Receber" (pacotes de serviço com o restante ainda pendente) —
+// mesma ideia da Contas a Pagar, só que ao contrário: dinheiro que ainda
+// vamos receber. Visível pra todo mundo; "Marcar como recebido" só Admin.
+async function carregarContasAReceber() {
+  const lista = $("lista-contas-receber");
+  lista.innerHTML = `<div class="vazio-lista">Carregando...</div>`;
+  try {
+    const resp = await chamarAPI("listarContasAReceber", {});
+    if (resp.status !== "ok") { lista.innerHTML = `<div class="vazio-lista">❌ ${resp.mensagem}</div>`; return; }
+    if (!resp.registros.length) { lista.innerHTML = `<div class="vazio-lista">Nenhum valor a receber pendente 🎉</div>`; return; }
+    lista.innerHTML = "";
+    const admin = ehAdmin();
+    resp.registros.forEach(r => {
+      const linha = document.createElement("div");
+      linha.className = "linha-tabela";
+      linha.innerHTML = `
+        <div class="nome-item">${r.cliente} — ${r.tipoPacote}<div class="cat-item">Evento em ${paraBR(r.dataEvento) || r.dataEvento}</div></div>
+        <div style="font-weight:800; color:var(--azul);">${fmt(r.valorRestante)}</div>
+        ${admin ? `<button class="btn-mini salvar">Marcar como recebido</button>` : ""}
+      `;
+      if (admin) {
+        linha.querySelector("button").onclick = async () => {
+          if (!confirm(`Confirmar recebimento de ${fmt(r.valorRestante)} de ${r.cliente}?`)) return;
+          await chamarAPI("marcarRestantePacoteComoRecebido", { linha: r.linha, usuario: USUARIO_LOGADO });
+          carregarContasAReceber();
+          gerarResumoEExibir($("rf-data-inicio").value, $("rf-data-fim").value, true);
+        };
+      }
+      lista.appendChild(linha);
+    });
+  } catch (e) {
+    lista.innerHTML = `<div class="vazio-lista">❌ ${e.message}</div>`;
+  }
+}
+
 // dataInicio pode vir vazia — significa "desde o primeiro registro".
 // dataFim, se vazia, é preenchida com hoje (fuso local, não UTC).
 function dataHojeISO() {
@@ -2216,17 +2544,17 @@ async function gerarResumoEExibir(dataInicio, dataFim, forcarAtualizacao) {
 
     // Tooltips (aparecem ao passar o mouse) explicando o cálculo, com os
     // números reais desse período.
-    const tituloLucroVendas = `Lucro das Vendas = Total de Vendas − Custo do Vendido\n${fmt(r.totalVendas)} − ${fmt(r.totalCustoVendas)} = ${fmt(r.totalLucroVendas)}`;
+    const tituloLucroVendas = `Lucro das Vendas = Total de Vendas − Custo das Vendas\n${fmt(r.totalVendas)} − ${fmt(r.totalCustoVendas)} = ${fmt(r.totalLucroVendas)}`;
     const tituloLucroLiquido = `Lucro Líquido = Lucro das Vendas + Juros − Despesas Operacionais\n${fmt(r.totalLucroVendas)} + ${fmt(r.totalJuros)} − ${fmt(r.totalSaidas)} = ${fmt(r.lucroLiquido)}\n(não inclui compra de estoque, investimentos nem retiradas — veja "Detalhes")`;
     const tituloCaixa = `Valor em Caixa = Vendas + Juros + Entrada Manual/Aportes − Despesas − Compra de Estoque − Investimentos − Retiradas\n${fmt(r.totalVendas)} + ${fmt(r.totalJuros)} + ${fmt(r.totalEntradasManual + r.totalAportes)} − ${fmt(r.totalSaidas)} − ${fmt(r.totalComprasEstoque)} − ${fmt(r.totalInvestimentos)} − ${fmt(r.totalRetiradas)} = ${fmt(r.valorEmCaixa)}`;
-    const tituloCusto = `Custo do que foi DE FATO VENDIDO nesse período (regime de competência) — não é "quanto foi comprado". Comprar estoque não vira custo na hora; só quando o item é vendido.`;
+    const tituloCusto = `Custo das Vendas = custo do que foi DE FATO VENDIDO nesse período (regime de competência) — não é "quanto foi comprado". Comprar estoque não vira custo na hora; só quando o item é vendido.`;
 
     // Visão "clean": só os 5 números que realmente importam de cara. Cada
     // card tem data-metric (usado pro clique abrir o detalhamento por dia).
     gridPrincipal.innerHTML = `
       <div class="resumo-caixa venda" data-metric="vendas" title="Some tudo que foi vendido pelas comandas no período."><div class="rotulo">Total de Vendas</div><div class="valor">${fmt(r.totalVendas)}</div></div>
       <div class="resumo-caixa emcaixa" data-metric="caixa" title="${tituloCaixa}"><div class="rotulo">Valor em Caixa</div><div class="valor">${fmt(r.valorEmCaixa)}</div></div>
-      <div class="resumo-caixa venda" data-metric="custo" title="${tituloCusto}"><div class="rotulo">Custo do Vendido</div><div class="valor">${fmt(r.totalCustoVendas)}</div></div>
+      <div class="resumo-caixa venda" data-metric="custo" title="${tituloCusto}"><div class="rotulo">Custo das Vendas</div><div class="valor">${fmt(r.totalCustoVendas)}</div></div>
       <div class="resumo-caixa venda" data-metric="lucroVendas" title="${tituloLucroVendas}"><div class="rotulo">Lucro das Vendas</div><div class="valor">${fmt(r.totalLucroVendas)}</div></div>
       <div class="resumo-caixa destaque" data-metric="lucroLiquido" title="${tituloLucroLiquido}"><div class="rotulo">Lucro Líquido</div><div class="valor">${fmt(r.lucroLiquido)}</div></div>
     `;
@@ -2259,7 +2587,7 @@ async function gerarResumoEExibir(dataInicio, dataFim, forcarAtualizacao) {
 const CONFIG_METRICA = {
   vendas: { titulo: "Total de Vendas por dia", coluna: "vendas" },
   caixa: { titulo: "Saldo de caixa por dia (entradas − saídas)", coluna: "valorEmCaixa" },
-  custo: { titulo: "Custo do Vendido por dia (regime de competência)", coluna: "custoVendas" },
+  custo: { titulo: "Custo das Vendas por dia (regime de competência)", coluna: "custoVendas" },
   lucroVendas: { titulo: "Lucro das Vendas por dia", coluna: "lucroVendas" },
   lucroLiquido: { titulo: "Lucro Líquido por dia", coluna: "lucroLiquido" }
 };
@@ -2298,7 +2626,7 @@ function alternarDetalheCard(metric, card) {
 function carregarResumoInicial() {
   $("rf-data-fim").value = dataHojeISO();
   gerarResumoEExibir("", dataHojeISO());
-  carregarContasAPagar();
+  carregarContasAPagar(); carregarContasAReceber();
   carregarSaldoLivre();
 }
 
@@ -2530,7 +2858,7 @@ function textoPeriodo(dataInicioIso, dataFimIso, todoPeriodo) {
 }
 
 // desabilita os campos de data quando "Todo o período" está marcado, nos 3 relatórios novos
-[["rv-todo-periodo", "rv-data-inicio", "rv-data-fim"], ["re-todo-periodo", "re-data-inicio", "re-data-fim"], ["rsa-todo-periodo", "rsa-data-inicio", "rsa-data-fim"]].forEach(([chk, ini, fim]) => {
+[["rv-todo-periodo", "rv-data-inicio", "rv-data-fim"], ["re-todo-periodo", "re-data-inicio", "re-data-fim"], ["rsa-todo-periodo", "rsa-data-inicio", "rsa-data-fim"], ["rp-todo-periodo", "rp-data-inicio", "rp-data-fim"]].forEach(([chk, ini, fim]) => {
   $(chk).onchange = () => { $(ini).disabled = $(chk).checked; $(fim).disabled = $(chk).checked; };
 });
 
@@ -2733,6 +3061,57 @@ $("btn-gerar-rel-saidas").onclick = async () => {
   }
 };
 $("btn-imprimir-rel-saidas").onclick = () => window.print();
+
+// ---------- Relatório de Pacotes de Serviço ----------
+$("btn-gerar-rel-pacotes").onclick = async () => {
+  const todoPeriodo = $("rp-todo-periodo").checked;
+  const dataInicio = todoPeriodo ? "" : $("rp-data-inicio").value;
+  const dataFim = todoPeriodo ? "" : $("rp-data-fim").value;
+  if (!todoPeriodo && (!dataInicio || !dataFim)) { alert("Escolha o período ou marque \"Todo o período\"."); return; }
+  const observacoes = $("rp-observacoes").value.trim();
+  const container = $("rel-pacotes-container");
+  container.innerHTML = `<div class="vazio-lista">Carregando...</div>`;
+  $("btn-imprimir-rel-pacotes").style.display = "none";
+  try {
+    const r = await chamarAPI("relatorioPacotes", { dataInicio, dataFim });
+    if (r.status !== "ok") { container.innerHTML = `<div class="vazio-lista">❌ ${r.mensagem}</div>`; return; }
+    const linhas = r.pacotes.map(p => `
+      <tr>
+        <td>${paraBR(p.dataEvento) || p.dataEvento}</td>
+        <td>${p.cliente}</td>
+        <td>${p.tipoPacote}</td>
+        <td style="text-align:right;">${p.qtdPessoas}</td>
+        <td class="valor">${fmt(p.valorFinal)}</td>
+        <td>${p.statusRestante === "Recebido" ? "✅ Quitado" : "⏳ " + fmt(p.valorRestante) + " a receber"}</td>
+      </tr>
+    `);
+    container.innerHTML = `
+      <div class="relatorio-folha">
+        ${blocoCabecalhoRelatorio("Relatório de Pacotes de Serviço", textoPeriodo(dataInicio, dataFim, todoPeriodo), observacoes)}
+        <div class="relatorio-cards">
+          <div class="relatorio-card"><div class="rotulo">Qtd. de Pacotes</div><div class="valor">${r.pacotes.length}</div></div>
+          <div class="relatorio-card destaque"><div class="rotulo">Total Contratado</div><div class="valor">${fmt(r.totalContratado)}</div></div>
+          <div class="relatorio-card"><div class="rotulo">Total Recebido</div><div class="valor">${fmt(r.totalRecebido)}</div></div>
+          <div class="relatorio-card"><div class="rotulo">Total a Receber</div><div class="valor">${fmt(r.totalAReceber)}</div></div>
+          <div class="relatorio-card"><div class="rotulo">Lucro Estimado</div><div class="valor">${fmt(r.totalLucroEstimado)}</div></div>
+        </div>
+        <div class="relatorio-secao-titulo">Pacotes do Período (por Data do Evento)</div>
+        <table>
+          <thead><tr><th>Evento</th><th>Cliente</th><th>Tipo</th><th style="text-align:right;">Pessoas</th><th style="text-align:right;">Valor</th><th>Situação</th></tr></thead>
+          <tbody>
+            ${linhaOuVazio(linhas, 6, "Nenhum pacote no período.")}
+            ${r.pacotes.length ? `<tr class="total-linha"><td colspan="4">Total contratado</td><td class="valor">${fmt(r.totalContratado)}</td><td></td></tr>` : ""}
+          </tbody>
+        </table>
+        <div class="relatorio-rodape">Relatório gerado automaticamente pelo Sistema Financeiro Brasero 96.</div>
+      </div>
+    `;
+    $("btn-imprimir-rel-pacotes").style.display = "inline-block";
+  } catch (e) {
+    container.innerHTML = `<div class="vazio-lista">❌ ${e.message}</div>`;
+  }
+};
+$("btn-imprimir-rel-pacotes").onclick = () => window.print();
 </script>
 </body>
 </html>
