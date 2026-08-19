@@ -709,6 +709,8 @@
             <input type="number" id="en-valor" step="0.5">
             <label>Data do lançamento</label>
             <input type="date" id="en-data">
+            <label>Observação (opcional)</label>
+            <input type="text" id="en-observacao" placeholder="Ex: repasse pendente, valor de terceiro...">
             <button class="btn-mini salvar" style="width:100%; margin-top:10px;" id="btn-registrar-entrada">Registrar entrada</button>
             <div class="msg-status" id="status-entrada"></div>
           </div>
@@ -725,26 +727,91 @@
 
     <!-- ---------- RELATÓRIO SEMANAL ---------- -->
     <section class="secao" id="secao-relatorio">
-      <div class="linha-topo no-print"><h2>Relatório Semanal</h2></div>
-      <div class="card-form no-print">
-        <p style="font-size:12px; color:var(--muted); margin-top:-4px;">Já vem preenchido com a semana anterior completa (segunda a domingo) — ajuste as datas se quiser outro período.</p>
-        <div class="grid2">
-          <div><label>De</label><input type="date" id="rs-data-inicio"></div>
-          <div><label>Até</label><input type="date" id="rs-data-fim"></div>
-        </div>
-        <label>Observações (opcional)</label>
-        <textarea id="rs-observacoes" rows="3" placeholder="Ex: R$210 retidos no PicPay, ainda não repassados/contabilizados..." style="width:100%; background:var(--preto); border:1.5px solid var(--borda); border-radius:9px; padding:9px 10px; color:var(--creme); font-size:13.5px; outline:none; resize:vertical; font-family:'Inter',sans-serif;"></textarea>
-        <p style="font-size:11px; color:var(--muted); margin:4px 0 0;">Qualquer coisa que só você sabe (dinheiro em outra conta, acerto pendente, etc.) — entra destacado no relatório.</p>
-        <div class="grid2" style="margin-top:10px;">
-          <div><label>Nome de quem assina</label><input type="text" id="rs-assinante" placeholder="Ex: Jessica Nascimento"></div>
-          <div><label>Sócios (separe por vírgula)</label><input type="text" id="rs-socios" placeholder="Ex: Thiago Xavier, Diêgo Xavier"></div>
-        </div>
-        <div style="display:flex; gap:10px; margin-top:12px; flex-wrap:wrap;">
-          <button class="btn-primario" style="flex:1; min-width:160px;" id="btn-gerar-relatorio">Gerar relatório</button>
-          <button class="btn-mini salvar" id="btn-imprimir-relatorio" style="display:none;">🖨️ Imprimir / Salvar PDF</button>
-        </div>
+      <div class="linha-topo no-print"><h2>Relatórios</h2></div>
+
+      <div class="sub-abas no-print">
+        <button data-subaba="rel-semanal" class="ativa">Semanal</button>
+        <button data-subaba="rel-vendas">Vendas</button>
+        <button data-subaba="rel-entradas">Entradas</button>
+        <button data-subaba="rel-saidas">Saídas</button>
       </div>
-      <div id="relatorio-container"></div>
+
+      <!-- ---- Relatório Semanal (já existia) ---- -->
+      <div class="sub-secao ativa" id="subsecao-rel-semanal">
+        <div class="card-form no-print">
+          <p style="font-size:12px; color:var(--muted); margin-top:-4px;">Já vem preenchido com a semana anterior completa (segunda a domingo) — ajuste as datas se quiser outro período.</p>
+          <div class="grid2">
+            <div><label>De</label><input type="date" id="rs-data-inicio"></div>
+            <div><label>Até</label><input type="date" id="rs-data-fim"></div>
+          </div>
+          <label>Observações (opcional)</label>
+          <textarea id="rs-observacoes" rows="3" placeholder="Ex: R$210 retidos no PicPay, ainda não repassados/contabilizados..."></textarea>
+          <p style="font-size:11px; color:var(--muted); margin:4px 0 0;">Qualquer coisa que só você sabe (dinheiro em outra conta, acerto pendente, etc.) — entra destacado no relatório.</p>
+          <div class="grid2" style="margin-top:10px;">
+            <div><label>Nome de quem assina</label><input type="text" id="rs-assinante" placeholder="Ex: Jessica Nascimento"></div>
+            <div><label>Sócios (separe por vírgula)</label><input type="text" id="rs-socios" placeholder="Ex: Thiago Xavier, Diêgo Xavier"></div>
+          </div>
+          <div style="display:flex; gap:10px; margin-top:12px; flex-wrap:wrap;">
+            <button class="btn-primario" style="flex:1; min-width:160px;" id="btn-gerar-relatorio">Gerar relatório</button>
+            <button class="btn-mini salvar" id="btn-imprimir-relatorio" style="display:none;">🖨️ Imprimir / Salvar PDF</button>
+          </div>
+        </div>
+        <div id="relatorio-container"></div>
+      </div>
+
+      <!-- ---- Relatório de Vendas ---- -->
+      <div class="sub-secao" id="subsecao-rel-vendas">
+        <div class="card-form no-print">
+          <div class="grid2">
+            <div><label>De</label><input type="date" id="rv-data-inicio"></div>
+            <div><label>Até</label><input type="date" id="rv-data-fim"></div>
+          </div>
+          <label class="checkbox-linha"><input type="checkbox" id="rv-todo-periodo"><span>Considerar todo o período (ignora as datas acima)</span></label>
+          <label>Observações (opcional)</label>
+          <textarea id="rv-observacoes" rows="3" placeholder="Alguma observação sobre as vendas desse período..."></textarea>
+          <div style="display:flex; gap:10px; margin-top:12px; flex-wrap:wrap;">
+            <button class="btn-primario" style="flex:1; min-width:160px;" id="btn-gerar-rel-vendas">Gerar relatório de vendas</button>
+            <button class="btn-mini salvar" id="btn-imprimir-rel-vendas" style="display:none;">🖨️ Imprimir / Salvar PDF</button>
+          </div>
+        </div>
+        <div id="rel-vendas-container"></div>
+      </div>
+
+      <!-- ---- Relatório de Entradas ---- -->
+      <div class="sub-secao" id="subsecao-rel-entradas">
+        <div class="card-form no-print">
+          <div class="grid2">
+            <div><label>De</label><input type="date" id="re-data-inicio"></div>
+            <div><label>Até</label><input type="date" id="re-data-fim"></div>
+          </div>
+          <label class="checkbox-linha"><input type="checkbox" id="re-todo-periodo"><span>Considerar todo o período (ignora as datas acima)</span></label>
+          <label>Observações (opcional)</label>
+          <textarea id="re-observacoes" rows="3" placeholder="Alguma observação sobre as entradas desse período..."></textarea>
+          <div style="display:flex; gap:10px; margin-top:12px; flex-wrap:wrap;">
+            <button class="btn-primario" style="flex:1; min-width:160px;" id="btn-gerar-rel-entradas">Gerar relatório de entradas</button>
+            <button class="btn-mini salvar" id="btn-imprimir-rel-entradas" style="display:none;">🖨️ Imprimir / Salvar PDF</button>
+          </div>
+        </div>
+        <div id="rel-entradas-container"></div>
+      </div>
+
+      <!-- ---- Relatório de Saídas ---- -->
+      <div class="sub-secao" id="subsecao-rel-saidas">
+        <div class="card-form no-print">
+          <div class="grid2">
+            <div><label>De</label><input type="date" id="rsa-data-inicio"></div>
+            <div><label>Até</label><input type="date" id="rsa-data-fim"></div>
+          </div>
+          <label class="checkbox-linha"><input type="checkbox" id="rsa-todo-periodo"><span>Considerar todo o período (ignora as datas acima)</span></label>
+          <label>Observações (opcional)</label>
+          <textarea id="rsa-observacoes" rows="3" placeholder="Alguma observação sobre as saídas desse período..."></textarea>
+          <div style="display:flex; gap:10px; margin-top:12px; flex-wrap:wrap;">
+            <button class="btn-primario" style="flex:1; min-width:160px;" id="btn-gerar-rel-saidas">Gerar relatório de saídas</button>
+            <button class="btn-mini salvar" id="btn-imprimir-rel-saidas" style="display:none;">🖨️ Imprimir / Salvar PDF</button>
+          </div>
+        </div>
+        <div id="rel-saidas-container"></div>
+      </div>
     </section>
 
   </main>
@@ -829,14 +896,14 @@
 // ar é realmente a versão mais nova ou se o GitHub Pages ainda está
 // servindo uma versão antiga em cache.
 // =====================================================================
-const VERSAO_APP = "5.3";
+const VERSAO_APP = "5.4";
 document.querySelectorAll(".badge-versao").forEach(el => el.textContent = "v" + VERSAO_APP);
 
 // =====================================================================
 // CONFIG
 // =====================================================================
 const CONFIG = {
-  API_URL: "https://script.google.com/macros/s/AKfycbzWSdKIA__Q6aUUOzoNJNbP6doRGMvLQj5Vj211ddARVh-aiIJQ2tsl2RONjzmrh-1lKA/exec"
+  API_URL: "https://script.google.com/macros/s/AKfycbw-4SLvJQWIncpzkzMl4--l1bDr5X0zqj7_dsE5vMOxYEjFRZqYNWmSKCGyy79qBuJ6JA/exec"
 };
 
 const $ = (id) => document.getElementById(id);
@@ -2015,13 +2082,14 @@ $("btn-registrar-saida").onclick = async () => {
 $("btn-registrar-entrada").onclick = async () => {
   const categoria = $("en-categoria").value, descricao = $("en-descricao").value, valor = $("en-valor").value;
   const dataLancamento = $("en-data").value;
+  const observacao = $("en-observacao").value;
   const status = $("status-entrada");
   status.textContent = "Salvando...";
   try {
-    const resp = await chamarAPI("registrarEntrada", { categoria, descricao, valor, data: dataLancamento, usuario: USUARIO_LOGADO });
+    const resp = await chamarAPI("registrarEntrada", { categoria, descricao, valor, data: dataLancamento, observacao, usuario: USUARIO_LOGADO });
     if (resp.status === "ok") {
       status.textContent = "✓ Entrada registrada."; status.className = "msg-status ok";
-      $("en-descricao").value = ""; $("en-valor").value = ""; $("en-data").value = "";
+      $("en-descricao").value = ""; $("en-valor").value = ""; $("en-data").value = ""; $("en-observacao").value = "";
       gerarResumoEExibir($("rf-data-inicio").value, $("rf-data-fim").value, true);
     } else { status.textContent = "❌ " + resp.mensagem; status.className = "msg-status erro"; }
   } catch (e) { status.textContent = "❌ " + e.message; status.className = "msg-status erro"; }
@@ -2364,6 +2432,198 @@ function montarHtmlRelatorio(r, dataInicioIso, dataFimIso, observacoes, assinant
     </div>
   `;
 }
+
+// =====================================================================
+// RELATÓRIO DE VENDAS / ENTRADAS / SAÍDAS — filtro por data específica ou
+// "todo o período", cada um com observações próprias e impressão própria.
+// =====================================================================
+function blocoCabecalhoRelatorio(titulo, periodoTexto, observacoes) {
+  return `
+    <div class="relatorio-cabecalho">
+      <img src="logo.png" alt="Brasero 96">
+      <div class="titulos">
+        <h1>Brasero 96 — ${titulo}</h1>
+        <div class="subtitulo">Documento gerado automaticamente pelo Sistema Financeiro</div>
+      </div>
+    </div>
+    <div class="relatorio-periodo">Período: <b>${periodoTexto}</b> · Gerado em ${dataHojeFormatadaHora()} por <b>${USUARIO_LOGADO}</b></div>
+    ${observacoes ? `<div style="background:#fff8ec; border:1px solid #f0d9a8; border-radius:8px; padding:10px 12px; font-size:12.5px; color:#7a4d00; white-space:pre-wrap; margin-bottom:16px;">⚠️ ${observacoes}</div>` : ""}
+  `;
+}
+function dataHojeFormatadaHora() {
+  const d = new Date();
+  return `${String(d.getDate()).padStart(2, "0")}/${String(d.getMonth() + 1).padStart(2, "0")}/${d.getFullYear()} às ${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
+}
+function textoPeriodo(dataInicioIso, dataFimIso, todoPeriodo) {
+  return todoPeriodo ? "Todo o período" : `${paraBR(dataInicioIso)} a ${paraBR(dataFimIso)}`;
+}
+
+// desabilita os campos de data quando "Todo o período" está marcado, nos 3 relatórios novos
+[["rv-todo-periodo", "rv-data-inicio", "rv-data-fim"], ["re-todo-periodo", "re-data-inicio", "re-data-fim"], ["rsa-todo-periodo", "rsa-data-inicio", "rsa-data-fim"]].forEach(([chk, ini, fim]) => {
+  $(chk).onchange = () => { $(ini).disabled = $(chk).checked; $(fim).disabled = $(chk).checked; };
+});
+
+// ---------- Relatório de Vendas ----------
+$("btn-gerar-rel-vendas").onclick = async () => {
+  const todoPeriodo = $("rv-todo-periodo").checked;
+  const dataInicio = todoPeriodo ? "" : $("rv-data-inicio").value;
+  const dataFim = todoPeriodo ? "" : $("rv-data-fim").value;
+  if (!todoPeriodo && (!dataInicio || !dataFim)) { alert("Escolha o período ou marque \"Todo o período\"."); return; }
+  const observacoes = $("rv-observacoes").value.trim();
+  const container = $("rel-vendas-container");
+  container.innerHTML = `<div class="vazio-lista">Carregando...</div>`;
+  $("btn-imprimir-rel-vendas").style.display = "none";
+  try {
+    const r = await chamarAPI("relatorioVendas", { dataInicio, dataFim });
+    if (r.status !== "ok") { container.innerHTML = `<div class="vazio-lista">❌ ${r.mensagem}</div>`; return; }
+    const linhasComandas = r.comandas.map(c => `
+      <tr>
+        <td>${(c.data || "").toString().split(" ")[0]}</td>
+        <td>${c.identificacao}</td>
+        <td>${c.status}</td>
+        <td style="text-align:right;">${c.totalItens}</td>
+        <td class="valor">${fmt(c.valorTotal)}</td>
+      </tr>
+    `);
+    container.innerHTML = `
+      <div class="relatorio-folha">
+        ${blocoCabecalhoRelatorio("Relatório de Vendas", textoPeriodo(dataInicio, dataFim, todoPeriodo), observacoes)}
+
+        <div class="relatorio-cards">
+          <div class="relatorio-card"><div class="rotulo">Clientes Atendidos</div><div class="valor">${r.qtdClientes}</div></div>
+          <div class="relatorio-card destaque"><div class="rotulo">Total Vendido</div><div class="valor">${fmt(r.totalVendido)}</div></div>
+          <div class="relatorio-card"><div class="rotulo">Ticket Médio p/ Cliente</div><div class="valor">${fmt(r.ticketMedioPorCliente)}</div></div>
+          <div class="relatorio-card"><div class="rotulo">Ticket Médio p/ Dia</div><div class="valor">${fmt(r.ticketMedioPorDia)}</div></div>
+          <div class="relatorio-card"><div class="rotulo">Itens Vendidos</div><div class="valor">${r.totalItensVendidos}</div></div>
+        </div>
+        <p style="font-size:11.5px; color:#666; margin:-8px 0 18px;">Dias com venda no período: <b>${r.qtdDiasComVenda}</b>${r.maiorComanda ? ` · Maior comanda: <b>${r.maiorComanda.identificacao}</b> (${fmt(r.maiorComanda.valorTotal)})` : ""}${r.menorComanda ? ` · Menor: <b>${r.menorComanda.identificacao}</b> (${fmt(r.menorComanda.valorTotal)})` : ""}</p>
+
+        <div class="relatorio-secao-titulo">Vendas por Comanda/Cliente</div>
+        <table>
+          <thead><tr><th>Data</th><th>Comanda</th><th>Status</th><th style="text-align:right;">Itens</th><th style="text-align:right;">Valor</th></tr></thead>
+          <tbody>
+            ${linhaOuVazio(linhasComandas, 5, "Nenhuma comanda no período.")}
+            ${r.comandas.length ? `<tr class="total-linha"><td colspan="4">Total vendido</td><td class="valor">${fmt(r.totalVendido)}</td></tr>` : ""}
+          </tbody>
+        </table>
+        <div class="relatorio-rodape">Relatório gerado automaticamente pelo Sistema Financeiro Brasero 96.</div>
+      </div>
+    `;
+    $("btn-imprimir-rel-vendas").style.display = "inline-block";
+  } catch (e) {
+    container.innerHTML = `<div class="vazio-lista">❌ ${e.message}</div>`;
+  }
+};
+$("btn-imprimir-rel-vendas").onclick = () => window.print();
+
+// ---------- Relatório de Entradas ----------
+$("btn-gerar-rel-entradas").onclick = async () => {
+  const todoPeriodo = $("re-todo-periodo").checked;
+  const dataInicio = todoPeriodo ? "" : $("re-data-inicio").value;
+  const dataFim = todoPeriodo ? "" : $("re-data-fim").value;
+  if (!todoPeriodo && (!dataInicio || !dataFim)) { alert("Escolha o período ou marque \"Todo o período\"."); return; }
+  const observacoes = $("re-observacoes").value.trim();
+  const container = $("rel-entradas-container");
+  container.innerHTML = `<div class="vazio-lista">Carregando...</div>`;
+  $("btn-imprimir-rel-entradas").style.display = "none";
+  try {
+    const r = await chamarAPI("relatorioEntradas", { dataInicio, dataFim });
+    if (r.status !== "ok") { container.innerHTML = `<div class="vazio-lista">❌ ${r.mensagem}</div>`; return; }
+    const linhas = r.registros.map(e => `
+      <tr>
+        <td>${(e.data || "").toString().split(" ")[0]}</td>
+        <td>${e.categoria}</td>
+        <td>${e.descricao || "—"}</td>
+        <td>${e.observacao || "—"}</td>
+        <td class="valor">${fmt(e.valor)}</td>
+      </tr>
+    `);
+    container.innerHTML = `
+      <div class="relatorio-folha">
+        ${blocoCabecalhoRelatorio("Relatório de Entradas Eventuais", textoPeriodo(dataInicio, dataFim, todoPeriodo), observacoes)}
+        <div class="relatorio-cards">
+          <div class="relatorio-card destaque"><div class="rotulo">Total de Entradas</div><div class="valor">${fmt(r.total)}</div></div>
+          <div class="relatorio-card"><div class="rotulo">Qtd. de Lançamentos</div><div class="valor">${r.registros.length}</div></div>
+        </div>
+        <div class="relatorio-secao-titulo">Detalhamento</div>
+        <table>
+          <thead><tr><th>Data</th><th>Categoria</th><th>Descrição</th><th>Observação</th><th style="text-align:right;">Valor</th></tr></thead>
+          <tbody>
+            ${linhaOuVazio(linhas, 5, "Nenhuma entrada registrada no período.")}
+            ${r.registros.length ? `<tr class="total-linha"><td colspan="4">Total</td><td class="valor">${fmt(r.total)}</td></tr>` : ""}
+          </tbody>
+        </table>
+        <div class="relatorio-rodape">Relatório gerado automaticamente pelo Sistema Financeiro Brasero 96.</div>
+      </div>
+    `;
+    $("btn-imprimir-rel-entradas").style.display = "inline-block";
+  } catch (e) {
+    container.innerHTML = `<div class="vazio-lista">❌ ${e.message}</div>`;
+  }
+};
+$("btn-imprimir-rel-entradas").onclick = () => window.print();
+
+// ---------- Relatório de Saídas ----------
+$("btn-gerar-rel-saidas").onclick = async () => {
+  const todoPeriodo = $("rsa-todo-periodo").checked;
+  const dataInicio = todoPeriodo ? "" : $("rsa-data-inicio").value;
+  const dataFim = todoPeriodo ? "" : $("rsa-data-fim").value;
+  if (!todoPeriodo && (!dataInicio || !dataFim)) { alert("Escolha o período ou marque \"Todo o período\"."); return; }
+  const observacoes = $("rsa-observacoes").value.trim();
+  const container = $("rel-saidas-container");
+  container.innerHTML = `<div class="vazio-lista">Carregando...</div>`;
+  $("btn-imprimir-rel-saidas").style.display = "none";
+  try {
+    const r = await chamarAPI("relatorioSaidas", { dataInicio, dataFim });
+    if (r.status !== "ok") { container.innerHTML = `<div class="vazio-lista">❌ ${r.mensagem}</div>`; return; }
+    const linhas = r.registros.map(s => `
+      <tr>
+        <td>${(s.data || "").toString().split(" ")[0]}</td>
+        <td>${s.categoria}</td>
+        <td>${s.descricao || "—"}</td>
+        <td>${s.statusPagamento === "Pago" ? "✅ Pago" : "⏳ Pendente"}</td>
+        <td class="valor">${fmt(s.valor)}</td>
+      </tr>
+    `);
+    const linhasCategoria = Object.keys(r.porCategoria).sort().map(cat => `
+      <tr>
+        <td>${cat}</td>
+        <td class="valor">${fmt(r.porCategoria[cat].pago)}</td>
+        <td class="valor">${fmt(r.porCategoria[cat].pendente)}</td>
+      </tr>
+    `);
+    container.innerHTML = `
+      <div class="relatorio-folha">
+        ${blocoCabecalhoRelatorio("Relatório de Saídas", textoPeriodo(dataInicio, dataFim, todoPeriodo), observacoes)}
+        <div class="relatorio-cards">
+          <div class="relatorio-card"><div class="rotulo">Total Geral</div><div class="valor">${fmt(r.totalGeral)}</div></div>
+          <div class="relatorio-card"><div class="rotulo">Total Pago</div><div class="valor">${fmt(r.totalPago)}</div></div>
+          <div class="relatorio-card destaque"><div class="rotulo">Total Pendente</div><div class="valor">${fmt(r.totalPendente)}</div></div>
+        </div>
+
+        <div class="relatorio-secao-titulo">Saídas por Categoria</div>
+        <table>
+          <thead><tr><th>Categoria</th><th style="text-align:right;">Pago</th><th style="text-align:right;">Pendente</th></tr></thead>
+          <tbody>${linhaOuVazio(linhasCategoria, 3, "Sem dados.")}</tbody>
+        </table>
+
+        <div class="relatorio-secao-titulo">Detalhamento</div>
+        <table>
+          <thead><tr><th>Data</th><th>Categoria</th><th>Descrição</th><th>Status</th><th style="text-align:right;">Valor</th></tr></thead>
+          <tbody>
+            ${linhaOuVazio(linhas, 5, "Nenhuma saída registrada no período.")}
+            ${r.registros.length ? `<tr class="total-linha"><td colspan="4">Total geral</td><td class="valor">${fmt(r.totalGeral)}</td></tr>` : ""}
+          </tbody>
+        </table>
+        <div class="relatorio-rodape">Relatório gerado automaticamente pelo Sistema Financeiro Brasero 96.</div>
+      </div>
+    `;
+    $("btn-imprimir-rel-saidas").style.display = "inline-block";
+  } catch (e) {
+    container.innerHTML = `<div class="vazio-lista">❌ ${e.message}</div>`;
+  }
+};
+$("btn-imprimir-rel-saidas").onclick = () => window.print();
 </script>
 </body>
 </html>
