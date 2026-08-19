@@ -366,6 +366,7 @@
   .toggle-ativo.off{ color:var(--muted); }
 
   .card-form{ background:var(--preto2); border:1px solid var(--borda); border-radius:var(--radius); padding:16px; margin-bottom:16px; }
+  .card-form.sem-moldura{ background:transparent; border:none; padding:0; margin-bottom:0; }
   .card-form h3{ font-size:14px; color:var(--amarelo); margin-bottom:10px; }
   .grid2{ display:grid; grid-template-columns:1fr 1fr; gap:10px; }
   .card-form label{ font-size:11.5px; font-weight:700; display:block; margin:8px 0 4px; }
@@ -997,6 +998,7 @@
     </div>
     <p style="font-size:12px; color:var(--muted); margin:0 0 12px;">Rodízio ou pacote personalizado pra evento</p>
 
+    <div class="card-form sem-moldura">
     <label style="font-size:11.5px; font-weight:700; display:block; margin-bottom:6px;">Tipo de pacote</label>
     <div class="toggle-tipo-pacote">
       <button class="ativo" id="pac-tipo-rodizio">Rodízio</button>
@@ -1063,6 +1065,7 @@
 
     <button class="btn-fechar-comanda" style="width:100%; margin-top:16px; background:linear-gradient(90deg,#1d6fa5,var(--azul));" id="btn-confirmar-pacote">Confirmar venda do pacote</button>
     <div class="msg-status" id="pacote-status"></div>
+    </div>
   </div>
 </div>
 
@@ -1073,7 +1076,7 @@
 // ar é realmente a versão mais nova ou se o GitHub Pages ainda está
 // servindo uma versão antiga em cache.
 // =====================================================================
-const VERSAO_APP = "6.0";
+const VERSAO_APP = "6.1";
 document.querySelectorAll(".badge-versao").forEach(el => el.textContent = "v" + VERSAO_APP);
 
 // =====================================================================
