@@ -25,6 +25,16 @@
   ::-webkit-scrollbar{ width:8px; height:8px; }
   ::-webkit-scrollbar-thumb{ background:#3a2e22; border-radius:8px; }
 
+  /* Trava o scroll de fundo enquanto um modal está aberto (evita o
+     "arrastão"/corte de tela ao rolar dentro do modal no celular) */
+  body.modal-aberto{ position:fixed; left:0; right:0; width:100%; overflow:hidden; }
+
+  /* Evita o zoom automático do iOS ao tocar num campo (que também
+     "sacode"/desloca a tela) */
+  @media(max-width:480px){
+    input, select, textarea{ font-size:16px; }
+  }
+
   /* ---------- LOGIN ---------- */
   #tela-login{
     min-height:100vh; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:6px; padding:20px;
@@ -265,11 +275,14 @@
   .overlay.aberto{ display:flex; }
   .modal{
     background:var(--preto2); border-top:2px solid var(--laranja); border-radius:18px 18px 0 0;
-    width:100%; max-width:520px; max-height:92vh; overflow-y:auto; padding:18px 16px 24px;
+    width:100%; max-width:520px;
+    max-height:92vh; max-height:92dvh;
+    overflow-y:auto; -webkit-overflow-scrolling:touch; overscroll-behavior:contain;
+    padding:18px 16px 24px; padding-bottom:calc(24px + env(safe-area-inset-bottom));
   }
   @media(min-width:600px){
     .overlay{ align-items:center; }
-    .modal{ border-radius:18px; border-top:2px solid var(--laranja); max-height:88vh; }
+    .modal{ border-radius:18px; border-top:2px solid var(--laranja); max-height:88vh; max-height:88dvh; }
   }
   .modal-topo{ display:flex; align-items:flex-start; justify-content:space-between; gap:10px; margin-bottom:6px; }
   .modal-topo .titulo-comanda{ font-size:18px; font-weight:800; display:flex; align-items:center; gap:6px; }
@@ -342,7 +355,7 @@
   .linha-tabela{
     display:flex; align-items:center; gap:8px; background:var(--preto2); border:1px solid var(--borda); border-radius:10px; padding:10px 12px; flex-wrap:wrap;
   }
-  .linha-tabela .nome-item{ flex:1; min-width:120px; font-size:13.5px; font-weight:700; }
+  .linha-tabela .nome-item{ flex:1 1 100%; min-width:120px; font-size:13.5px; font-weight:700; }
   .linha-tabela .cat-item{ font-size:10.5px; color:var(--muted); text-transform:uppercase; }
   .linha-tabela input[type=number], .linha-tabela input[type=text], .linha-tabela select{
     width:80px; background:var(--preto); border:1.5px solid var(--borda); border-radius:8px; padding:7px 8px; color:var(--creme); font-size:13px; outline:none;
@@ -360,18 +373,34 @@
   .cabecalho-tabela .col-input{ width:80px; text-align:center; }
   .cabecalho-tabela .col-botao{ width:70px; }
 
-  /* cada quantidade numa caixinha sutil, fácil de bater o olho */
+  /* Estoque: as 3 caixinhas (Vendido/Total/Disponível) ficam sempre juntas
+     num grid próprio, do mesmo tamanho, para nunca desalinhar no celular */
+  .estoque-boxes{ display:grid; grid-template-columns:repeat(3, 1fr); gap:8px; width:100%; }
   .estoque-caixa{
     display:flex; flex-direction:column; align-items:center; justify-content:center;
-    width:64px; padding:6px 4px; border-radius:9px; background:var(--preto); border:1px solid var(--borda);
+    width:100%; padding:8px 4px; border-radius:9px; background:var(--preto); border:1px solid var(--borda);
   }
   .estoque-caixa .rotulo-mini{ font-size:8.5px; text-transform:uppercase; color:var(--muted); letter-spacing:.3px; }
   .estoque-caixa .valor-mini{ font-size:15px; font-weight:800; color:var(--creme); }
+  .estoque-caixa .input-estoque{
+    width:100%; text-align:center; background:transparent; border:none; color:var(--creme);
+    font-size:15px; font-weight:800; padding:2px 0 0; outline:none; -moz-appearance:textfield;
+  }
+  .estoque-caixa .input-estoque::-webkit-outer-spin-button,
+  .estoque-caixa .input-estoque::-webkit-inner-spin-button{ -webkit-appearance:none; margin:0; }
   .estoque-caixa.baixo .valor-mini{ color:#ff8a80; }
   .estoque-caixa.critico{ background:rgba(194,65,12,.15); border-color:rgba(194,65,12,.5); }
   .estoque-caixa.critico .valor-mini{ color:#f0793a; }
   .estoque-caixa.zerado{ background:rgba(255,59,48,.15); border-color:rgba(255,59,48,.6); }
   .estoque-caixa.zerado .valor-mini{ color:#ff3b30; font-weight:900; }
+
+  @media(min-width:640px){
+    .linha-tabela .nome-item{ flex:1 1 auto; }
+    .estoque-boxes{ width:auto; flex:0 0 auto; grid-auto-flow:column; grid-template-columns:repeat(3, 70px); }
+  }
+  @media(max-width:639px){
+    #cabecalho-estoque{ display:none !important; } /* os rótulos já ficam dentro de cada caixinha no celular */
+  }
 
   .btn-mini{ background:var(--preto); border:1px solid var(--borda); color:var(--creme); border-radius:8px; padding:7px 10px; font-size:12px; font-weight:700; }
   .btn-mini.salvar{ background:rgba(47,191,113,.15); color:var(--verde); border-color:rgba(47,191,113,.4); }
@@ -1148,14 +1177,44 @@
 // ar é realmente a versão mais nova ou se o GitHub Pages ainda está
 // servindo uma versão antiga em cache.
 // =====================================================================
-const VERSAO_APP = "6.7";
+const VERSAO_APP = "6.8";
 document.querySelectorAll(".badge-versao").forEach(el => el.textContent = "v" + VERSAO_APP);
+
+// =====================================================================
+// TRAVA DE SCROLL DE FUNDO ENQUANTO UM MODAL ESTIVER ABERTO
+// =====================================================================
+// Sem isso, no celular, a página por trás do modal continua rolável — o
+// que causa aquele "arrastão"/corte de tela ao tentar rolar dentro do
+// modal. Observa a classe ".aberto" de qualquer ".overlay" automaticamente,
+// então funciona pra Comanda, Pacote, Detalhes do Pacote e Comprovante sem
+// precisar mexer em cada abrir/fechar espalhado pelo código.
+(function () {
+  let scrollAntesDoModal = 0;
+  function atualizarTravaScroll() {
+    const temModalAberto = !!document.querySelector(".overlay.aberto");
+    const jaTravado = document.body.classList.contains("modal-aberto");
+    if (temModalAberto && !jaTravado) {
+      scrollAntesDoModal = window.scrollY || window.pageYOffset || 0;
+      document.body.style.top = "-" + scrollAntesDoModal + "px";
+      document.body.classList.add("modal-aberto");
+    } else if (!temModalAberto && jaTravado) {
+      document.body.classList.remove("modal-aberto");
+      document.body.style.top = "";
+      window.scrollTo(0, scrollAntesDoModal);
+    }
+  }
+  document.addEventListener("DOMContentLoaded", () => {
+    document.querySelectorAll(".overlay").forEach(overlay => {
+      new MutationObserver(atualizarTravaScroll).observe(overlay, { attributes: true, attributeFilter: ["class"] });
+    });
+  });
+})();
 
 // =====================================================================
 // CONFIG
 // =====================================================================
 const CONFIG = {
-  API_URL: "https://script.google.com/macros/s/AKfycbzMOd1Kv3LsHmVhcb4X3y6Gbf1GmHxoBEWB7j_fqZbbL4HCwgNzuvRPnjdrODhSyXImnA/exec"
+  API_URL: "https://script.google.com/macros/s/AKfycbyiRzNRzLdM_tgryogef_qL5FlxpQ__DfUpW93kuzvsGez4ACF4M93HuhCEQScHxWNpMQ/exec"
 };
 
 const $ = (id) => document.getElementById(id);
@@ -2581,13 +2640,15 @@ async function carregarEstoque() {
       linha.dataset.categoria = it.categoria;
 
       if (!admin) {
-        // Padrão: só consulta, sem campo pra editar
+        // Padrão: só consulta, sem campo pra editar. As 3 caixinhas ficam
+        // sempre juntas no mesmo grid, do mesmo tamanho.
         linha.innerHTML = `
           <div class="nome-item">${it.produto}<div class="cat-item">${it.categoria}</div></div>
-          <div class="estoque-caixa"><div class="rotulo-mini">Vendido</div><div class="valor-mini">${it.qtdVendido}</div></div>
-          <div class="estoque-caixa"><div class="rotulo-mini">Total</div><div class="valor-mini">${it.qtdTotal}</div></div>
-          <div style="width:70px;"></div>
-          <div class="estoque-caixa ${classeCor}"><div class="rotulo-mini">Disponível</div><div class="valor-mini">${it.qtdDisponivel}</div></div>
+          <div class="estoque-boxes">
+            <div class="estoque-caixa"><div class="rotulo-mini">Vendido</div><div class="valor-mini">${it.qtdVendido}</div></div>
+            <div class="estoque-caixa"><div class="rotulo-mini">Total</div><div class="valor-mini">${it.qtdTotal}</div></div>
+            <div class="estoque-caixa ${classeCor}"><div class="rotulo-mini">Disponível</div><div class="valor-mini">${it.qtdDisponivel}</div></div>
+          </div>
         `;
         lista.appendChild(linha);
         return;
@@ -2595,10 +2656,14 @@ async function carregarEstoque() {
 
       linha.innerHTML = `
         <div class="nome-item">${it.produto}<div class="cat-item">${it.categoria}</div></div>
-        <div class="estoque-caixa"><div class="rotulo-mini">Vendido</div><div class="valor-mini">${it.qtdVendido}</div></div>
-        <input type="number" class="input-estoque" value="${it.qtdTotal}" min="0">
-        <div style="width:70px;"></div>
-        <div class="estoque-caixa ${classeCor}"><div class="rotulo-mini">Disponível</div><div class="valor-mini">${it.qtdDisponivel}</div></div>
+        <div class="estoque-boxes">
+          <div class="estoque-caixa"><div class="rotulo-mini">Vendido</div><div class="valor-mini">${it.qtdVendido}</div></div>
+          <div class="estoque-caixa editavel">
+            <div class="rotulo-mini">Total</div>
+            <input type="number" class="input-estoque" value="${it.qtdTotal}" min="0">
+          </div>
+          <div class="estoque-caixa ${classeCor}"><div class="rotulo-mini">Disponível</div><div class="valor-mini">${it.qtdDisponivel}</div></div>
+        </div>
       `;
       lista.appendChild(linha);
     });
