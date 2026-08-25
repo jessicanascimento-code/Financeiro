@@ -153,6 +153,9 @@
   .resumo-dia-card .titulo{ font-size:13px; font-weight:700; color:var(--amarelo); margin-bottom:8px; }
   .resumo-dia-card .linha{ display:flex; justify-content:space-between; font-size:13px; margin-top:4px; }
   .resumo-dia-card .linha b{ color:var(--creme); }
+  .resumo-dia-card.clicavel{ cursor:pointer; transition:transform .12s, box-shadow .12s; }
+  .resumo-dia-card.clicavel:hover{ transform:translateY(-2px); box-shadow:0 8px 20px rgba(0,0,0,.3); }
+  .resumo-dia-card.aberto{ outline:2px solid var(--laranja); }
 
   /* ---------- GRID DE COMANDAS ---------- */
   .grid-comandas{ display:grid; grid-template-columns:repeat(auto-fill, minmax(180px,1fr)); gap:14px; }
@@ -478,6 +481,10 @@
   .secao-titulo-financeiro:first-child{ margin-top:0; }
   .secao-titulo-financeiro h3{ font-size:14px; color:var(--amarelo); }
   .secao-titulo-financeiro .linha-divisoria{ flex:1; height:1px; background:var(--borda); }
+  .filtro-mes-vencimento{
+    background:var(--preto); border:1.5px solid var(--borda); border-radius:8px; padding:5px 8px;
+    color:var(--creme); font-size:11.5px; outline:none; flex-shrink:0;
+  }
   .btn-toggle-secao{
     background:var(--preto2); border:1px solid var(--borda); color:var(--amarelo); border-radius:8px;
     width:26px; height:26px; font-size:15px; font-weight:800; line-height:1; flex-shrink:0;
@@ -636,6 +643,8 @@
           <button class="btn-mini salvar" id="btn-filtrar-resumo-dia">Buscar</button>
         </div>
         <div class="resumo-dia-grid" id="resumo-dia-grid"></div>
+        <p style="font-size:11px; color:var(--muted); margin:8px 0 0;">Toque nos cards "Espeto" ou "Combo" pra ver a quantidade vendida de cada sabor.</p>
+        <div class="detalhe-card-financeiro" id="detalhe-sabor-resumo-dia" style="display:none;"></div>
       </div>
 
       <div class="sub-secao" id="subsecao-comandas-indicadores">
@@ -718,7 +727,7 @@
       <div class="banner-distribuicao" id="banner-distribuicao">
         <div class="banner-distribuicao-titulo">💡 Antes de distribuir lucro entre os sócios</div>
         <div class="banner-distribuicao-grid" id="banner-distribuicao-grid"><div class="vazio-lista">Carregando...</div></div>
-        <p class="banner-distribuicao-nota">Esse cálculo usa a posição atual (todo o período, não só as datas filtradas acima) — é "quanto dá pra tirar hoje", não depende do relatório que você está vendo.</p>
+        <p class="banner-distribuicao-nota">Esse cálculo usa a posição atual (todo o período, não só as datas filtradas acima) — é "quanto dá pra tirar hoje", não depende do relatório que você está vendo. "Contas Pendentes" soma só o mês de vencimento mais próximo que ainda tem pendência (não as parcelas futuras) — assim que esse mês for todo pago, o cálculo passa a considerar o mês seguinte automaticamente.</p>
       </div>
 
       <div class="sub-abas">
@@ -772,6 +781,8 @@
         <div class="secao-titulo-financeiro">
           <h3>📋 Contas a pagar (pendentes)</h3>
           <div class="linha-divisoria"></div>
+          <input type="month" id="cp-filtro-mes" class="filtro-mes-vencimento" title="Filtrar por mês de vencimento">
+          <button class="btn-mini" id="btn-limpar-filtro-mes" title="Limpar filtro de mês" style="font-size:11px; padding:6px 8px;">✕</button>
           <button class="btn-toggle-secao" id="btn-historico-pagar" title="Ver histórico completo (pagas também)" style="font-size:11px; width:auto; padding:0 8px;">Ver histórico</button>
         </div>
         <div class="tabela-cards" id="lista-contas-pagar"><div class="vazio-lista">Carregando...</div></div>
@@ -1177,7 +1188,7 @@
 // ar é realmente a versão mais nova ou se o GitHub Pages ainda está
 // servindo uma versão antiga em cache.
 // =====================================================================
-const VERSAO_APP = "6.8";
+const VERSAO_APP = "6.9";
 document.querySelectorAll(".badge-versao").forEach(el => el.textContent = "v" + VERSAO_APP);
 
 // =====================================================================
@@ -1214,7 +1225,7 @@ document.querySelectorAll(".badge-versao").forEach(el => el.textContent = "v" + 
 // CONFIG
 // =====================================================================
 const CONFIG = {
-  API_URL: "https://script.google.com/macros/s/AKfycbyiRzNRzLdM_tgryogef_qL5FlxpQ__DfUpW93kuzvsGez4ACF4M93HuhCEQScHxWNpMQ/exec"
+  API_URL: "https://script.google.com/macros/s/AKfycbxJe8T3ZriTM-h0RbZRCtWDDtMVk_YZ-winNyMV72ftkAzraXuL9qkb6bk7_fEeIVD9cw/exec"
 };
 
 const $ = (id) => document.getElementById(id);
@@ -1727,22 +1738,69 @@ async function carregarResumoDia() {
     $("rd-data-dia").value = dia;
     dataInicio = dia; dataFim = dia;
   }
+  // fecha qualquer detalhamento de sabor que estivesse aberto de uma busca anterior
+  $("detalhe-sabor-resumo-dia").style.display = "none";
+  SABOR_RESUMO_DIA_ABERTO = null;
   try {
     const resp = await chamarAPI("resumoPorTipo", { dataInicio, dataFim });
     if (resp.status !== "ok") { grid.innerHTML = `<div class="vazio-lista">❌ ${resp.mensagem}</div>`; return; }
     const icones = { "Espeto": "🍢", "Bebida": "🥤", "Baião": "🍚", "Combo": "🍱" };
+    // "Espeto" e "Combo" são clicáveis — mostram a quebra por sabor. Note que
+    // agora "Espeto" conta só o avulso e "Combo" só o combo (ver comentário
+    // em acumularVendaPorTipo no Codigo.gs) — cada card mostra o número
+    // próprio dele, sem misturar um com o outro.
     grid.innerHTML = ["Espeto", "Bebida", "Baião", "Combo"].map(tipo => {
       const t = resp.porTipo[tipo] || { quantidade: 0, valor: 0 };
+      const clicavel = tipo === "Espeto" || tipo === "Combo";
       return `
-        <div class="resumo-dia-card">
+        <div class="resumo-dia-card${clicavel ? ' clicavel' : ''}" data-tipo="${tipo}">
           <div class="titulo">${icones[tipo] || ""} ${tipo}</div>
           <div class="linha"><span>Quantidade vendida</span><b>${t.quantidade}</b></div>
           <div class="linha"><span>Faturamento</span><b>${fmt(t.valor)}</b></div>
         </div>
       `;
     }).join("");
+    grid.querySelectorAll('.resumo-dia-card[data-tipo="Espeto"], .resumo-dia-card[data-tipo="Combo"]').forEach(card => {
+      card.onclick = () => alternarDetalheSaborResumoDia(card.dataset.tipo, dataInicio, dataFim, card);
+    });
   } catch (e) {
     grid.innerHTML = `<div class="vazio-lista">❌ ${e.message}</div>`;
+  }
+}
+
+// Quebra por sabor ao clicar em "Espeto" (avulso) ou "Combo" (sabores
+// escolhidos dentro dos combos vendidos) — usa o mesmo período (dia/mês)
+// que já está selecionado no filtro acima.
+let SABOR_RESUMO_DIA_ABERTO = null;
+async function alternarDetalheSaborResumoDia(tipo, dataInicio, dataFim, cardEl) {
+  const painel = $("detalhe-sabor-resumo-dia");
+  document.querySelectorAll("#resumo-dia-grid .resumo-dia-card").forEach(c => c.classList.remove("aberto"));
+
+  if (SABOR_RESUMO_DIA_ABERTO === tipo) {
+    painel.style.display = "none";
+    SABOR_RESUMO_DIA_ABERTO = null;
+    return;
+  }
+  SABOR_RESUMO_DIA_ABERTO = tipo;
+  cardEl.classList.add("aberto");
+  painel.style.display = "block";
+  painel.innerHTML = `<div class="vazio-lista">Carregando...</div>`;
+  try {
+    const resp = await chamarAPI("detalheSaboresEspeto", { dataInicio, dataFim });
+    if (resp.status !== "ok") { painel.innerHTML = `<div class="vazio-lista">❌ ${resp.mensagem}</div>`; return; }
+    const lista = tipo === "Espeto" ? resp.avulso : resp.emCombo;
+    const titulo = tipo === "Espeto" ? "Espetos avulsos vendidos por sabor" : "Sabores escolhidos dentro dos combos vendidos";
+    painel.innerHTML = `
+      <div class="detalhe-titulo">${titulo}</div>
+      ${lista.length ? `
+        <table>
+          <thead><tr><th>Sabor</th><th style="text-align:right;">Quantidade</th></tr></thead>
+          <tbody>${lista.map(s => `<tr><td>${s.produto}</td><td class="valor">${s.quantidade}</td></tr>`).join("")}</tbody>
+        </table>
+      ` : `<div class="vazio-lista">Nenhum item nesse período.</div>`}
+    `;
+  } catch (e) {
+    painel.innerHTML = `<div class="vazio-lista">❌ ${e.message}</div>`;
   }
 }
 
@@ -2920,21 +2978,38 @@ $("btn-custos-fixos").onclick = async () => {
 // ---------- Contas a pagar (pendentes — visível pra todo mundo, mas só
 // Admin marca como paga) ----------
 let VER_HISTORICO_PAGAR = false;
+// Filtro de mês de vencimento (yyyy-mm) — útil pra contas parceladas, pra
+// ver só as parcelas que vencem num mês específico em vez de tudo junto.
+// Vazio = sem filtro (mostra todas as pendentes, como antes).
+let FILTRO_MES_CONTAS_PAGAR = "";
+
 async function carregarContasAPagar() {
   const lista = $("lista-contas-pagar");
   lista.innerHTML = `<div class="vazio-lista">Carregando...</div>`;
   try {
     const resp = await chamarAPI("listarSaidas", VER_HISTORICO_PAGAR ? {} : { somentePendentes: "1" });
     if (resp.status !== "ok") { lista.innerHTML = `<div class="vazio-lista">❌ ${resp.mensagem}</div>`; return; }
-    if (!resp.registros.length) { lista.innerHTML = `<div class="vazio-lista">${VER_HISTORICO_PAGAR ? "Nenhuma saída registrada ainda." : "Nenhuma conta pendente 🎉"}</div>`; return; }
+    let registros = resp.registros;
+    // o filtro de mês só faz sentido olhando vencimento, então só se aplica
+    // na visão de pendentes (contas pagas não têm vencimento preenchido)
+    if (!VER_HISTORICO_PAGAR && FILTRO_MES_CONTAS_PAGAR) {
+      registros = registros.filter(r => (r.vencimento || "").slice(0, 7) === FILTRO_MES_CONTAS_PAGAR);
+    }
+    if (!registros.length) {
+      const msgVazio = VER_HISTORICO_PAGAR
+        ? "Nenhuma saída registrada ainda."
+        : (FILTRO_MES_CONTAS_PAGAR ? "Nenhuma conta pendente com vencimento nesse mês." : "Nenhuma conta pendente 🎉");
+      lista.innerHTML = `<div class="vazio-lista">${msgVazio}</div>`;
+      return;
+    }
     lista.innerHTML = "";
     const admin = ehAdmin();
-    resp.registros.forEach(r => {
+    registros.forEach(r => {
       const linha = document.createElement("div");
       linha.className = "linha-tabela";
       const pendente = r.statusPagamento === "Pendente";
       linha.innerHTML = `
-        <div class="nome-item">${r.categoria} — ${r.descricao || "sem descrição"}<div class="cat-item">${pendente ? "Vence " + (r.vencimento || "?") : "Pago em " + (r.dataHora || "").toString().split(" ")[0]}</div></div>
+        <div class="nome-item">${r.categoria} — ${r.descricao || "sem descrição"}<div class="cat-item">${pendente ? "Vence " + (r.vencimento ? paraBR(r.vencimento) : "?") : "Pago em " + (r.dataHora || "").toString().split(" ")[0]}</div></div>
         <div style="font-weight:800; color:${pendente ? "var(--amarelo)" : "var(--verde)"};">${fmt(r.valor)} ${pendente ? "" : "✅"}</div>
         ${admin && pendente ? `<button class="btn-mini salvar">Marcar como pago</button>` : ""}
       `;
@@ -2944,6 +3019,7 @@ async function carregarContasAPagar() {
           await chamarAPI("marcarSaidaComoPaga", { linha: r.linha, usuario: USUARIO_LOGADO });
           carregarContasAPagar();
           gerarResumoEExibir($("rf-data-inicio").value, $("rf-data-fim").value, true);
+          carregarSaldoLivre();
         };
       }
       lista.appendChild(linha);
@@ -2952,6 +3028,15 @@ async function carregarContasAPagar() {
     lista.innerHTML = `<div class="vazio-lista">❌ ${e.message}</div>`;
   }
 }
+$("cp-filtro-mes").onchange = () => {
+  FILTRO_MES_CONTAS_PAGAR = $("cp-filtro-mes").value || "";
+  carregarContasAPagar();
+};
+$("btn-limpar-filtro-mes").onclick = () => {
+  $("cp-filtro-mes").value = "";
+  FILTRO_MES_CONTAS_PAGAR = "";
+  carregarContasAPagar();
+};
 $("btn-historico-pagar").onclick = () => {
   VER_HISTORICO_PAGAR = !VER_HISTORICO_PAGAR;
   $("btn-historico-pagar").textContent = VER_HISTORICO_PAGAR ? "Ver só pendentes" : "Ver histórico";
@@ -3130,9 +3215,16 @@ async function carregarSaldoLivre() {
     const r = await chamarAPI("obterSaldoLivreDistribuicao", {});
     if (r.status !== "ok") { grid.innerHTML = `<div class="vazio-lista">❌ ${r.mensagem}</div>`; return; }
     const positivo = r.livreParaDistribuir >= 0;
+    // "Contas Pendentes" agora soma só o MÊS VIGENTE (o mês mais próximo que
+    // ainda tem pendência) — não mais todas as parcelas a vencer de uma vez.
+    let rotuloPendentes = "(−) Contas Pendentes";
+    if (r.mesVigentePendentes) {
+      const [anoM, mesM] = r.mesVigentePendentes.split("-");
+      rotuloPendentes = `(−) Contas Pendentes (${mesM}/${anoM})`;
+    }
     grid.innerHTML = `
       <div class="item"><div class="rotulo">Valor em Caixa (total)</div><div class="valor">${fmt(r.valorEmCaixa)}</div></div>
-      <div class="item"><div class="rotulo">(−) Contas Pendentes</div><div class="valor">${fmt(r.saidasPendentes)}</div></div>
+      <div class="item"><div class="rotulo">${rotuloPendentes}</div><div class="valor">${fmt(r.saidasPendentes)}</div></div>
       <div class="item"><div class="rotulo">(−) Reserva Mínima</div><div class="valor">${fmt(r.reservaMinima)}</div></div>
       <div class="item livre"><div class="rotulo">Livre pra Distribuir</div><div class="valor ${positivo ? 'positivo' : 'negativo'}">${fmt(r.livreParaDistribuir)}</div></div>
     `;
@@ -3285,7 +3377,7 @@ function montarHtmlRelatorio(r, dataInicioIso, dataFimIso, observacoes, assinant
       </div>
 
       <div class="relatorio-secao-titulo">Vendas por Tipo (no período)</div>
-      <p style="font-size:11px; color:#888; margin:0 0 8px;">As quantidades de Espeto, Bebida e Baião já incluem o que saiu dentro dos combos vendidos (cada combo = 2 espetos + 1 bebida + 1 baião); o faturamento desses componentes fica todo contabilizado na linha "Combo", sem duplicar.</p>
+      <p style="font-size:11px; color:#888; margin:0 0 8px;">As quantidades de Espeto, Bebida e Baião aqui são só das vendas avulsas (fora de combo) — o que foi vendido dentro de combos conta separado (veja "Sabores Usados em Combos" no Relatório de Vendas). O faturamento de tudo que vem no combo fica contabilizado só na linha "Combo", sem duplicar.</p>
       <table>
         <thead><tr><th>Tipo</th><th style="text-align:right;">Qtd.</th><th style="text-align:right;">Faturamento</th></tr></thead>
         <tbody>${linhaOuVazio(linhasVendasPorTipo, 3, "Nenhuma venda registrada no período.")}</tbody>
@@ -3415,6 +3507,11 @@ $("btn-gerar-rel-vendas").onclick = async () => {
       </tr>
     `);
 
+    // Quebra por sabor de espeto — avulso e o que saiu dentro de combos,
+    // contados separadamente (cada um no seu próprio card/seção).
+    const linhasSaboresAvulso = (r.saboresEspetoAvulso || []).map(s => `<tr><td>${s.produto}</td><td style="text-align:right;">${s.quantidade}</td></tr>`);
+    const linhasSaboresCombo = (r.saboresEspetoCombo || []).map(s => `<tr><td>${s.produto}</td><td style="text-align:right;">${s.quantidade}</td></tr>`);
+
     container.innerHTML = `
       <div class="relatorio-folha">
         ${blocoCabecalhoRelatorio("Relatório de Vendas", textoPeriodo(dataInicio, dataFim, todoPeriodo), observacoes)}
@@ -3434,6 +3531,18 @@ $("btn-gerar-rel-vendas").onclick = async () => {
         <table>
           <thead><tr><th>Dia</th><th style="text-align:right;">Clientes</th><th style="text-align:right;">Faturamento</th><th style="text-align:right;">Ticket Médio</th></tr></thead>
           <tbody>${linhaOuVazio(linhasDiaSemana, 4, "Sem dados suficientes.")}</tbody>
+        </table>
+
+        <div class="relatorio-secao-titulo">Espetos Avulsos por Sabor</div>
+        <table>
+          <thead><tr><th>Sabor</th><th style="text-align:right;">Quantidade</th></tr></thead>
+          <tbody>${linhaOuVazio(linhasSaboresAvulso, 2, "Nenhum espeto avulso vendido no período.")}</tbody>
+        </table>
+
+        <div class="relatorio-secao-titulo">Sabores Usados em Combos</div>
+        <table>
+          <thead><tr><th>Sabor</th><th style="text-align:right;">Quantidade</th></tr></thead>
+          <tbody>${linhaOuVazio(linhasSaboresCombo, 2, "Nenhum combo vendido no período.")}</tbody>
         </table>
 
         <div class="relatorio-secao-titulo">Vendas por Comanda/Cliente</div>
@@ -3586,6 +3695,7 @@ $("btn-gerar-rel-pacotes").onclick = async () => {
         <td>${p.statusRestante === "Recebido" ? "✅ Quitado" : "⏳ " + fmt(p.valorRestante) + " a receber"}</td>
       </tr>
     `);
+    const linhasSaboresAgregados = (r.saboresAgregados || []).map(s => `<tr><td>${s.produto}</td><td style="text-align:right;">${s.quantidade}</td></tr>`);
     container.innerHTML = `
       <div class="relatorio-folha">
         ${blocoCabecalhoRelatorio("Relatório de Pacotes de Serviço", textoPeriodo(dataInicio, dataFim, todoPeriodo), observacoes)}
@@ -3596,6 +3706,13 @@ $("btn-gerar-rel-pacotes").onclick = async () => {
           <div class="relatorio-card"><div class="rotulo">Total a Receber</div><div class="valor">${fmt(r.totalAReceber)}</div></div>
           <div class="relatorio-card"><div class="rotulo">Lucro Estimado</div><div class="valor">${fmt(r.totalLucroEstimado)}</div></div>
         </div>
+
+        <div class="relatorio-secao-titulo">Sabores Contratados (todos os pacotes do período)</div>
+        <table>
+          <thead><tr><th>Sabor</th><th style="text-align:right;">Quantidade</th></tr></thead>
+          <tbody>${linhaOuVazio(linhasSaboresAgregados, 2, "Nenhum pacote no período.")}</tbody>
+        </table>
+
         <div class="relatorio-secao-titulo">Pacotes do Período (por Data do Evento)</div>
         <table>
           <thead><tr><th>Evento</th><th>Cliente</th><th>Tipo</th><th style="text-align:right;">Pessoas</th><th style="text-align:right;">Valor</th><th>Situação</th></tr></thead>
