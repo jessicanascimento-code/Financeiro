@@ -466,6 +466,37 @@
   .banner-distribuicao-grid .item.livre .valor.negativo{ color:#ff3b30; }
   .banner-distribuicao-nota{ font-size:10.5px; color:var(--muted); margin:10px 0 0; }
 
+  /* ---------- BANNER "EM ATENDIMENTO" (comandas abertas, ainda não contabilizadas) ---------- */
+  .banner-em-atendimento{
+    background:var(--preto2); border:1.5px solid var(--azul); border-radius:12px; padding:14px 16px; margin-bottom:20px;
+  }
+  .banner-em-atendimento-titulo{ font-size:13px; font-weight:800; color:var(--azul); margin-bottom:10px; }
+  .banner-em-atendimento-grid{ display:grid; grid-template-columns:repeat(auto-fit,minmax(130px,1fr)); gap:10px; }
+  .banner-em-atendimento-grid .item{ background:var(--preto); border:1px solid var(--borda); border-radius:9px; padding:10px 12px; }
+  .banner-em-atendimento-grid .item .rotulo{ font-size:9.5px; text-transform:uppercase; color:var(--muted); letter-spacing:.3px; }
+  .banner-em-atendimento-grid .item .valor{ font-size:16px; font-weight:800; margin-top:4px; color:var(--azul); }
+  .banner-em-atendimento-nota{ font-size:10.5px; color:var(--muted); margin:10px 0 0; }
+
+  /* ---------- CONCILIAÇÃO DE CAIXA (esperado x informado x diferença) ---------- */
+  .conciliacao-caixa-grid{ display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:12px; margin-top:14px; }
+  .conciliacao-caixa-card{
+    background:var(--preto); border:1px solid var(--borda); border-top:3px solid var(--azul); border-radius:10px; padding:12px 14px;
+  }
+  .conciliacao-caixa-card .rotulo{ font-size:10px; color:var(--muted); text-transform:uppercase; letter-spacing:.3px; }
+  .conciliacao-caixa-card .valor{ font-size:18px; font-weight:800; margin-top:5px; color:var(--creme); }
+  .conciliacao-caixa-card.diferenca .valor.zerada{ color:var(--verde); }
+  .conciliacao-caixa-card.diferenca .valor.positiva{ color:var(--azul); }
+  .conciliacao-caixa-card.diferenca .valor.negativa{ color:#ff3b30; }
+  .caixa-justificativa-box{
+    background:var(--preto); border:1.5px dashed var(--amarelo); border-radius:10px; padding:12px; margin-top:12px; display:none;
+  }
+  .caixa-justificativa-box.visivel{ display:block; }
+  .caixa-justificativa-box label{ font-size:11.5px; font-weight:700; display:block; margin-bottom:6px; color:var(--amarelo); }
+  .caixa-justificativa-box textarea{
+    width:100%; background:var(--preto2); border:1.5px solid var(--borda); border-radius:9px; padding:9px 10px; color:var(--creme); font-size:13px; outline:none; resize:vertical; min-height:60px;
+  }
+  .caixa-justificativa-meta{ font-size:10.5px; color:var(--muted); margin-top:6px; }
+
   .detalhe-card-financeiro{
     background:var(--preto2); border:1px solid var(--laranja); border-radius:12px; padding:14px 16px; margin:-6px 0 20px;
     max-height:260px; overflow-y:auto;
@@ -542,11 +573,38 @@
   .relatorio-assinaturas div{ flex:1; text-align:center; border-top:1px solid #333; padding-top:6px; font-size:11px; color:#555; }
   .relatorio-rodape{ margin-top:26px; padding-top:12px; border-top:1px solid #eee; font-size:10.5px; color:#999; text-align:center; }
 
+  /* ---------- COMPROVANTE / IMPRESSÃO DE COMANDA (folha estilo cupom, sempre clara) ---------- */
+  .cupom-comanda{
+    background:#fff; color:#1a1a1a; border-radius:10px; padding:26px; max-width:420px; margin:0 auto;
+    box-shadow:0 10px 30px rgba(0,0,0,.4); font-family:'Inter',system-ui,sans-serif;
+  }
+  .cupom-comanda h1, .cupom-comanda h2, .cupom-comanda h3{ color:#1a1a1a; }
+  .cupom-cabecalho{ text-align:center; border-bottom:3px solid var(--laranja); padding-bottom:12px; margin-bottom:14px; }
+  .cupom-cabecalho img{ width:48px; height:48px; border-radius:50%; object-fit:cover; margin-bottom:6px; }
+  .cupom-cabecalho .cupom-marca{ font-size:17px; font-weight:800; letter-spacing:.5px; }
+  .cupom-cabecalho .cupom-subtitulo{ font-size:11px; color:#777; margin-top:2px; }
+  .cupom-meta{ font-size:12px; color:#333; margin-bottom:14px; line-height:1.6; }
+  .cupom-meta b{ color:#1a1a1a; }
+  .cupom-meta .linha-meta{ display:flex; justify-content:space-between; }
+  .cupom-itens{ width:100%; border-collapse:collapse; font-size:12.5px; margin-bottom:10px; }
+  .cupom-itens th{ text-align:left; border-bottom:1px solid #ddd; padding:5px 4px; font-size:10px; text-transform:uppercase; color:#777; }
+  .cupom-itens td{ padding:5px 4px; border-bottom:1px dashed #eee; color:#222; }
+  .cupom-itens td.qtd{ text-align:center; }
+  .cupom-itens td.valor{ text-align:right; white-space:nowrap; }
+  .cupom-itens .combo-detalhe-cupom{ font-size:10px; color:#888; }
+  .cupom-total{ display:flex; justify-content:space-between; align-items:center; margin-top:10px; padding-top:10px; border-top:2px solid #333; font-size:16px; font-weight:800; }
+  .cupom-pagamento{ margin-top:12px; padding:10px 12px; border-radius:8px; font-size:12.5px; }
+  .cupom-pagamento.pago{ background:#eefaf1; border:1px solid #bfe8cc; color:#1a6b3a; }
+  .cupom-pagamento.pendente{ background:#fff6e9; border:1px solid #f0d9a8; color:#7a4d00; }
+  .cupom-rodape{ margin-top:18px; padding-top:10px; border-top:1px solid #eee; font-size:10px; color:#999; text-align:center; }
+
   @media print{
     .no-print, nav.abas, header, .indicador-sync{ display:none !important; }
     body, #app, main, .secao{ background:#fff !important; padding:0 !important; margin:0 !important; }
     .relatorio-folha{ box-shadow:none; margin:0; max-width:100%; }
+    .cupom-comanda{ box-shadow:none; margin:0; max-width:100%; }
     body.imprimindo-comprovante #app{ display:none !important; }
+    body.imprimindo-cupom-comanda #app{ display:none !important; }
   }
 </style>
 </head>
@@ -721,6 +779,12 @@
         <button class="btn-primario" style="width:100%; margin-top:12px;" id="btn-gerar-resumo">Gerar resumo</button>
       </div>
 
+      <div class="banner-em-atendimento" id="banner-em-atendimento">
+        <div class="banner-em-atendimento-titulo">🕒 Em atendimento (ainda não contabilizado)</div>
+        <div class="banner-em-atendimento-grid" id="banner-em-atendimento-grid"><div class="vazio-lista">Carregando...</div></div>
+        <p class="banner-em-atendimento-nota">Comandas abertas não entram em Total de Vendas, Lucro ou Caixa — só contam quando fechadas. Esse valor é a posição atual (agora), não depende do período filtrado acima.</p>
+      </div>
+
       <div class="resumo-grid resumo-grid-principal" id="resumo-grid-principal"></div>
       <div class="detalhe-card-financeiro" id="detalhe-card-financeiro" style="display:none;"></div>
 
@@ -775,6 +839,22 @@
             </div>
           </div>
           <div class="saldo-caixa-total"><span>Total em caixa (informado)</span><span id="cx-total">R$ 0,00</span></div>
+
+          <div class="secao-titulo-financeiro" style="margin-top:20px;">
+            <h3>⚖️ Conciliação de caixa</h3>
+            <div class="linha-divisoria"></div>
+          </div>
+          <div class="conciliacao-caixa-grid" id="conciliacao-caixa-grid">
+            <div class="conciliacao-caixa-card"><div class="rotulo">Caixa Esperado</div><div class="valor" id="conc-esperado">R$ 0,00</div></div>
+            <div class="conciliacao-caixa-card"><div class="rotulo">Caixa Informado</div><div class="valor" id="conc-informado">R$ 0,00</div></div>
+            <div class="conciliacao-caixa-card diferenca"><div class="rotulo">Diferença</div><div class="valor" id="conc-diferenca">R$ 0,00</div></div>
+          </div>
+          <div class="caixa-justificativa-box" id="caixa-justificativa-box">
+            <label>⚠️ Há diferença entre o caixa esperado e o informado — registre a justificativa</label>
+            <textarea id="caixa-justificativa-texto" placeholder="Ex: sobrou troco de evento anterior, diferença de R$5 no fechamento de sexta..."></textarea>
+            <button class="btn-mini salvar somente-admin" style="margin-top:8px;" id="btn-salvar-justificativa-caixa">Salvar justificativa</button>
+            <div class="caixa-justificativa-meta" id="caixa-justificativa-meta"></div>
+          </div>
         </div>
         </div>
 
@@ -793,6 +873,45 @@
           <button class="btn-toggle-secao" id="btn-historico-receber" title="Ver histórico completo (recebidas também)" style="font-size:11px; width:auto; padding:0 8px;">Ver histórico</button>
         </div>
         <div class="tabela-cards" id="lista-contas-receber"><div class="vazio-lista">Carregando...</div></div>
+
+        <div class="secao-titulo-financeiro somente-admin">
+          <h3>📦 Compra de estoque</h3>
+          <div class="linha-divisoria"></div>
+        </div>
+        <div class="card-form somente-admin">
+          <h3>Registrar compra de estoque</h3>
+          <p style="font-size:12px; color:var(--muted); margin-top:-4px;">Lança a saída financeira E adiciona a quantidade comprada ao estoque numa única ação — evita ter que cadastrar a mesma compra duas vezes.</p>
+          <label>Produto</label>
+          <select id="ce-produto"></select>
+          <div class="grid2">
+            <div><label>Quantidade comprada</label><input type="number" id="ce-quantidade" step="1" min="1"></div>
+            <div><label>Custo unitário (R$)</label><input type="number" id="ce-custo-unitario" step="0.5"></div>
+          </div>
+          <label>Custo total (R$)</label>
+          <input type="number" id="ce-custo-total" step="0.5" readonly style="opacity:.75;">
+          <div class="grid2">
+            <div><label>Forma de pagamento</label>
+              <select id="ce-forma-pagamento">
+                <option value="Dinheiro">Dinheiro</option>
+                <option value="Pix">Pix</option>
+                <option value="Cartão de Crédito">Cartão de Crédito</option>
+              </select>
+            </div>
+            <div><label>Data da compra</label><input type="date" id="ce-data"></div>
+          </div>
+          <label class="checkbox-linha">
+            <input type="checkbox" id="ce-ja-paga" checked>
+            <span>Já foi paga?</span>
+          </label>
+          <div id="ce-bloco-vencimento" style="display:none;">
+            <label>Vencimento</label>
+            <input type="date" id="ce-vencimento">
+          </div>
+          <label>Fornecedor (opcional)</label>
+          <input type="text" id="ce-fornecedor" placeholder="Ex: Açougue do Zé">
+          <button class="btn-mini salvar" style="width:100%; margin-top:10px;" id="btn-registrar-compra-estoque">Registrar compra</button>
+          <div class="msg-status" id="status-compra-estoque"></div>
+        </div>
 
         <div class="secao-titulo-financeiro somente-admin">
           <h3>📝 Lançamentos</h3>
@@ -1006,6 +1125,21 @@
   </div>
 </div>
 
+<!-- ================= CUPOM DE IMPRESSÃO DA COMANDA ================= -->
+<div class="overlay" id="overlay-cupom-comanda">
+  <div class="modal" style="max-width:460px;">
+    <div class="modal-topo no-print">
+      <div><span class="titulo-comanda"><span>🧾 Imprimir Comanda</span></span></div>
+      <button class="btn-fechar-x" id="btn-fechar-cupom-comanda">✕</button>
+    </div>
+    <div id="cupom-comanda-container"></div>
+    <div class="no-print" style="display:flex; gap:10px; margin-top:14px;">
+      <button class="btn-mini salvar" style="flex:1;" id="btn-imprimir-cupom-comanda">🖨️ Imprimir / Salvar PDF</button>
+      <button class="btn-secundario" id="btn-fechar-cupom-comanda-2">Fechar</button>
+    </div>
+  </div>
+</div>
+
 <!-- ================= MODAL COMANDA ================= -->
 <div class="overlay" id="overlay-comanda">
   <div class="modal">
@@ -1076,6 +1210,7 @@
         <button class="btn-secundario" id="btn-reabrir-comanda" style="display:none;">Reabrir comanda</button>
         <button class="btn-secundario" id="btn-editar-pagamento" style="display:none;">Editar pagamento</button>
       </div>
+      <button class="btn-secundario" id="btn-imprimir-comanda">🧾 Imprimir comanda</button>
       <button class="btn-perigo" id="btn-cancelar-comanda">Cancelar comanda</button>
     </div>
 
@@ -1225,7 +1360,7 @@ document.querySelectorAll(".badge-versao").forEach(el => el.textContent = "v" + 
 // CONFIG
 // =====================================================================
 const CONFIG = {
-  API_URL: "https://script.google.com/macros/s/AKfycbxJe8T3ZriTM-h0RbZRCtWDDtMVk_YZ-winNyMV72ftkAzraXuL9qkb6bk7_fEeIVD9cw/exec"
+  API_URL: "https://script.google.com/macros/s/AKfycby_uf74stFDzdFtLTKr6f7kdW7nyLD_Pipf1YljuImrWqrXqk6yX-tbxE1g0VCRMzUupQ/exec"
 };
 
 const $ = (id) => document.getElementById(id);
@@ -2341,6 +2476,10 @@ $("btn-confirmar-fechamento").onclick = () => {
     (resp) => {
       if (COMANDA_ATUAL && COMANDA_ATUAL.comanda.comandaId === comandaId) { COMANDA_ATUAL = resp; renderModalComanda(); }
       carregarComandas();
+      // fechar comanda muda o que conta como venda — força o resumo financeiro
+      // a ignorar o cache de 45s e recalcular já com esse fechamento
+      gerarResumoEExibir($("rf-data-inicio").value, $("rf-data-fim").value, true);
+      carregarBannerEmAtendimento();
     },
     (msg) => { alert("❌ Não foi possível fechar a comanda: " + msg); recarregarComanda(comandaId); }
   );
@@ -2356,6 +2495,8 @@ $("btn-reabrir-comanda").onclick = () => {
     (resp) => {
       if (COMANDA_ATUAL && COMANDA_ATUAL.comanda.comandaId === comandaId) { COMANDA_ATUAL = resp; renderModalComanda(); }
       carregarComandas();
+      gerarResumoEExibir($("rf-data-inicio").value, $("rf-data-fim").value, true);
+      carregarBannerEmAtendimento();
     },
     (msg) => { alert("❌ Não foi possível reabrir a comanda: " + msg); recarregarComanda(comandaId); }
   );
@@ -2369,12 +2510,100 @@ $("btn-cancelar-comanda").onclick = async () => {
       $("overlay-comanda").classList.remove("aberto");
       await carregarComandas();
       await carregarEstoque();
+      carregarBannerEmAtendimento();
     } else { alert("❌ " + resp.mensagem); }
   } catch (e) { alert("❌ " + e.message); }
 };
 
 $("btn-fechar-modal").onclick = () => { $("overlay-comanda").classList.remove("aberto"); };
 $("overlay-comanda").addEventListener("click", (e) => { if (e.target.id === "overlay-comanda") $("overlay-comanda").classList.remove("aberto"); });
+
+// =====================================================================
+// IMPRESSÃO DE COMANDA (cupom) — item extra da Fase 1
+// =====================================================================
+// Reaproveita o mesmo padrão visual/impressão já usado no comprovante de
+// pacote: uma folha clara (".cupom-comanda"), preenchida 100% no navegador
+// com o que já está em COMANDA_ATUAL — não depende de nenhuma chamada nova
+// ao Apps Script.
+$("btn-imprimir-comanda").onclick = () => {
+  if (!COMANDA_ATUAL) return;
+  abrirCupomComanda(COMANDA_ATUAL);
+};
+
+function formatarDataHoraCupom(dataHoraBR) {
+  // dataHoraBR já vem como "dd/MM/yyyy HH:mm:ss" (agoraBR()/agora() do
+  // Apps Script) — só precisamos trocar pro formato pedido "dd/mm/aaaa - HH:mm:ss"
+  if (!dataHoraBR) return "";
+  const [data, hora] = dataHoraBR.toString().split(" ");
+  return hora ? `${data} - ${hora}` : data;
+}
+
+function abrirCupomComanda(payload) {
+  const c = payload.comanda;
+  const itens = payload.itens || [];
+  const agora = agoraBR();
+  const fechada = c.status === "Fechada";
+  const cancelada = c.status === "Cancelada";
+
+  const linhasItens = itens.length ? itens.map(it => {
+    const detalheCombo = it.comboEspeto1
+      ? `<div class="combo-detalhe-cupom">${it.comboEspeto1} + ${it.comboEspeto2} + ${it.comboRefri}${it.comboVinagrete === "SIM" ? " + Vinagrete" : ""}${it.comboFarofa === "SIM" ? " + Farofa" : ""} + Baião</div>`
+      : "";
+    return `
+      <tr>
+        <td>${it.produto}${detalheCombo}</td>
+        <td class="qtd">${it.quantidade}</td>
+        <td class="valor">${fmt(it.valorTotal)}</td>
+      </tr>
+    `;
+  }).join("") : `<tr><td colspan="3" style="text-align:center; color:#999;">Nenhum item</td></tr>`;
+
+  let blocoPagamento;
+  if (fechada) {
+    blocoPagamento = `
+      <div class="cupom-pagamento pago">
+        ✅ Pago — ${c.formaPagamento || "—"}${c.troco ? ` · Troco: ${fmt(c.troco)}` : ""}${c.juros ? ` · Juros cartão: ${fmt(c.juros)}` : ""}
+        ${c.fechadaEm ? `<br>Fechada em ${formatarDataHoraCupom(c.fechadaEm)}` : ""}
+      </div>
+    `;
+  } else if (cancelada) {
+    blocoPagamento = `<div class="cupom-pagamento pendente">🚫 Comanda cancelada</div>`;
+  } else {
+    blocoPagamento = `<div class="cupom-pagamento pendente">⏳ Pendente — comanda ainda aberta</div>`;
+  }
+
+  $("cupom-comanda-container").innerHTML = `
+    <div class="cupom-comanda">
+      <div class="cupom-cabecalho">
+        <img src="logo.png" alt="Brasero 96">
+        <div class="cupom-marca">BRASERO 96</div>
+        <div class="cupom-subtitulo">Comanda de atendimento</div>
+      </div>
+      <div class="cupom-meta">
+        <div class="linha-meta"><span>Comanda</span><b>${c.identificacao} (${c.comandaId})</b></div>
+        <div class="linha-meta"><span>Atendente</span><b>${c.usuarioAbertura || USUARIO_LOGADO}</b></div>
+        <div class="linha-meta"><span>Aberta em</span><b>${formatarDataHoraCupom(c.abertaEm)}</b></div>
+        <div class="linha-meta"><span>Impresso em</span><b>${formatarDataHoraCupom(agora)}</b></div>
+      </div>
+      <table class="cupom-itens">
+        <thead><tr><th>Item</th><th class="qtd">Qtd</th><th class="valor">Valor</th></tr></thead>
+        <tbody>${linhasItens}</tbody>
+      </table>
+      <div class="cupom-total"><span>Total</span><span>${fmt(payload.valorTotal)}</span></div>
+      ${blocoPagamento}
+      <div class="cupom-rodape">Brasero 96 — obrigado pela confiança!</div>
+    </div>
+  `;
+  $("overlay-cupom-comanda").classList.add("aberto");
+}
+$("btn-fechar-cupom-comanda").onclick = () => { $("overlay-cupom-comanda").classList.remove("aberto"); };
+$("btn-fechar-cupom-comanda-2").onclick = () => { $("overlay-cupom-comanda").classList.remove("aberto"); };
+$("overlay-cupom-comanda").addEventListener("click", (e) => { if (e.target.id === "overlay-cupom-comanda") $("overlay-cupom-comanda").classList.remove("aberto"); });
+$("btn-imprimir-cupom-comanda").onclick = () => {
+  document.body.classList.add("imprimindo-cupom-comanda");
+  window.print();
+};
+window.addEventListener("afterprint", () => document.body.classList.remove("imprimindo-cupom-comanda"));
 
 // =====================================================================
 // VENDA DE PACOTE (Rodízio / Personalizado)
@@ -2758,6 +2987,7 @@ async function carregarProdutos() {
     PRODUTOS_CACHE_TODOS = resp.produtos;
     PRODUTOS_CACHE = resp.produtos.filter(p => p.ativo);
     renderCardapio(resp.produtos);
+    popularSelectProdutoCompraEstoque();
   }
 }
 
@@ -2839,6 +3069,7 @@ function atualizarTotalCaixaExibido() {
   const dinheiro = parseFloat($("cx-dinheiro").value) || 0;
   const conta = parseFloat($("cx-conta").value) || 0;
   $("cx-total").textContent = fmt(dinheiro + conta);
+  atualizarConciliacaoCaixa();
 }
 $("cx-dinheiro").oninput = atualizarTotalCaixaExibido;
 $("cx-conta").oninput = atualizarTotalCaixaExibido;
@@ -2863,6 +3094,14 @@ async function carregarSaldoCaixa() {
     $("cx-dinheiro-meta").textContent = resp.dinheiroAtualizadoEm ? `Atualizado em ${resp.dinheiroAtualizadoEm}${resp.dinheiroAtualizadoPor ? " por " + resp.dinheiroAtualizadoPor : ""}` : "Ainda não informado";
     $("cx-conta-meta").textContent = resp.contaAtualizadoEm ? `Atualizado em ${resp.contaAtualizadoEm}${resp.contaAtualizadoPor ? " por " + resp.contaAtualizadoPor : ""}` : "Ainda não informado";
     $("cx-reserva-meta").textContent = resp.reservaAtualizadaEm ? `Atualizado em ${resp.reservaAtualizadaEm}${resp.reservaAtualizadaPor ? " por " + resp.reservaAtualizadaPor : ""}` : "Sugestão: 2 semanas de operação (ex: R$1.000-1.500)";
+    // guarda a justificativa atual (se houver) pra render da conciliação
+    JUSTIFICATIVA_CAIXA_ATUAL = {
+      texto: resp.justificativaDiferenca || "",
+      atualizadoEm: resp.justificativaAtualizadaEm || "",
+      atualizadoPor: resp.justificativaAtualizadaPor || ""
+    };
+    $("caixa-justificativa-texto").value = JUSTIFICATIVA_CAIXA_ATUAL.texto;
+    atualizarMetaJustificativaCaixa();
   } catch (e) { /* silencioso — não é crítico pra abertura do app */ }
 }
 
@@ -2890,6 +3129,52 @@ $("btn-salvar-reserva").onclick = async () => {
     const resp = await chamarAPI("atualizarSaldoCaixa", { campo: "reserva", valor, usuario: USUARIO_LOGADO });
     if (resp.status === "ok") { $("cx-reserva-meta").textContent = `Atualizado em ${resp.reservaAtualizadaEm} por ${resp.reservaAtualizadaPor}`; carregarSaldoLivre(); }
     else alert("❌ " + resp.mensagem);
+  } catch (e) { alert("❌ " + e.message); }
+};
+
+// ---------------------------------------------------------------------
+// CONCILIAÇÃO DE CAIXA — Caixa Esperado × Caixa Informado × Diferença
+// (item 6 da Fase 2). "Esperado" é o mesmo valorEmCaixa acumulado que já
+// alimenta o banner "Livre pra Distribuir"; "Informado" é a soma de
+// dinheiro + conta digitados manualmente aqui em cima.
+// ---------------------------------------------------------------------
+let CAIXA_ESPERADO_ATUAL = 0;
+let JUSTIFICATIVA_CAIXA_ATUAL = { texto: "", atualizadoEm: "", atualizadoPor: "" };
+const EPSILON_DIFERENCA_CAIXA = 0.01; // tolerância de 1 centavo pra não marcar diferença por arredondamento
+
+function atualizarConciliacaoCaixa() {
+  const informado = (parseFloat($("cx-dinheiro").value) || 0) + (parseFloat($("cx-conta").value) || 0);
+  const esperado = CAIXA_ESPERADO_ATUAL;
+  const diferenca = informado - esperado;
+
+  $("conc-esperado").textContent = fmt(esperado);
+  $("conc-informado").textContent = fmt(informado);
+  const elDiferenca = $("conc-diferenca");
+  elDiferenca.textContent = fmt(diferenca);
+  elDiferenca.className = "valor " + (Math.abs(diferenca) < EPSILON_DIFERENCA_CAIXA ? "zerada" : (diferenca > 0 ? "positiva" : "negativa"));
+
+  const temDiferenca = Math.abs(diferenca) >= EPSILON_DIFERENCA_CAIXA;
+  $("caixa-justificativa-box").classList.toggle("visivel", temDiferenca);
+}
+
+function atualizarMetaJustificativaCaixa() {
+  const meta = $("caixa-justificativa-meta");
+  if (JUSTIFICATIVA_CAIXA_ATUAL.atualizadoEm) {
+    meta.textContent = `Última justificativa salva em ${JUSTIFICATIVA_CAIXA_ATUAL.atualizadoEm} por ${JUSTIFICATIVA_CAIXA_ATUAL.atualizadoPor}`;
+  } else {
+    meta.textContent = "";
+  }
+}
+
+$("btn-salvar-justificativa-caixa").onclick = async () => {
+  const texto = $("caixa-justificativa-texto").value.trim();
+  if (!texto) { alert("Escreva a justificativa antes de salvar."); return; }
+  try {
+    const resp = await chamarAPI("salvarJustificativaCaixa", { texto, usuario: USUARIO_LOGADO });
+    if (resp.status === "ok") {
+      JUSTIFICATIVA_CAIXA_ATUAL = { texto, atualizadoEm: resp.atualizadoEm, atualizadoPor: resp.atualizadoPor };
+      atualizarMetaJustificativaCaixa();
+    } else { alert("❌ " + resp.mensagem); }
   } catch (e) { alert("❌ " + e.message); }
 };
 
@@ -2975,6 +3260,66 @@ $("btn-custos-fixos").onclick = async () => {
   } catch (e) { status.textContent = "❌ " + e.message; status.className = "msg-status erro"; }
 };
 
+// ---------------------------------------------------------------------
+// COMPRA DE ESTOQUE INTEGRADA (item 3 da Fase 2) — 1 ação só que lança a
+// saída financeira E soma a quantidade comprada ao estoque, sem precisar
+// cadastrar a mesma compra 2 vezes.
+// ---------------------------------------------------------------------
+function popularSelectProdutoCompraEstoque() {
+  const sel = $("ce-produto");
+  if (!sel) return;
+  sel.innerHTML = PRODUTOS_CACHE_TODOS.map(p => `<option value="${p.nome}" data-categoria="${p.categoria}">${p.nome}</option>`).join("");
+}
+
+function atualizarCustoTotalCompraEstoque() {
+  const qtd = parseFloat($("ce-quantidade").value) || 0;
+  const custoUnitario = parseFloat($("ce-custo-unitario").value) || 0;
+  $("ce-custo-total").value = (qtd * custoUnitario).toFixed(2);
+}
+$("ce-quantidade").oninput = atualizarCustoTotalCompraEstoque;
+$("ce-custo-unitario").oninput = atualizarCustoTotalCompraEstoque;
+
+$("ce-ja-paga").onchange = () => {
+  $("ce-bloco-vencimento").style.display = $("ce-ja-paga").checked ? "none" : "block";
+};
+
+$("btn-registrar-compra-estoque").onclick = async () => {
+  const status = $("status-compra-estoque");
+  const produto = $("ce-produto").value;
+  const categoria = $("ce-produto").selectedOptions[0] ? $("ce-produto").selectedOptions[0].dataset.categoria : "";
+  const quantidade = parseFloat($("ce-quantidade").value) || 0;
+  const custoUnitario = parseFloat($("ce-custo-unitario").value) || 0;
+  const formaPagamento = $("ce-forma-pagamento").value;
+  const dataCompra = $("ce-data").value;
+  const jaPaga = $("ce-ja-paga").checked;
+  const vencimento = $("ce-vencimento").value;
+  const fornecedor = $("ce-fornecedor").value.trim();
+
+  if (!produto) { status.textContent = "Escolha o produto."; status.className = "msg-status erro"; return; }
+  if (quantidade <= 0) { status.textContent = "Informe a quantidade comprada."; status.className = "msg-status erro"; return; }
+  if (!jaPaga && !vencimento) { status.textContent = "Informe o vencimento."; status.className = "msg-status erro"; return; }
+
+  status.textContent = "Salvando...";
+  status.className = "msg-status";
+  try {
+    const resp = await chamarAPI("registrarCompraEstoque", {
+      produto, categoria, quantidade, custoUnitario,
+      formaPagamento, statusPagamento: jaPaga ? "Pago" : "Pendente", vencimento,
+      data: dataCompra, fornecedor, usuario: USUARIO_LOGADO
+    });
+    if (resp.status === "ok") {
+      status.textContent = `✓ Compra registrada — ${quantidade}x ${produto} somados ao estoque e custo atualizado para ${fmt(custoUnitario)}.`;
+      status.className = "msg-status ok";
+      $("ce-quantidade").value = ""; $("ce-custo-unitario").value = ""; $("ce-custo-total").value = "";
+      $("ce-fornecedor").value = ""; $("ce-vencimento").value = "";
+      carregarEstoque();
+      carregarProdutos();
+      carregarContasAPagar();
+      gerarResumoEExibir($("rf-data-inicio").value, $("rf-data-fim").value, true);
+    } else { status.textContent = "❌ " + resp.mensagem; status.className = "msg-status erro"; }
+  } catch (e) { status.textContent = "❌ " + e.message; status.className = "msg-status erro"; }
+};
+
 // ---------- Contas a pagar (pendentes — visível pra todo mundo, mas só
 // Admin marca como paga) ----------
 let VER_HISTORICO_PAGAR = false;
@@ -3009,7 +3354,7 @@ async function carregarContasAPagar() {
       linha.className = "linha-tabela";
       const pendente = r.statusPagamento === "Pendente";
       linha.innerHTML = `
-        <div class="nome-item">${r.categoria} — ${r.descricao || "sem descrição"}<div class="cat-item">${pendente ? "Vence " + (r.vencimento ? paraBR(r.vencimento) : "?") : "Pago em " + (r.dataHora || "").toString().split(" ")[0]}</div></div>
+        <div class="nome-item">${r.categoria} — ${r.descricao || "sem descrição"}${r.fornecedor ? ` <span style="color:var(--muted); font-weight:400;">(${r.fornecedor})</span>` : ""}<div class="cat-item">${pendente ? "Vence " + (r.vencimento ? paraBR(r.vencimento) : "?") : "Pago em " + (r.dataHora || "").toString().split(" ")[0]}</div></div>
         <div style="font-weight:800; color:${pendente ? "var(--amarelo)" : "var(--verde)"};">${fmt(r.valor)} ${pendente ? "" : "✅"}</div>
         ${admin && pendente ? `<button class="btn-mini salvar">Marcar como pago</button>` : ""}
       `;
@@ -3099,6 +3444,29 @@ function dataHojeISO() {
 let DIAS_RESUMO_CACHE = [];
 let CARD_ABERTO_ATUAL = null;
 
+// ---------------------------------------------------------------------
+// BANNER "EM ATENDIMENTO" — total das comandas ainda ABERTAS (não contam
+// como venda/lucro/caixa; item 1 da Fase 1). Sempre a posição atual, sem
+// filtro de data (não faz sentido filtrar "o que está em andamento agora").
+// ---------------------------------------------------------------------
+async function carregarBannerEmAtendimento() {
+  const grid = $("banner-em-atendimento-grid");
+  grid.innerHTML = `<div class="vazio-lista">Carregando...</div>`;
+  try {
+    const resp = await chamarAPI("listarComandas", { status: "Aberta" });
+    if (resp.status !== "ok") { grid.innerHTML = `<div class="vazio-lista">❌ ${resp.mensagem}</div>`; return; }
+    const comandas = (resp.comandas || []).filter(c => !c.ehPacote); // pacotes têm o próprio fluxo de Contas a Receber
+    const qtd = comandas.length;
+    const total = comandas.reduce((soma, c) => soma + (Number(c.valorTotal) || 0), 0);
+    grid.innerHTML = `
+      <div class="item"><div class="rotulo">Comandas em atendimento</div><div class="valor">${qtd}</div></div>
+      <div class="item"><div class="rotulo">Valor ainda não recebido</div><div class="valor">${fmt(total)}</div></div>
+    `;
+  } catch (e) {
+    grid.innerHTML = `<div class="vazio-lista">❌ ${e.message}</div>`;
+  }
+}
+
 async function gerarResumoEExibir(dataInicio, dataFim, forcarAtualizacao) {
   const gridPrincipal = $("resumo-grid-principal");
   const gridSecundario = $("resumo-grid-secundario");
@@ -3112,10 +3480,13 @@ async function gerarResumoEExibir(dataInicio, dataFim, forcarAtualizacao) {
     // numa única passada pelas abas). O resultado fica em cache por 45s no
     // servidor — reabrir a aba ou trocar de sub-aba usa esse cache e carrega
     // na hora; só forçamos ignorar o cache logo depois de registrar algo
-    // novo (saída/entrada/pagamento), pra nunca mostrar número desatualizado.
+    // novo (saída/entrada/pagamento/fechamento de comanda), pra nunca mostrar
+    // número desatualizado.
     const r = await chamarAPI("resumoCompleto", { dataInicio: dIni, dataFim: dFim, forcar: forcarAtualizacao ? "1" : "" });
     if (r.status !== "ok") { gridPrincipal.innerHTML = `<div class="vazio-lista">❌ ${r.mensagem}</div>`; return; }
     DIAS_RESUMO_CACHE = r.dias || [];
+    CAIXA_ESPERADO_ATUAL = r.valorEmCaixa || 0;
+    atualizarConciliacaoCaixa();
 
     // Tooltips (aparecem ao passar o mouse) explicando o cálculo, com os
     // números reais desse período.
@@ -3123,11 +3494,12 @@ async function gerarResumoEExibir(dataInicio, dataFim, forcarAtualizacao) {
     const tituloLucroLiquido = `Lucro Líquido = Lucro das Vendas + Juros − Despesas Operacionais\n${fmt(r.totalLucroVendas)} + ${fmt(r.totalJuros)} − ${fmt(r.totalSaidas)} = ${fmt(r.lucroLiquido)}\n(não inclui compra de estoque, investimentos nem retiradas — veja "Detalhes")`;
     const tituloCaixa = `Valor em Caixa = Vendas + Juros + Entrada Manual/Aportes − Despesas − Compra de Estoque − Investimentos − Retiradas\n${fmt(r.totalVendas)} + ${fmt(r.totalJuros)} + ${fmt(r.totalEntradasManual + r.totalAportes)} − ${fmt(r.totalSaidas)} − ${fmt(r.totalComprasEstoque)} − ${fmt(r.totalInvestimentos)} − ${fmt(r.totalRetiradas)} = ${fmt(r.valorEmCaixa)}`;
     const tituloCusto = `Custo das Vendas = custo do que foi DE FATO VENDIDO nesse período (regime de competência) — não é "quanto foi comprado". Comprar estoque não vira custo na hora; só quando o item é vendido.`;
+    const tituloVendas = `Só conta comanda FECHADA — reconhecida na data/horário do fechamento. Comanda aberta aparece em "Em atendimento" acima, sem entrar aqui.`;
 
     // Visão "clean": só os 5 números que realmente importam de cara. Cada
     // card tem data-metric (usado pro clique abrir o detalhamento por dia).
     gridPrincipal.innerHTML = `
-      <div class="resumo-caixa venda" data-metric="vendas" title="Some tudo que foi vendido pelas comandas no período."><div class="rotulo">Total de Vendas</div><div class="valor">${fmt(r.totalVendas)}</div></div>
+      <div class="resumo-caixa venda" data-metric="vendas" title="${tituloVendas}"><div class="rotulo">Total de Vendas</div><div class="valor">${fmt(r.totalVendas)}</div></div>
       <div class="resumo-caixa emcaixa" data-metric="caixa" title="${tituloCaixa}"><div class="rotulo">Valor em Caixa</div><div class="valor">${fmt(r.valorEmCaixa)}</div></div>
       <div class="resumo-caixa venda" data-metric="custo" title="${tituloCusto}"><div class="rotulo">Custo das Vendas</div><div class="valor">${fmt(r.totalCustoVendas)}</div></div>
       <div class="resumo-caixa venda" data-metric="lucroVendas" title="${tituloLucroVendas}"><div class="rotulo">Lucro das Vendas</div><div class="valor">${fmt(r.totalLucroVendas)}</div></div>
@@ -3160,7 +3532,7 @@ async function gerarResumoEExibir(dataInicio, dataFim, forcarAtualizacao) {
 // Mostra/esconde o detalhamento dia-a-dia de um card. Clicar de novo no
 // mesmo card fecha; clicar em outro troca o conteúdo.
 const CONFIG_METRICA = {
-  vendas: { titulo: "Total de Vendas por dia", coluna: "vendas" },
+  vendas: { titulo: "Total de Vendas por dia (comandas fechadas)", coluna: "vendas" },
   caixa: { titulo: "Saldo de caixa por dia (entradas − saídas)", coluna: "valorEmCaixa" },
   custo: { titulo: "Custo das Vendas por dia (regime de competência)", coluna: "custoVendas" },
   lucroVendas: { titulo: "Lucro das Vendas por dia", coluna: "lucroVendas" },
@@ -3203,6 +3575,7 @@ function carregarResumoInicial() {
   gerarResumoEExibir("", dataHojeISO());
   carregarContasAPagar(); carregarContasAReceber();
   carregarSaldoLivre();
+  carregarBannerEmAtendimento();
 }
 
 // "Livre pra Distribuir": Valor em Caixa (posição atual, sem filtro de
@@ -3377,12 +3750,12 @@ function montarHtmlRelatorio(r, dataInicioIso, dataFimIso, observacoes, assinant
       </div>
 
       <div class="relatorio-secao-titulo">Vendas por Tipo (no período)</div>
-      <p style="font-size:11px; color:#888; margin:0 0 8px;">As quantidades de Espeto, Bebida e Baião aqui são só das vendas avulsas (fora de combo) — o que foi vendido dentro de combos conta separado (veja "Sabores Usados em Combos" no Relatório de Vendas). O faturamento de tudo que vem no combo fica contabilizado só na linha "Combo", sem duplicar.</p>
+      <p style="font-size:11px; color:#888; margin:0 0 8px;">Considera só comandas FECHADAS. As quantidades de Espeto, Bebida e Baião aqui são só das vendas avulsas (fora de combo) — o que foi vendido dentro de combos conta separado (veja "Sabores Usados em Combos" no Relatório de Vendas). O faturamento de tudo que vem no combo fica contabilizado só na linha "Combo", sem duplicar.</p>
       <table>
         <thead><tr><th>Tipo</th><th style="text-align:right;">Qtd.</th><th style="text-align:right;">Faturamento</th></tr></thead>
         <tbody>${linhaOuVazio(linhasVendasPorTipo, 3, "Nenhuma venda registrada no período.")}</tbody>
       </table>
-      <p style="font-size:11.5px; color:#666; margin:6px 0 0;">🍢 Espetos vendidos (acumulado geral desde o início do sistema, avulsos + combos): <b>${r.espetosAcumulado}</b></p>
+      <p style="font-size:11.5px; color:#666; margin:6px 0 0;">🍢 Espetos vendidos (acumulado geral desde o início do sistema, avulsos + combos, só comandas fechadas): <b>${r.espetosAcumulado}</b></p>
 
       <div class="relatorio-secao-titulo">Contas Pagas no Período</div>
       <table>
@@ -3402,14 +3775,15 @@ function montarHtmlRelatorio(r, dataInicioIso, dataFimIso, observacoes, assinant
         </tbody>
       </table>
 
-      <div class="relatorio-secao-titulo">Saldo em Caixa Informado (situação atual)</div>
+      <div class="relatorio-secao-titulo">Conciliação de Caixa</div>
       <table>
         <tbody>
-          <tr><td>Dinheiro em espécie</td><td class="valor">${fmt(r.saldoCaixa.dinheiro)}</td></tr>
-          <tr><td>Saldo em conta</td><td class="valor">${fmt(r.saldoCaixa.conta)}</td></tr>
-          <tr class="total-linha"><td>Total em caixa</td><td class="valor">${fmt(r.saldoCaixa.total)}</td></tr>
+          <tr><td>Caixa Esperado (calculado pelas movimentações)</td><td class="valor">${fmt(res.valorEmCaixa)}</td></tr>
+          <tr><td>Caixa Informado (dinheiro + conta)</td><td class="valor">${fmt(r.saldoCaixa.total)}</td></tr>
+          <tr class="total-linha"><td>Diferença (Informado − Esperado)</td><td class="valor">${fmt(r.saldoCaixa.total - res.valorEmCaixa)}</td></tr>
         </tbody>
       </table>
+      ${r.justificativaDiferencaCaixa ? `<p style="font-size:11.5px; color:#7a4d00; background:#fff8ec; border:1px solid #f0d9a8; border-radius:8px; padding:8px 10px;">⚠️ Justificativa registrada: ${r.justificativaDiferencaCaixa}</p>` : ""}
 
       ${observacoes ? `
       <div class="relatorio-secao-titulo">Observações</div>
@@ -3523,7 +3897,7 @@ $("btn-gerar-rel-vendas").onclick = async () => {
           <div class="relatorio-card"><div class="rotulo">Ticket Médio p/ Dia</div><div class="valor">${fmt(r.ticketMedioPorDia)}</div></div>
           <div class="relatorio-card"><div class="rotulo">Itens Vendidos</div><div class="valor">${r.totalItensVendidos}</div></div>
         </div>
-        <p style="font-size:11.5px; color:#666; margin:-8px 0 18px;">Dias com venda no período: <b>${r.qtdDiasComVenda}</b>${r.maiorComanda ? ` · Maior comanda: <b>${r.maiorComanda.identificacao}</b> (${fmt(r.maiorComanda.valorTotal)})` : ""}${r.menorComanda ? ` · Menor: <b>${r.menorComanda.identificacao}</b> (${fmt(r.menorComanda.valorTotal)})` : ""}</p>
+        <p style="font-size:11.5px; color:#666; margin:-8px 0 18px;">Considera só comandas fechadas. Dias com venda no período: <b>${r.qtdDiasComVenda}</b>${r.maiorComanda ? ` · Maior comanda: <b>${r.maiorComanda.identificacao}</b> (${fmt(r.maiorComanda.valorTotal)})` : ""}${r.menorComanda ? ` · Menor: <b>${r.menorComanda.identificacao}</b> (${fmt(r.menorComanda.valorTotal)})` : ""}</p>
 
         ${blocoSimulador}
 
