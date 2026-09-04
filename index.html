@@ -254,6 +254,18 @@
   }
   .aviso-calendario b{ color:var(--creme); }
 
+  /* ---------- CUSTO REALIZADO DO PACOTE (Fase 3, item 5) ---------- */
+  .aviso-desvio-custo{
+    background:rgba(255,59,48,.1); border:1.5px solid rgba(255,59,48,.5); border-radius:10px; padding:10px 12px;
+    font-size:11.5px; color:#ff8a80; margin-top:8px; line-height:1.5;
+  }
+  .grid-custo-realizado{ display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:8px; }
+  .grid-custo-realizado label{ font-size:10.5px; font-weight:700; display:block; margin:0 0 4px; }
+  .grid-custo-realizado input{
+    width:100%; background:var(--preto); border:1.5px solid var(--borda); border-radius:8px; padding:8px 9px; color:var(--creme); font-size:13px; outline:none;
+  }
+  .custo-realizado-meta{ font-size:10.5px; color:var(--muted); margin-top:8px; }
+
   .caixa-termo-adesao{
     background:rgba(255,196,46,.1); border:1.5px solid rgba(255,196,46,.5); border-radius:10px; padding:12px;
     margin-top:14px; font-size:12px; line-height:1.5;
@@ -376,9 +388,10 @@
   .cabecalho-tabela .col-input{ width:80px; text-align:center; }
   .cabecalho-tabela .col-botao{ width:70px; }
 
-  /* Estoque: as 3 caixinhas (Vendido/Total/Disponível) ficam sempre juntas
-     num grid próprio, do mesmo tamanho, para nunca desalinhar no celular */
-  .estoque-boxes{ display:grid; grid-template-columns:repeat(3, 1fr); gap:8px; width:100%; }
+  /* Estoque: as caixinhas (Vendido/Total/Reservado/Disponível) ficam
+     sempre juntas num grid próprio, do mesmo tamanho, para nunca desalinhar
+     no celular */
+  .estoque-boxes{ display:grid; grid-template-columns:repeat(4, 1fr); gap:8px; width:100%; }
   .estoque-caixa{
     display:flex; flex-direction:column; align-items:center; justify-content:center;
     width:100%; padding:8px 4px; border-radius:9px; background:var(--preto); border:1px solid var(--borda);
@@ -399,10 +412,22 @@
 
   @media(min-width:640px){
     .linha-tabela .nome-item{ flex:1 1 auto; }
-    .estoque-boxes{ width:auto; flex:0 0 auto; grid-auto-flow:column; grid-template-columns:repeat(3, 70px); }
+    .estoque-boxes{ width:auto; flex:0 0 auto; grid-auto-flow:column; grid-template-columns:repeat(4, 64px); }
   }
   @media(max-width:639px){
     #cabecalho-estoque{ display:none !important; } /* os rótulos já ficam dentro de cada caixinha no celular */
+  }
+
+  /* ---------- ESTOQUE AVANÇADO (Fase 4): movimentar / conferência / histórico ---------- */
+  .conferencia-diferenca{ min-width:64px; text-align:right; font-weight:800; font-size:14px; }
+  .input-fisico-conferencia{
+    width:76px !important; text-align:center; background:var(--preto); border:1.5px solid var(--borda); border-radius:8px; padding:7px 6px; color:var(--creme); font-size:13px; outline:none;
+  }
+  .select-motivo-conferencia{
+    background:var(--preto); border:1.5px solid var(--amarelo); border-radius:8px; padding:7px 8px; color:var(--creme); font-size:12.5px; outline:none;
+  }
+  .input-observacao-conferencia{
+    background:var(--preto); border:1.5px solid var(--borda); border-radius:8px; padding:7px 8px; color:var(--creme); font-size:12.5px; outline:none; width:100%; margin-top:6px;
   }
 
   .btn-mini{ background:var(--preto); border:1px solid var(--borda); color:var(--creme); border-radius:8px; padding:7px 10px; font-size:12px; font-weight:700; }
@@ -723,16 +748,71 @@
     <!-- ---------- ESTOQUE ---------- -->
     <section class="secao" id="secao-estoque">
       <div class="linha-topo"><h2>Estoque</h2><button class="btn-mini" id="btn-atualizar-estoque">🔄 Atualizar</button></div>
-      <p style="font-size:12px; color:var(--muted); margin-top:-6px;">"Vendido" e "Disponível" são calculados automaticamente a cada item incluído numa comanda. "Qtd Total" é o que você define manualmente.</p>
-      <button class="btn-salvar-tudo somente-admin" id="btn-salvar-estoque-tudo" style="display:none;">💾 Salvar tudo</button>
-      <div class="cabecalho-tabela" id="cabecalho-estoque">
-        <span class="col-nome">Produto</span>
-        <span class="col-caixa">Vendido</span>
-        <span class="col-input">Qtd Total</span>
-        <span class="col-botao"></span>
-        <span class="col-caixa">Disponível</span>
+
+      <div class="sub-abas">
+        <button data-subaba="estoque-lista" class="ativa">Estoque</button>
+        <button data-subaba="estoque-movimentar">📉 Perda/Cortesia/Consumo</button>
+        <button data-subaba="estoque-conferencia">🔍 Conferência</button>
+        <button data-subaba="estoque-historico">📜 Histórico</button>
       </div>
-      <div class="tabela-cards" id="lista-estoque"><div class="vazio-lista">Carregando...</div></div>
+
+      <div class="sub-secao ativa" id="subsecao-estoque-lista">
+        <p style="font-size:12px; color:var(--muted); margin:10px 0 -2px;">"Vendido" e "Reservado" são calculados automaticamente. "Qtd Total" é o que você define manualmente. "Reservado" soma os ingredientes de pacotes com evento ainda não realizado — "Disponível" já é o que sobra pra venda avulsa (Total − Vendido − Reservado).</p>
+        <button class="btn-salvar-tudo somente-admin" id="btn-salvar-estoque-tudo" style="display:none;">💾 Salvar tudo</button>
+        <div class="cabecalho-tabela" id="cabecalho-estoque">
+          <span class="col-nome">Produto</span>
+          <span class="col-caixa">Vendido</span>
+          <span class="col-input">Qtd Total</span>
+          <span class="col-botao"></span>
+          <span class="col-caixa">Reservado</span>
+          <span class="col-caixa">Disponível</span>
+        </div>
+        <div class="tabela-cards" id="lista-estoque"><div class="vazio-lista">Carregando...</div></div>
+      </div>
+
+      <div class="sub-secao" id="subsecao-estoque-movimentar">
+        <div class="card-form somente-admin">
+          <h3>Registrar perda, cortesia ou consumo interno</h3>
+          <p style="font-size:12px; color:var(--muted); margin-top:-4px;">Reduz a Qtd Total do produto e fica registrado no histórico, com motivo e responsável.</p>
+          <label>Produto</label>
+          <select id="mv-produto"></select>
+          <label>Quantidade</label>
+          <input type="number" id="mv-quantidade" step="1" min="1">
+          <label>Motivo</label>
+          <select id="mv-tipo">
+            <option value="Perda">Perda</option>
+            <option value="Cortesia">Cortesia</option>
+            <option value="Consumo Interno">Consumo Interno</option>
+          </select>
+          <label>Observação (opcional)</label>
+          <input type="text" id="mv-observacao" placeholder="Ex: espeto queimado, degustação de cliente...">
+          <button class="btn-mini salvar" style="width:100%; margin-top:10px;" id="btn-registrar-movimento-estoque">Registrar</button>
+          <div class="msg-status" id="status-movimento-estoque"></div>
+        </div>
+        <p class="vazio-lista" id="aviso-movimentar-padrao" style="display:none;">Só o Administrador pode registrar perda, cortesia ou consumo interno.</p>
+      </div>
+
+      <div class="sub-secao" id="subsecao-estoque-conferencia">
+        <div class="card-form">
+          <h3>Conferência de estoque (calculado × físico)</h3>
+          <p style="font-size:12px; color:var(--muted); margin-top:-4px;">Informe a contagem física de cada produto que quiser conferir. Quando houver diferença, escolha o motivo (e a observação, se for "Outro") — ao salvar, a Qtd Total é ajustada pra bater com o que foi contado.</p>
+          <button class="btn-mini" id="btn-atualizar-conferencia">🔄 Recarregar</button>
+        </div>
+        <div class="tabela-cards" id="lista-conferencia-estoque"><div class="vazio-lista">Carregando...</div></div>
+        <button class="btn-salvar-tudo somente-admin" style="margin-top:12px;" id="btn-salvar-conferencia-estoque">💾 Salvar conferência</button>
+        <div class="msg-status" id="status-conferencia-estoque"></div>
+        <p class="vazio-lista" id="aviso-conferencia-padrao" style="display:none;">Só o Administrador pode salvar a conferência.</p>
+      </div>
+
+      <div class="sub-secao" id="subsecao-estoque-historico">
+        <div class="filtro-data-comandas" style="display:flex;">
+          <div><label>De</label><input type="date" id="mh-data-inicio"></div>
+          <div><label>Até</label><input type="date" id="mh-data-fim"></div>
+          <button class="btn-mini salvar" id="btn-filtrar-historico-estoque">Filtrar</button>
+        </div>
+        <div style="height:12px;"></div>
+        <div class="tabela-cards" id="lista-historico-estoque"><div class="vazio-lista">Carregando...</div></div>
+      </div>
     </section>
 
     <!-- ---------- CARDÁPIO ---------- -->
@@ -1360,7 +1440,7 @@ document.querySelectorAll(".badge-versao").forEach(el => el.textContent = "v" + 
 // CONFIG
 // =====================================================================
 const CONFIG = {
-  API_URL: "https://script.google.com/macros/s/AKfycby_uf74stFDzdFtLTKr6f7kdW7nyLD_Pipf1YljuImrWqrXqk6yX-tbxE1g0VCRMzUupQ/exec"
+  API_URL: "https://script.google.com/macros/s/AKfycbwPGk22tW9upr2Hf1qaJbbEkoz44JH44vCpJy7TSZi17RYnoqymdqpYqFB0M3N9G4x0cQ/exec"
 };
 
 const $ = (id) => document.getElementById(id);
@@ -1552,6 +1632,12 @@ function aplicarRestricoesDePerfil() {
   // Estoque e Financeiro ficam visíveis pra todo mundo (consulta liberada);
   // só escondemos os controles de EDIÇÃO dentro delas pra quem é Padrão.
   document.querySelectorAll('.somente-admin').forEach(el => { el.style.display = admin ? "" : "none"; });
+  // avisos "só admin" (Fase 4: Movimentar estoque / Conferência) — mostrados
+  // só pra quem é Padrão, complementando as classes somente-admin acima
+  const avisoMovimentar = $("aviso-movimentar-padrao");
+  if (avisoMovimentar) avisoMovimentar.style.display = admin ? "none" : "block";
+  const avisoConferencia = $("aviso-conferencia-padrao");
+  if (avisoConferencia) avisoConferencia.style.display = admin ? "none" : "block";
   // saldo em caixa: Padrão enxerga os valores, mas não digita nem salva —
   // disabled (não digita) + readOnly (reforço) + botão Salvar escondido (já
   // coberto pela classe somente-admin acima)
@@ -1626,6 +1712,9 @@ document.querySelectorAll(".sub-abas").forEach(grupo => {
       if (btn.dataset.subaba === "comandas-resumo") carregarResumoDia();
       if (btn.dataset.subaba === "comandas-indicadores") carregarIndicadores();
       if (btn.dataset.subaba === "fin-detalhes") { carregarContasAPagar(); carregarContasAReceber(); }
+      if (btn.dataset.subaba === "estoque-movimentar") popularSelectProdutoMovimentoEstoque();
+      if (btn.dataset.subaba === "estoque-conferencia") carregarConferenciaEstoque();
+      if (btn.dataset.subaba === "estoque-historico") carregarHistoricoEstoque();
     };
   });
 });
@@ -1762,6 +1851,8 @@ async function abrirDetalhesPacote(pacoteId) {
           — <a href="${LINK_TERMO_ADESAO}" target="_blank" rel="noopener" style="color:inherit; text-decoration:underline;">ver documento</a>
         </p>
 
+        ${montarBlocoCustoRealizadoPacote(p, admin)}
+
         <button class="btn-mini salvar" style="width:100%; margin-top:14px; background:rgba(58,160,232,.15); color:var(--azul); border-color:rgba(58,160,232,.4);" id="btn-reemitir-comprovante">🖨️ Gerar comprovante em PDF</button>
         ${admin && p.valorRestante > 0 ? `
           <button class="btn-mini salvar" style="width:100%; margin-top:8px;" id="btn-toggle-restante-pacote">
@@ -1771,6 +1862,8 @@ async function abrirDetalhesPacote(pacoteId) {
         <div class="msg-status" id="detalhes-pacote-status"></div>
       </div>
     `;
+
+    montarHandlersCustoRealizadoPacote(p);
 
     $("btn-reemitir-comprovante").onclick = () => {
       abrirComprovantePacote({
@@ -1804,6 +1897,98 @@ async function abrirDetalhesPacote(pacoteId) {
     $("detalhes-pacote-container").innerHTML = `<div class="vazio-lista">❌ ${e.message}</div>`;
   }
 }
+// ---------------------------------------------------------------------
+// CUSTO REALIZADO DO PACOTE (Fase 3, item 5) — comparação entre o custo
+// ESTIMADO (calculado na venda) e o REALIZADO (preenchido pós-evento, com
+// detalhamento em 8 categorias). Não recalcula nada do resumo financeiro
+// geral — é só um comparativo por pacote.
+// ---------------------------------------------------------------------
+const CAMPOS_CUSTO_REALIZADO = [
+  { chave: "carnesEspetos", rotulo: "Carnes e espetos" },
+  { chave: "bebidas", rotulo: "Bebidas" },
+  { chave: "carvao", rotulo: "Carvão" },
+  { chave: "combustivelTransporte", rotulo: "Combustível e transporte" },
+  { chave: "acompanhamentos", rotulo: "Acompanhamentos" },
+  { chave: "descartaveis", rotulo: "Descartáveis" },
+  { chave: "maoDeObra", rotulo: "Mão de obra" },
+  { chave: "outros", rotulo: "Outros custos" }
+];
+
+function montarBlocoCustoRealizadoPacote(p, admin) {
+  const cr = p.custoRealizado || { preenchido: false, detalhe: {} };
+  const lucroEstimadoClasse = cr.lucroEstimado >= 0 ? "lucro-positivo" : "lucro-negativo";
+
+  let resumo = `
+    <label style="margin-top:14px;">Custo do evento</label>
+    <div class="caixa-preco-pacote">
+      <div class="linha-preco-pacote"><span>Custo estimado</span><b>${fmt(p.custoEstimado)}</b></div>
+      <div class="linha-preco-pacote"><span>Lucro estimado</span><b class="${lucroEstimadoClasse}">${fmt(cr.lucroEstimado)}</b></div>
+  `;
+  if (cr.preenchido) {
+    const lucroRealizadoClasse = cr.lucroRealizado >= 0 ? "lucro-positivo" : "lucro-negativo";
+    const desvioClasse = cr.desvioCusto > 0 ? "lucro-negativo" : "lucro-positivo";
+    resumo += `
+      <div class="linha-preco-pacote"><span>Custo realizado</span><b>${fmt(cr.custoRealizadoTotal)}</b></div>
+      <div class="linha-preco-pacote"><span>Lucro realizado</span><b class="${lucroRealizadoClasse}">${fmt(cr.lucroRealizado)}</b></div>
+      <div class="linha-preco-pacote total"><span>Desvio de custo</span><span class="${desvioClasse}">${fmt(cr.desvioCusto)}</span></div>
+    `;
+  }
+  resumo += `</div>`;
+  if (cr.preenchido && cr.desvioCusto > 0) {
+    resumo += `<div class="aviso-desvio-custo">⚠️ O custo realizado ficou ${fmt(cr.desvioCusto)} acima do estimado.</div>`;
+  }
+
+  if (cr.preenchido) {
+    const linhasDetalhe = CAMPOS_CUSTO_REALIZADO.map(c => `<div class="linha-preco-pacote"><span>${c.rotulo}</span><b>${fmt(cr.detalhe[c.chave] || 0)}</b></div>`).join("");
+    resumo += `
+      <label style="margin-top:14px;">Detalhamento do custo realizado</label>
+      <div class="caixa-preco-pacote">${linhasDetalhe}</div>
+      <p class="custo-realizado-meta">Preenchido em ${paraBRFlexivel(cr.preenchidoEm)}${cr.usuario ? " por " + cr.usuario : ""}.</p>
+    `;
+  }
+
+  if (admin) {
+    resumo += `
+      <label style="margin-top:14px;">${cr.preenchido ? "Corrigir custo realizado" : "Registrar custo realizado (pós-evento)"}</label>
+      <p style="font-size:10.5px; color:var(--muted); margin:0 0 6px;">Preencha depois que o evento acontecer, com o gasto real de cada categoria.</p>
+      <div class="grid-custo-realizado">
+        ${CAMPOS_CUSTO_REALIZADO.map(c => `
+          <div>
+            <label>${c.rotulo} (R$)</label>
+            <input type="number" step="0.5" id="cr-${c.chave}" value="${cr.preenchido ? (cr.detalhe[c.chave] || 0) : ""}">
+          </div>
+        `).join("")}
+      </div>
+      <button class="btn-mini salvar" style="width:100%; margin-top:10px;" id="btn-salvar-custo-realizado">${cr.preenchido ? "Atualizar custo realizado" : "Salvar custo realizado"}</button>
+      <div class="msg-status" id="status-custo-realizado"></div>
+    `;
+  } else if (!cr.preenchido) {
+    resumo += `<p style="font-size:11px; color:var(--muted); margin-top:10px;">Custo realizado ainda não preenchido.</p>`;
+  }
+
+  return resumo;
+}
+
+function montarHandlersCustoRealizadoPacote(p) {
+  const btn = $("btn-salvar-custo-realizado");
+  if (!btn) return; // Padrão não vê o botão — nada pra ligar
+  btn.onclick = async () => {
+    const status = $("status-custo-realizado");
+    const valores = {};
+    CAMPOS_CUSTO_REALIZADO.forEach(c => { valores[c.chave] = parseFloat($("cr-" + c.chave).value) || 0; });
+    status.textContent = "Salvando...";
+    status.className = "msg-status";
+    try {
+      const resp = await chamarAPI("registrarCustoRealizadoPacote", Object.assign({ linha: p.linha, usuario: USUARIO_LOGADO }, valores));
+      if (resp.status === "ok") {
+        status.textContent = "✓ Custo realizado salvo!";
+        status.className = "msg-status ok";
+        abrirDetalhesPacote(p.pacoteId);
+      } else { status.textContent = "❌ " + resp.mensagem; status.className = "msg-status erro"; }
+    } catch (e) { status.textContent = "❌ " + e.message; status.className = "msg-status erro"; }
+  };
+}
+
 $("btn-fechar-detalhes-pacote").onclick = () => { $("overlay-detalhes-pacote").classList.remove("aberto"); };
 $("overlay-detalhes-pacote").addEventListener("click", (e) => { if (e.target.id === "overlay-detalhes-pacote") $("overlay-detalhes-pacote").classList.remove("aberto"); });
 
@@ -2927,13 +3112,14 @@ async function carregarEstoque() {
       linha.dataset.categoria = it.categoria;
 
       if (!admin) {
-        // Padrão: só consulta, sem campo pra editar. As 3 caixinhas ficam
+        // Padrão: só consulta, sem campo pra editar. As caixinhas ficam
         // sempre juntas no mesmo grid, do mesmo tamanho.
         linha.innerHTML = `
           <div class="nome-item">${it.produto}<div class="cat-item">${it.categoria}</div></div>
           <div class="estoque-boxes">
             <div class="estoque-caixa"><div class="rotulo-mini">Vendido</div><div class="valor-mini">${it.qtdVendido}</div></div>
             <div class="estoque-caixa"><div class="rotulo-mini">Total</div><div class="valor-mini">${it.qtdTotal}</div></div>
+            <div class="estoque-caixa"><div class="rotulo-mini">Reservado</div><div class="valor-mini">${it.qtdReservada}</div></div>
             <div class="estoque-caixa ${classeCor}"><div class="rotulo-mini">Disponível</div><div class="valor-mini">${it.qtdDisponivel}</div></div>
           </div>
         `;
@@ -2949,6 +3135,7 @@ async function carregarEstoque() {
             <div class="rotulo-mini">Total</div>
             <input type="number" class="input-estoque" value="${it.qtdTotal}" min="0">
           </div>
+          <div class="estoque-caixa"><div class="rotulo-mini">Reservado</div><div class="valor-mini">${it.qtdReservada}</div></div>
           <div class="estoque-caixa ${classeCor}"><div class="rotulo-mini">Disponível</div><div class="valor-mini">${it.qtdDisponivel}</div></div>
         </div>
       `;
@@ -2977,6 +3164,157 @@ $("btn-salvar-estoque-tudo").onclick = async () => {
     else { alert("❌ " + resp.mensagem); btn.textContent = textoOriginal; }
   } catch (e) { alert("❌ " + e.message); btn.textContent = textoOriginal; }
 };
+
+// =====================================================================
+// ESTOQUE AVANÇADO (Fase 4) — Perda/Cortesia/Consumo, Conferência e
+// Histórico de movimentações.
+// =====================================================================
+
+// ---------- Perda / Cortesia / Consumo Interno ----------
+function popularSelectProdutoMovimentoEstoque() {
+  const sel = $("mv-produto");
+  if (!sel) return;
+  sel.innerHTML = PRODUTOS_CACHE_TODOS.map(p => `<option value="${p.nome}" data-categoria="${p.categoria}">${p.nome}</option>`).join("");
+}
+
+$("btn-registrar-movimento-estoque").onclick = async () => {
+  const status = $("status-movimento-estoque");
+  const produto = $("mv-produto").value;
+  const quantidade = parseFloat($("mv-quantidade").value) || 0;
+  const tipoMovimento = $("mv-tipo").value;
+  const observacao = $("mv-observacao").value.trim();
+  if (!produto) { status.textContent = "Escolha o produto."; status.className = "msg-status erro"; return; }
+  if (quantidade <= 0) { status.textContent = "Informe a quantidade."; status.className = "msg-status erro"; return; }
+  status.textContent = "Salvando...";
+  status.className = "msg-status";
+  try {
+    const resp = await chamarAPI("registrarMovimentoEstoque", { produto, quantidade, tipoMovimento, observacao, usuario: USUARIO_LOGADO });
+    if (resp.status === "ok") {
+      status.textContent = `✓ ${tipoMovimento} registrada: -${quantidade}x ${produto}.`;
+      status.className = "msg-status ok";
+      $("mv-quantidade").value = ""; $("mv-observacao").value = "";
+      carregarEstoque();
+    } else { status.textContent = "❌ " + resp.mensagem; status.className = "msg-status erro"; }
+  } catch (e) { status.textContent = "❌ " + e.message; status.className = "msg-status erro"; }
+};
+
+// ---------- Conferência de estoque (calculado × físico) ----------
+// Cada linha só é considerada se a pessoa preencher o campo "Físico" —
+// produtos deixados em branco simplesmente não entram no envio. Quando o
+// físico difere do calculado, aparece o select de Motivo (e o campo de
+// Observação, obrigatório se Motivo = "Outro") — tudo validado de novo no
+// servidor antes de aplicar qualquer ajuste.
+async function carregarConferenciaEstoque() {
+  const lista = $("lista-conferencia-estoque");
+  lista.innerHTML = `<div class="vazio-lista">Carregando...</div>`;
+  try {
+    const resp = await chamarAPI("listarEstoque", {});
+    if (resp.status !== "ok") { lista.innerHTML = `<div class="vazio-lista">❌ ${resp.mensagem}</div>`; return; }
+    if (!resp.itens.length) { lista.innerHTML = `<div class="vazio-lista">Nenhum item de estoque cadastrado ainda.</div>`; return; }
+    lista.innerHTML = "";
+    resp.itens.sort((a, b) => a.produto.localeCompare(b.produto)).forEach(it => {
+      const calculado = it.qtdTotal - it.qtdVendido; // referência é o bruto — reserva não é remoção física
+      const linha = document.createElement("div");
+      linha.className = "linha-tabela";
+      linha.dataset.produto = it.produto;
+      linha.dataset.categoria = it.categoria;
+      linha.dataset.calculado = calculado;
+      linha.innerHTML = `
+        <div class="nome-item">${it.produto}<div class="cat-item">${it.categoria} · Calculado: ${calculado}</div></div>
+        <input type="number" class="input-fisico-conferencia" placeholder="Físico" step="1">
+        <div class="conferencia-diferenca"></div>
+        <select class="select-motivo-conferencia" style="display:none;">
+          <option value="">Motivo...</option>
+          <option value="Perda">Perda</option>
+          <option value="Cortesia">Cortesia</option>
+          <option value="Consumo Interno">Consumo Interno</option>
+          <option value="Erro de Lançamento">Erro de Lançamento</option>
+          <option value="Quantidade Inicial Incorreta">Quantidade Inicial Incorreta</option>
+          <option value="Outro">Outro</option>
+        </select>
+        <input type="text" class="input-observacao-conferencia" placeholder="Observação (obrigatória se 'Outro')" style="display:none;">
+      `;
+      const inputFisico = linha.querySelector(".input-fisico-conferencia");
+      const diferencaEl = linha.querySelector(".conferencia-diferenca");
+      const selectMotivo = linha.querySelector(".select-motivo-conferencia");
+      const inputObs = linha.querySelector(".input-observacao-conferencia");
+      inputFisico.oninput = () => {
+        const fisico = parseFloat(inputFisico.value);
+        if (isNaN(fisico)) { diferencaEl.textContent = ""; selectMotivo.style.display = "none"; inputObs.style.display = "none"; return; }
+        const diferenca = fisico - calculado;
+        diferencaEl.textContent = diferenca === 0 ? "OK" : (diferenca > 0 ? "+" + diferenca : String(diferenca));
+        diferencaEl.style.color = diferenca === 0 ? "var(--verde)" : "#ff8a80";
+        const precisaMotivo = diferenca !== 0;
+        selectMotivo.style.display = precisaMotivo ? "inline-block" : "none";
+        inputObs.style.display = precisaMotivo ? "block" : "none";
+      };
+      lista.appendChild(linha);
+    });
+  } catch (e) {
+    lista.innerHTML = `<div class="vazio-lista">❌ ${e.message}</div>`;
+  }
+}
+$("btn-atualizar-conferencia").onclick = carregarConferenciaEstoque;
+
+$("btn-salvar-conferencia-estoque").onclick = async () => {
+  const status = $("status-conferencia-estoque");
+  const linhas = Array.from(document.querySelectorAll("#lista-conferencia-estoque .linha-tabela"));
+  const itens = [];
+  for (const l of linhas) {
+    const fisicoTexto = l.querySelector(".input-fisico-conferencia").value;
+    if (fisicoTexto === "") continue; // não preencheu esse produto, ignora
+    const fisico = parseFloat(fisicoTexto) || 0;
+    const calculado = parseFloat(l.dataset.calculado) || 0;
+    const diferenca = fisico - calculado;
+    const motivo = l.querySelector(".select-motivo-conferencia").value;
+    const observacao = l.querySelector(".input-observacao-conferencia").value.trim();
+    if (diferenca !== 0) {
+      if (!motivo) { status.textContent = `Escolha o motivo da diferença em "${l.dataset.produto}".`; status.className = "msg-status erro"; return; }
+      if (motivo === "Outro" && !observacao) { status.textContent = `Escreva a observação em "${l.dataset.produto}" (motivo "Outro").`; status.className = "msg-status erro"; return; }
+    }
+    itens.push({ produto: l.dataset.produto, categoria: l.dataset.categoria, fisico, motivo, observacao });
+  }
+  if (!itens.length) { status.textContent = "Informe a contagem física de pelo menos 1 produto."; status.className = "msg-status erro"; return; }
+  status.textContent = "Salvando...";
+  status.className = "msg-status";
+  try {
+    const resp = await chamarAPI("registrarConferenciaEstoque", { itens: JSON.stringify(itens), usuario: USUARIO_LOGADO });
+    if (resp.status === "ok") {
+      status.textContent = `✓ Conferência salva! ${resp.itensAjustados} produto(s) ajustado(s) de ${resp.itensConferidos} conferido(s).`;
+      status.className = "msg-status ok";
+      carregarConferenciaEstoque();
+      carregarEstoque();
+    } else { status.textContent = "❌ " + resp.mensagem; status.className = "msg-status erro"; }
+  } catch (e) { status.textContent = "❌ " + e.message; status.className = "msg-status erro"; }
+};
+
+// ---------- Histórico de movimentações (Compra/Perda/Cortesia/Consumo/Ajuste) ----------
+async function carregarHistoricoEstoque() {
+  const lista = $("lista-historico-estoque");
+  lista.innerHTML = `<div class="vazio-lista">Carregando...</div>`;
+  const dataInicio = $("mh-data-inicio").value;
+  const dataFim = $("mh-data-fim").value;
+  try {
+    const resp = await chamarAPI("listarMovimentosEstoque", { dataInicio, dataFim });
+    if (resp.status !== "ok") { lista.innerHTML = `<div class="vazio-lista">❌ ${resp.mensagem}</div>`; return; }
+    if (!resp.registros.length) { lista.innerHTML = `<div class="vazio-lista">Nenhuma movimentação registrada ainda.</div>`; return; }
+    lista.innerHTML = "";
+    resp.registros.forEach(r => {
+      const linha = document.createElement("div");
+      linha.className = "linha-tabela";
+      const positivo = r.quantidade >= 0;
+      const motivoExtra = r.motivo && r.motivo !== r.tipoMovimento ? ` (${r.motivo})` : "";
+      linha.innerHTML = `
+        <div class="nome-item">${r.produto} — ${r.tipoMovimento}${motivoExtra}<div class="cat-item">${(r.dataHora || "").toString()} · ${r.usuario}${r.observacao ? " · " + r.observacao : ""}</div></div>
+        <div style="font-weight:800; color:${positivo ? "var(--verde)" : "#ff8a80"};">${positivo ? "+" : ""}${r.quantidade}</div>
+      `;
+      lista.appendChild(linha);
+    });
+  } catch (e) {
+    lista.innerHTML = `<div class="vazio-lista">❌ ${e.message}</div>`;
+  }
+}
+$("btn-filtrar-historico-estoque").onclick = carregarHistoricoEstoque;
 
 // =====================================================================
 // CARDÁPIO
@@ -4059,17 +4397,25 @@ $("btn-gerar-rel-pacotes").onclick = async () => {
   try {
     const r = await chamarAPI("relatorioPacotes", { dataInicio, dataFim });
     if (r.status !== "ok") { container.innerHTML = `<div class="vazio-lista">❌ ${r.mensagem}</div>`; return; }
-    const linhas = r.pacotes.map(p => `
+    const linhas = r.pacotes.map(p => {
+      const temRealizado = p.custoRealizado !== null && p.custoRealizado !== undefined;
+      const corDesvio = temRealizado && p.desvioCusto > 0 ? "color:#e0231a; font-weight:800;" : "";
+      return `
       <tr>
         <td>${paraBR(p.dataEvento) || p.dataEvento}</td>
         <td>${p.cliente}</td>
         <td>${p.tipoPacote}</td>
         <td style="text-align:right;">${p.qtdPessoas}</td>
         <td class="valor">${fmt(p.valorFinal)}</td>
+        <td class="valor">${fmt(p.custoEstimado)}</td>
+        <td class="valor">${temRealizado ? fmt(p.custoRealizado) : "—"}</td>
+        <td class="valor" style="${corDesvio}">${temRealizado ? fmt(p.desvioCusto) : "—"}</td>
         <td>${p.statusRestante === "Recebido" ? "✅ Quitado" : "⏳ " + fmt(p.valorRestante) + " a receber"}</td>
       </tr>
-    `);
+    `;
+    });
     const linhasSaboresAgregados = (r.saboresAgregados || []).map(s => `<tr><td>${s.produto}</td><td style="text-align:right;">${s.quantidade}</td></tr>`);
+    const temAlgumRealizado = (r.qtdComCustoRealizado || 0) > 0;
     container.innerHTML = `
       <div class="relatorio-folha">
         ${blocoCabecalhoRelatorio("Relatório de Pacotes de Serviço", textoPeriodo(dataInicio, dataFim, todoPeriodo), observacoes)}
@@ -4081,6 +4427,19 @@ $("btn-gerar-rel-pacotes").onclick = async () => {
           <div class="relatorio-card"><div class="rotulo">Lucro Estimado</div><div class="valor">${fmt(r.totalLucroEstimado)}</div></div>
         </div>
 
+        <div class="relatorio-secao-titulo">Custo Estimado × Realizado</div>
+        <p style="font-size:11px; color:#888; margin:0 0 8px;">"Realizado" só existe pros pacotes cujo custo pós-evento já foi preenchido (${r.qtdComCustoRealizado || 0} de ${r.pacotes.length} pacote(s) do período). Não substitui o Custo Estimado usado no resumo financeiro geral — é um comparativo pra ver onde o orçamento furou.</p>
+        <table>
+          <tbody>
+            <tr><td>Custo Estimado (todos os pacotes)</td><td class="valor">${fmt(r.totalCusto)}</td></tr>
+            ${temAlgumRealizado ? `
+              <tr><td>Custo Realizado (só os já preenchidos)</td><td class="valor">${fmt(r.totalCustoRealizado)}</td></tr>
+              <tr><td>Lucro Realizado (só os já preenchidos)</td><td class="valor">${fmt(r.totalLucroRealizado)}</td></tr>
+              <tr class="total-linha"><td>Desvio de Custo (só os já preenchidos)</td><td class="valor" style="${r.totalDesvioCusto > 0 ? 'color:#e0231a;' : ''}">${fmt(r.totalDesvioCusto)}</td></tr>
+            ` : `<tr><td colspan="2" class="relatorio-vazio">Nenhum pacote do período teve o custo realizado preenchido ainda.</td></tr>`}
+          </tbody>
+        </table>
+
         <div class="relatorio-secao-titulo">Sabores Contratados (todos os pacotes do período)</div>
         <table>
           <thead><tr><th>Sabor</th><th style="text-align:right;">Quantidade</th></tr></thead>
@@ -4089,10 +4448,10 @@ $("btn-gerar-rel-pacotes").onclick = async () => {
 
         <div class="relatorio-secao-titulo">Pacotes do Período (por Data do Evento)</div>
         <table>
-          <thead><tr><th>Evento</th><th>Cliente</th><th>Tipo</th><th style="text-align:right;">Pessoas</th><th style="text-align:right;">Valor</th><th>Situação</th></tr></thead>
+          <thead><tr><th>Evento</th><th>Cliente</th><th>Tipo</th><th style="text-align:right;">Pessoas</th><th style="text-align:right;">Valor</th><th style="text-align:right;">Custo Est.</th><th style="text-align:right;">Custo Real.</th><th style="text-align:right;">Desvio</th><th>Situação</th></tr></thead>
           <tbody>
-            ${linhaOuVazio(linhas, 6, "Nenhum pacote no período.")}
-            ${r.pacotes.length ? `<tr class="total-linha"><td colspan="4">Total contratado</td><td class="valor">${fmt(r.totalContratado)}</td><td></td></tr>` : ""}
+            ${linhaOuVazio(linhas, 9, "Nenhum pacote no período.")}
+            ${r.pacotes.length ? `<tr class="total-linha"><td colspan="4">Total contratado</td><td class="valor">${fmt(r.totalContratado)}</td><td colspan="4"></td></tr>` : ""}
           </tbody>
         </table>
         <div class="relatorio-rodape">Relatório gerado automaticamente pelo Sistema Financeiro Brasero 96.</div>
