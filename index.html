@@ -605,7 +605,6 @@
   }
   .cupom-comanda h1, .cupom-comanda h2, .cupom-comanda h3{ color:#1a1a1a; }
   .cupom-cabecalho{ text-align:center; border-bottom:3px solid var(--laranja); padding-bottom:12px; margin-bottom:14px; }
-  .cupom-cabecalho img{ width:48px; height:48px; border-radius:50%; object-fit:cover; margin-bottom:6px; }
   .cupom-cabecalho .cupom-marca{ font-size:17px; font-weight:800; letter-spacing:.5px; }
   .cupom-cabecalho .cupom-subtitulo{ font-size:11px; color:#777; margin-top:2px; }
   .cupom-meta{ font-size:12px; color:#333; margin-bottom:14px; line-height:1.6; }
@@ -622,6 +621,12 @@
   .cupom-pagamento.pago{ background:#eefaf1; border:1px solid #bfe8cc; color:#1a6b3a; }
   .cupom-pagamento.pendente{ background:#fff6e9; border:1px solid #f0d9a8; color:#7a4d00; }
   .cupom-rodape{ margin-top:18px; padding-top:10px; border-top:1px solid #eee; font-size:10px; color:#999; text-align:center; }
+
+  /* z-index maior que o overlay padrão (50): o cupom pode ser aberto com o
+     modal da Comanda ainda aberto por trás — sem isso, como o modal da
+     Comanda vem depois no HTML, ele pintava por cima e escondia o cupom até
+     a Comanda ser fechada. */
+  #overlay-cupom-comanda{ z-index:60; }
 
   @media print{
     .no-print, nav.abas, header, .indicador-sync{ display:none !important; }
@@ -1403,7 +1408,7 @@
 // ar é realmente a versão mais nova ou se o GitHub Pages ainda está
 // servindo uma versão antiga em cache.
 // =====================================================================
-const VERSAO_APP = "6.9";
+const VERSAO_APP = "7.0";
 document.querySelectorAll(".badge-versao").forEach(el => el.textContent = "v" + VERSAO_APP);
 
 // =====================================================================
@@ -1440,7 +1445,7 @@ document.querySelectorAll(".badge-versao").forEach(el => el.textContent = "v" + 
 // CONFIG
 // =====================================================================
 const CONFIG = {
-  API_URL: "https://script.google.com/macros/s/AKfycbwPGk22tW9upr2Hf1qaJbbEkoz44JH44vCpJy7TSZi17RYnoqymdqpYqFB0M3N9G4x0cQ/exec"
+  API_URL: "https://script.google.com/macros/s/AKfycbzZSGh3NTCj3326TsKNEJC4ARIOFbNjKLneeXk1fmVrJxq7JVdMvbWJ4smS-WbmhivFWQ/exec"
 };
 
 const $ = (id) => document.getElementById(id);
@@ -2745,12 +2750,7 @@ function abrirCupomComanda(payload) {
 
   let blocoPagamento;
   if (fechada) {
-    blocoPagamento = `
-      <div class="cupom-pagamento pago">
-        ✅ Pago — ${c.formaPagamento || "—"}${c.troco ? ` · Troco: ${fmt(c.troco)}` : ""}${c.juros ? ` · Juros cartão: ${fmt(c.juros)}` : ""}
-        ${c.fechadaEm ? `<br>Fechada em ${formatarDataHoraCupom(c.fechadaEm)}` : ""}
-      </div>
-    `;
+    blocoPagamento = `<div class="cupom-pagamento pago">✅ Pago — ${c.formaPagamento || "—"}</div>`;
   } else if (cancelada) {
     blocoPagamento = `<div class="cupom-pagamento pendente">🚫 Comanda cancelada</div>`;
   } else {
@@ -2760,7 +2760,6 @@ function abrirCupomComanda(payload) {
   $("cupom-comanda-container").innerHTML = `
     <div class="cupom-comanda">
       <div class="cupom-cabecalho">
-        <img src="logo.png" alt="Brasero 96">
         <div class="cupom-marca">BRASERO 96</div>
         <div class="cupom-subtitulo">Comanda de atendimento</div>
       </div>
