@@ -965,34 +965,59 @@
         </div>
         <div class="card-form somente-admin">
           <h3>Registrar compra de estoque</h3>
-          <p style="font-size:12px; color:var(--muted); margin-top:-4px;">Lança a saída financeira E adiciona a quantidade comprada ao estoque numa única ação — evita ter que cadastrar a mesma compra duas vezes.</p>
+          <p style="font-size:12px; color:var(--muted); margin-top:-4px;">Adicione quantos itens quiser antes de registrar — tudo entra na mesma compra (itens de tipos diferentes viram lançamentos separados automaticamente, só pra manter a categoria certa nos relatórios).</p>
+
           <label>Produto</label>
           <select id="ce-produto"></select>
           <div class="grid2">
-            <div><label>Quantidade comprada</label><input type="number" id="ce-quantidade" step="1" min="1"></div>
+            <div><label>Quantidade</label><input type="number" id="ce-quantidade" step="1" min="1"></div>
             <div><label>Custo unitário (R$)</label><input type="number" id="ce-custo-unitario" step="0.5"></div>
           </div>
-          <label>Custo total (R$)</label>
-          <input type="number" id="ce-custo-total" step="0.5" readonly style="opacity:.75;">
-          <div class="grid2">
-            <div><label>Forma de pagamento</label>
-              <select id="ce-forma-pagamento">
-                <option value="Dinheiro">Dinheiro</option>
-                <option value="Pix">Pix</option>
-                <option value="Cartão de Crédito">Cartão de Crédito</option>
-              </select>
-            </div>
-            <div><label>Data da compra</label><input type="date" id="ce-data"></div>
+          <button class="btn-mini salvar" style="width:100%; margin-top:8px;" id="btn-add-item-compra-estoque">+ Adicionar item à compra</button>
+
+          <div class="tabela-cards" id="ce-carrinho-lista" style="margin-top:12px;"></div>
+          <div class="saldo-caixa-total" id="ce-carrinho-total-linha" style="display:none;">
+            <span>Total da compra</span><span id="ce-carrinho-total">R$ 0,00</span>
           </div>
-          <label class="checkbox-linha">
-            <input type="checkbox" id="ce-ja-paga" checked>
-            <span>Já foi paga?</span>
+
+          <label class="checkbox-linha" style="margin-top:14px;">
+            <input type="checkbox" id="ce-atualizar-estoque" checked>
+            <span>Atualizar quantidade no estoque</span>
           </label>
+          <p style="font-size:11px; color:var(--muted); margin:4px 0 0;">Desmarque se essa compra já foi lançada no estoque antes — aí só o valor financeiro é registrado, sem mexer em Qtd Total nem no Custo Unitário do produto.</p>
+
+          <label style="margin-top:14px;">Forma de pagamento</label>
+          <select id="ce-forma-pagamento">
+            <option value="Dinheiro">Dinheiro</option>
+            <option value="Pix">Pix</option>
+            <option value="Cartão de Crédito">Cartão de Crédito</option>
+          </select>
+          <label>Data da compra</label>
+          <input type="date" id="ce-data">
+
+          <label class="checkbox-linha" style="margin-top:10px;">
+            <input type="checkbox" id="ce-parcelar">
+            <span>Parcelar?</span>
+          </label>
+          <div id="ce-bloco-parcelas" style="display:none;">
+            <label>Quantidade de parcelas</label>
+            <input type="number" id="ce-qtd-parcelas" min="2" value="2">
+            <label>Vencimento da 1ª parcela</label>
+            <input type="date" id="ce-vencimento-parcela">
+            <p style="font-size:11px; color:var(--muted); margin:4px 0 0;">Cada parcela vira uma saída pendente própria (por grupo de categoria), vencendo 1 mês após a anterior.</p>
+          </div>
+          <div id="ce-bloco-ja-paga">
+            <label class="checkbox-linha">
+              <input type="checkbox" id="ce-ja-paga" checked>
+              <span>Já foi paga?</span>
+            </label>
+          </div>
           <div id="ce-bloco-vencimento" style="display:none;">
             <label>Vencimento</label>
             <input type="date" id="ce-vencimento">
           </div>
-          <label>Fornecedor (opcional)</label>
+
+          <label style="margin-top:10px;">Fornecedor (opcional)</label>
           <input type="text" id="ce-fornecedor" placeholder="Ex: Açougue do Zé">
           <button class="btn-mini salvar" style="width:100%; margin-top:10px;" id="btn-registrar-compra-estoque">Registrar compra</button>
           <div class="msg-status" id="status-compra-estoque"></div>
@@ -1408,7 +1433,7 @@
 // ar é realmente a versão mais nova ou se o GitHub Pages ainda está
 // servindo uma versão antiga em cache.
 // =====================================================================
-const VERSAO_APP = "7.0";
+const VERSAO_APP = "7.1";
 document.querySelectorAll(".badge-versao").forEach(el => el.textContent = "v" + VERSAO_APP);
 
 // =====================================================================
@@ -1445,7 +1470,7 @@ document.querySelectorAll(".badge-versao").forEach(el => el.textContent = "v" + 
 // CONFIG
 // =====================================================================
 const CONFIG = {
-  API_URL: "https://script.google.com/macros/s/AKfycbzZSGh3NTCj3326TsKNEJC4ARIOFbNjKLneeXk1fmVrJxq7JVdMvbWJ4smS-WbmhivFWQ/exec"
+  API_URL: "https://script.google.com/macros/s/AKfycbxNy4zZy0QDwGNDZV0BCCTerV78xtrDDVJ7Rjd_EXEI8M0cpfk4I7QmbLWaNY3sf5tZ5Q/exec"
 };
 
 const $ = (id) => document.getElementById(id);
@@ -3598,9 +3623,11 @@ $("btn-custos-fixos").onclick = async () => {
 };
 
 // ---------------------------------------------------------------------
-// COMPRA DE ESTOQUE INTEGRADA (item 3 da Fase 2) — 1 ação só que lança a
-// saída financeira E soma a quantidade comprada ao estoque, sem precisar
-// cadastrar a mesma compra 2 vezes.
+// COMPRA DE ESTOQUE INTEGRADA (item 3 da Fase 2, ajustada depois) — 1 ação
+// só que lança a(s) saída(s) financeira(s) E soma a quantidade comprada ao
+// estoque, sem precisar cadastrar a mesma compra 2 vezes. Suporta vários
+// itens numa mesma compra (carrinho), parcelamento e um toggle pra pular a
+// atualização do estoque (compra que já foi lançada nele antes).
 // ---------------------------------------------------------------------
 function popularSelectProdutoCompraEstoque() {
   const sel = $("ce-produto");
@@ -3608,47 +3635,93 @@ function popularSelectProdutoCompraEstoque() {
   sel.innerHTML = PRODUTOS_CACHE_TODOS.map(p => `<option value="${p.nome}" data-categoria="${p.categoria}">${p.nome}</option>`).join("");
 }
 
-function atualizarCustoTotalCompraEstoque() {
-  const qtd = parseFloat($("ce-quantidade").value) || 0;
-  const custoUnitario = parseFloat($("ce-custo-unitario").value) || 0;
-  $("ce-custo-total").value = (qtd * custoUnitario).toFixed(2);
-}
-$("ce-quantidade").oninput = atualizarCustoTotalCompraEstoque;
-$("ce-custo-unitario").oninput = atualizarCustoTotalCompraEstoque;
+// Carrinho da compra atual — cada item fica aqui até o "Registrar compra".
+let CARRINHO_COMPRA_ESTOQUE = [];
 
+function renderCarrinhoCompraEstoque() {
+  const lista = $("ce-carrinho-lista");
+  if (!CARRINHO_COMPRA_ESTOQUE.length) {
+    lista.innerHTML = `<div class="vazio-lista">Nenhum item adicionado ainda.</div>`;
+    $("ce-carrinho-total-linha").style.display = "none";
+    return;
+  }
+  lista.innerHTML = "";
+  let total = 0;
+  CARRINHO_COMPRA_ESTOQUE.forEach((item, idx) => {
+    const subtotal = item.quantidade * item.custoUnitario;
+    total += subtotal;
+    const linha = document.createElement("div");
+    linha.className = "linha-tabela";
+    linha.innerHTML = `
+      <div class="nome-item">${item.produto}<div class="cat-item">${item.quantidade}x ${fmt(item.custoUnitario)} = ${fmt(subtotal)}</div></div>
+      <button class="btn-mini" style="color:#ff8a80;">🗑 Remover</button>
+    `;
+    linha.querySelector("button").onclick = () => {
+      CARRINHO_COMPRA_ESTOQUE.splice(idx, 1);
+      renderCarrinhoCompraEstoque();
+    };
+    lista.appendChild(linha);
+  });
+  $("ce-carrinho-total-linha").style.display = "flex";
+  $("ce-carrinho-total").textContent = fmt(total);
+}
+renderCarrinhoCompraEstoque();
+
+$("btn-add-item-compra-estoque").onclick = () => {
+  const produto = $("ce-produto").value;
+  const categoria = $("ce-produto").selectedOptions[0] ? $("ce-produto").selectedOptions[0].dataset.categoria : "";
+  const quantidade = parseFloat($("ce-quantidade").value) || 0;
+  const custoUnitario = parseFloat($("ce-custo-unitario").value) || 0;
+  if (!produto) { alert("Escolha o produto."); return; }
+  if (quantidade <= 0) { alert("Informe a quantidade."); return; }
+  CARRINHO_COMPRA_ESTOQUE.push({ produto, categoria, quantidade, custoUnitario });
+  renderCarrinhoCompraEstoque();
+  $("ce-quantidade").value = ""; $("ce-custo-unitario").value = "";
+};
+
+// Parcelar × à vista — mesmo padrão já usado em "Lançar saída" (sd-*).
+$("ce-parcelar").onchange = () => {
+  const parcelar = $("ce-parcelar").checked;
+  $("ce-bloco-parcelas").style.display = parcelar ? "block" : "none";
+  $("ce-bloco-ja-paga").style.display = parcelar ? "none" : "block";
+  if (parcelar) $("ce-bloco-vencimento").style.display = "block";
+  else $("ce-bloco-vencimento").style.display = $("ce-ja-paga").checked ? "none" : "block";
+};
 $("ce-ja-paga").onchange = () => {
   $("ce-bloco-vencimento").style.display = $("ce-ja-paga").checked ? "none" : "block";
 };
 
 $("btn-registrar-compra-estoque").onclick = async () => {
   const status = $("status-compra-estoque");
-  const produto = $("ce-produto").value;
-  const categoria = $("ce-produto").selectedOptions[0] ? $("ce-produto").selectedOptions[0].dataset.categoria : "";
-  const quantidade = parseFloat($("ce-quantidade").value) || 0;
-  const custoUnitario = parseFloat($("ce-custo-unitario").value) || 0;
+  if (!CARRINHO_COMPRA_ESTOQUE.length) { status.textContent = "Adicione pelo menos 1 item à compra."; status.className = "msg-status erro"; return; }
+
   const formaPagamento = $("ce-forma-pagamento").value;
   const dataCompra = $("ce-data").value;
-  const jaPaga = $("ce-ja-paga").checked;
-  const vencimento = $("ce-vencimento").value;
+  const atualizarEstoque = $("ce-atualizar-estoque").checked;
   const fornecedor = $("ce-fornecedor").value.trim();
-
-  if (!produto) { status.textContent = "Escolha o produto."; status.className = "msg-status erro"; return; }
-  if (quantidade <= 0) { status.textContent = "Informe a quantidade comprada."; status.className = "msg-status erro"; return; }
+  const parcelar = $("ce-parcelar").checked;
+  const parcelas = parcelar ? (parseInt($("ce-qtd-parcelas").value, 10) || 2) : 1;
+  const jaPaga = parcelar ? false : $("ce-ja-paga").checked;
+  const vencimento = parcelar ? $("ce-vencimento-parcela").value : $("ce-vencimento").value;
   if (!jaPaga && !vencimento) { status.textContent = "Informe o vencimento."; status.className = "msg-status erro"; return; }
 
   status.textContent = "Salvando...";
   status.className = "msg-status";
   try {
     const resp = await chamarAPI("registrarCompraEstoque", {
-      produto, categoria, quantidade, custoUnitario,
+      itens: JSON.stringify(CARRINHO_COMPRA_ESTOQUE),
       formaPagamento, statusPagamento: jaPaga ? "Pago" : "Pendente", vencimento,
-      data: dataCompra, fornecedor, usuario: USUARIO_LOGADO
+      data: dataCompra, parcelas, atualizarEstoque: atualizarEstoque ? "1" : "0",
+      fornecedor, usuario: USUARIO_LOGADO
     });
     if (resp.status === "ok") {
-      status.textContent = `✓ Compra registrada — ${quantidade}x ${produto} somados ao estoque e custo atualizado para ${fmt(custoUnitario)}.`;
+      status.textContent = `✓ Compra registrada — ${resp.qtdItens} item(ns), total ${fmt(resp.custoTotalGeral)}` + (atualizarEstoque ? "." : " (estoque não alterado).");
       status.className = "msg-status ok";
-      $("ce-quantidade").value = ""; $("ce-custo-unitario").value = ""; $("ce-custo-total").value = "";
-      $("ce-fornecedor").value = ""; $("ce-vencimento").value = "";
+      CARRINHO_COMPRA_ESTOQUE = [];
+      renderCarrinhoCompraEstoque();
+      $("ce-fornecedor").value = ""; $("ce-vencimento").value = ""; $("ce-vencimento-parcela").value = "";
+      $("ce-parcelar").checked = false; $("ce-bloco-parcelas").style.display = "none"; $("ce-bloco-ja-paga").style.display = "block";
+      $("ce-ja-paga").checked = true; $("ce-bloco-vencimento").style.display = "none";
       carregarEstoque();
       carregarProdutos();
       carregarContasAPagar();
