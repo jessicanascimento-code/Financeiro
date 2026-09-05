@@ -169,6 +169,14 @@
   .card-comanda.aberta{ border-color:rgba(255,122,26,.5); }
   .card-comanda.fechada{ border-color:rgba(47,191,113,.5); }
   .card-comanda.card-pacote{ border-color:rgba(58,160,232,.5); background:linear-gradient(180deg, rgba(58,160,232,.06), var(--preto2)); }
+  /* Crachá com o nome de quem abriu a comanda + borda esquerda colorida por
+     usuário — a cor em si vem via style inline (mapeada em CORES_USUARIO no
+     JS), essa classe só cuida do formato comum a todas as cores. */
+  .card-comanda{ border-left-width:4px; }
+  .badge-criador{
+    display:inline-block; font-size:9.5px; font-weight:800; text-transform:uppercase; letter-spacing:.3px;
+    padding:3px 8px; border-radius:6px; margin-bottom:6px; align-self:flex-start;
+  }
   .badge-pacote{
     display:inline-block; background:rgba(58,160,232,.18); color:var(--azul); font-size:9.5px; font-weight:800;
     text-transform:uppercase; letter-spacing:.3px; padding:3px 8px; border-radius:6px; margin-bottom:6px; align-self:flex-start;
@@ -700,12 +708,14 @@
       </div>
 
       <div class="sub-abas">
-        <button data-subaba="comandas-lista" class="ativa">Comandas</button>
+        <button data-subaba="comandas-lista" class="ativa">Minhas Comandas</button>
+        <button data-subaba="comandas-hoje">🗓️ Comandas de Hoje</button>
         <button data-subaba="comandas-resumo">📊 Resumo do dia</button>
         <button data-subaba="comandas-indicadores">📈 Indicadores</button>
       </div>
 
       <div class="sub-secao ativa" id="subsecao-comandas-lista">
+        <p style="font-size:11px; color:var(--muted); margin:0 0 8px;">Mostrando só as comandas abertas por <b id="rotulo-usuario-minhas-comandas"></b>. Pra ver de todo mundo, use a aba "Comandas de Hoje".</p>
         <div class="filtros-status">
           <button data-status="Aberta" class="ativa">Abertas</button>
           <button data-status="Fechada">Fechadas hoje</button>
@@ -718,6 +728,12 @@
         </div>
         <div style="height:12px;"></div>
         <div class="grid-comandas" id="grid-comandas"><div class="vazio-lista">Carregando...</div></div>
+      </div>
+
+      <div class="sub-secao" id="subsecao-comandas-hoje">
+        <p style="font-size:11px; color:var(--muted); margin:0 0 8px;">Todas as comandas de hoje, de todos os usuários — abertas ou fechadas hoje.</p>
+        <button class="btn-mini" id="btn-atualizar-comandas-hoje" style="margin-bottom:10px;">🔄 Atualizar</button>
+        <div class="grid-comandas" id="grid-comandas-hoje"><div class="vazio-lista">Carregando...</div></div>
       </div>
 
       <div class="sub-secao" id="subsecao-comandas-resumo">
@@ -1433,7 +1449,7 @@
 // ar é realmente a versão mais nova ou se o GitHub Pages ainda está
 // servindo uma versão antiga em cache.
 // =====================================================================
-const VERSAO_APP = "7.1";
+const VERSAO_APP = "7.2";
 document.querySelectorAll(".badge-versao").forEach(el => el.textContent = "v" + VERSAO_APP);
 
 // =====================================================================
@@ -1683,6 +1699,7 @@ function iniciarApp() {
   $("tela-login").style.display = "none";
   $("app").style.display = "flex";
   $("nome-usuario-logado").textContent = USUARIO_LOGADO;
+  $("rotulo-usuario-minhas-comandas").textContent = USUARIO_LOGADO;
   $("badge-perfil").textContent = ehAdmin() ? "Administrador" : "Padrão";
   aplicarRestricoesDePerfil();
   carregarCategorias();
@@ -1740,6 +1757,7 @@ document.querySelectorAll(".sub-abas").forEach(grupo => {
       btn.classList.add("ativa");
       secoes.forEach(s => s.classList.toggle("ativa", s.id === `subsecao-${btn.dataset.subaba}`));
       if (btn.dataset.subaba === "comandas-resumo") carregarResumoDia();
+      if (btn.dataset.subaba === "comandas-hoje") carregarComandasHoje();
       if (btn.dataset.subaba === "comandas-indicadores") carregarIndicadores();
       if (btn.dataset.subaba === "fin-detalhes") { carregarContasAPagar(); carregarContasAReceber(); }
       if (btn.dataset.subaba === "estoque-movimentar") popularSelectProdutoMovimentoEstoque();
@@ -1765,15 +1783,35 @@ document.querySelectorAll(".filtros-status button").forEach(btn => {
 
 $("btn-filtrar-comandas").onclick = () => carregarComandas();
 
+// ---------------------------------------------------------------------
+// CORES POR USUÁRIO — sinaliza visualmente quem abriu cada comanda/pacote.
+// Nome não mapeado (ex: alguém digitado em "Outro nome...") cai no padrão
+// neutro (mesma borda cinza que os cards já usavam antes desta mudança).
+// ---------------------------------------------------------------------
+const CORES_USUARIO = {
+  "Jessica Nascimento": { borda: "#ff6fae", fundo: "rgba(255,111,174,.16)" }, // rosa
+  "Jessica Miranda": { borda: "#b388ff", fundo: "rgba(179,136,255,.16)" },   // lilás
+  "Thiago Xavier": { borda: "#3aa0e8", fundo: "rgba(58,160,232,.16)" },      // azul
+  "Diêgo Xavier": { borda: "#2fbf71", fundo: "rgba(47,191,113,.16)" }        // verde
+};
+const COR_USUARIO_PADRAO = { borda: "var(--borda)", fundo: "rgba(255,255,255,.06)" };
+function corDoUsuario(nome) {
+  return CORES_USUARIO[(nome || "").trim()] || COR_USUARIO_PADRAO;
+}
+
 function montarCardComanda(c, totalItens) {
   const card = document.createElement("div");
   card.className = "card-comanda " + c.status.toLowerCase() + (c.ehPacote ? " card-pacote" : "");
   card.dataset.comandaId = c.comandaId;
   // abertaEm já vem como "dd/MM/yyyy HH:mm:ss"
   const [dataComanda, horaComanda] = (c.abertaEm || "").toString().split(" ");
+  const cor = corDoUsuario(c.usuarioAbertura);
+  card.style.borderLeftColor = cor.borda;
+  const badgeCriador = `<div class="badge-criador" style="background:${cor.fundo}; color:${cor.borda};">${c.usuarioAbertura || "-"}</div>`;
 
   if (c.ehPacote) {
     card.innerHTML = `
+      ${badgeCriador}
       <div class="badge-pacote">📦 Pacote — ${c.tipoPacote}</div>
       <div class="card-topo">
         <div class="id">${c.identificacao}</div>
@@ -1793,6 +1831,7 @@ function montarCardComanda(c, totalItens) {
       <button class="btn-editar-menu">✏️ Editar</button>
       <button class="excluir btn-excluir-menu">🗑 Excluir</button>
     </div>
+    ${badgeCriador}
     <div class="card-topo">
       <div class="id">${c.identificacao}</div>
       <span class="status-pill ${c.status}">${c.status}</span>
@@ -2031,6 +2070,11 @@ async function excluirComandaComConfirmacao(comandaId, identificacao) {
   } catch (e) { alert("❌ " + e.message); }
 }
 
+// Mostra só as comandas abertas pelo usuário logado (item novo: cada
+// usuário vê primeiro as próprias comandas). Pacotes ficam de fora desse
+// filtro por "dono" — eles já têm seu próprio fluxo de Contas a Receber e
+// costumam ser combinados por qualquer um da equipe, então continuam
+// aparecendo aqui independente de quem os vendeu.
 async function carregarComandas() {
   const grid = $("grid-comandas");
   grid.innerHTML = `<div class="vazio-lista">Carregando...</div>`;
@@ -2047,13 +2091,33 @@ async function carregarComandas() {
   try {
     const resp = await chamarAPI("listarComandas", params);
     if (resp.status !== "ok") { grid.innerHTML = `<div class="vazio-lista">❌ ${resp.mensagem}</div>`; return; }
-    if (!resp.comandas.length) { grid.innerHTML = `<div class="vazio-lista">Nenhuma comanda por aqui ainda.</div>`; return; }
+    const minhas = resp.comandas.filter(c => c.ehPacote || c.usuarioAbertura === USUARIO_LOGADO);
+    if (!minhas.length) { grid.innerHTML = `<div class="vazio-lista">Nenhuma comanda sua por aqui ainda. Veja "Comandas de Hoje" pra conferir as de todo mundo.</div>`; return; }
+    grid.innerHTML = "";
+    minhas.forEach(c => grid.appendChild(montarCardComanda(c)));
+  } catch (e) {
+    grid.innerHTML = `<div class="vazio-lista">❌ ${e.message}</div>`;
+  }
+}
+
+// "Comandas de Hoje" — todas as comandas de todos os usuários, sempre do
+// dia de hoje (aberta hoje OU fechada hoje), sem filtro de dono. Item novo:
+// visão consolidada da operação do dia inteiro.
+async function carregarComandasHoje() {
+  const grid = $("grid-comandas-hoje");
+  grid.innerHTML = `<div class="vazio-lista">Carregando...</div>`;
+  const iso = dataHojeISO();
+  try {
+    const resp = await chamarAPI("listarComandas", { status: "Todas", dataInicio: iso, dataFim: iso });
+    if (resp.status !== "ok") { grid.innerHTML = `<div class="vazio-lista">❌ ${resp.mensagem}</div>`; return; }
+    if (!resp.comandas.length) { grid.innerHTML = `<div class="vazio-lista">Nenhuma comanda hoje ainda.</div>`; return; }
     grid.innerHTML = "";
     resp.comandas.forEach(c => grid.appendChild(montarCardComanda(c)));
   } catch (e) {
     grid.innerHTML = `<div class="vazio-lista">❌ ${e.message}</div>`;
   }
 }
+$("btn-atualizar-comandas-hoje").onclick = carregarComandasHoje;
 
 // =====================================================================
 // COMANDAS — SUB-ABA "RESUMO DO DIA" (Espeto / Bebida / Baião / Combo)
