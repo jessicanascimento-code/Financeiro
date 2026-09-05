@@ -1449,7 +1449,7 @@
 // ar é realmente a versão mais nova ou se o GitHub Pages ainda está
 // servindo uma versão antiga em cache.
 // =====================================================================
-const VERSAO_APP = "7.2";
+const VERSAO_APP = "7.3";
 document.querySelectorAll(".badge-versao").forEach(el => el.textContent = "v" + VERSAO_APP);
 
 // =====================================================================
@@ -1486,7 +1486,7 @@ document.querySelectorAll(".badge-versao").forEach(el => el.textContent = "v" + 
 // CONFIG
 // =====================================================================
 const CONFIG = {
-  API_URL: "https://script.google.com/macros/s/AKfycbxNy4zZy0QDwGNDZV0BCCTerV78xtrDDVJ7Rjd_EXEI8M0cpfk4I7QmbLWaNY3sf5tZ5Q/exec"
+  API_URL: "https://script.google.com/macros/s/AKfycbwex0BXjAGiW15z0L4UHm-KwQ8eSrUDCfTSK9a2D9FThcr8lB3-rkQ5xkECopERxp6V6A/exec"
 };
 
 const $ = (id) => document.getElementById(id);
@@ -1537,14 +1537,26 @@ async function chamarAPI(acao, params) {
   const paramsComOpId = Object.assign({ opId }, params || {});
 
   const tentativas = [15000, 15000, 15000]; // até 3 tentativas
-  let ultimoErro;
+  let ultimoErro, ultimaRespostaComErro;
   for (let i = 0; i < tentativas.length; i++) {
     try {
-      return await chamarAPIUmaVez(acao, paramsComOpId, tentativas[i]);
+      const resp = await chamarAPIUmaVez(acao, paramsComOpId, tentativas[i]);
+      // Erro de TRAVA (Lock) é passageiro — outro usuário estava gravando
+      // algo no exato mesmo instante (normal com vários operadores ao mesmo
+      // tempo). Diferente de "chegou uma resposta de negócio dizendo que
+      // algo está errado" (ex: comanda não existe), aqui vale tentar de
+      // novo com o MESMO opId em vez de mostrar erro já na 1ª tentativa.
+      if (resp && resp.status === "erro" && /lock|timeout/i.test(resp.mensagem || "") && i < tentativas.length - 1) {
+        ultimaRespostaComErro = resp;
+        await new Promise(r => setTimeout(r, 1500));
+        continue;
+      }
+      return resp;
     } catch (erro) {
       ultimoErro = erro;
     }
   }
+  if (ultimaRespostaComErro) return ultimaRespostaComErro;
   throw ultimoErro;
 }
 
@@ -1615,6 +1627,16 @@ async function processarFila() {
     atualizarIndicadorSync();
     try {
       const resp = await chamarAPIUmaVez(op.acao, op.params, 20000);
+      const msgErro = (resp && resp.mensagem) || "Erro desconhecido.";
+      // Erro de TRAVA (Lock) é passageiro — outro usuário estava gravando
+      // algo no mesmo instante (comum com vários operadores ao mesmo
+      // tempo). Vale tentar de novo, como erro de rede, em vez de desistir
+      // e avisar a pessoa já na 1ª tentativa.
+      if (resp && resp.status === "erro" && /lock|timeout/i.test(msgErro)) {
+        atualizarIndicadorSync(msgErro);
+        await new Promise(r => setTimeout(r, 3000));
+        continue;
+      }
       FILA_SYNC.shift();
       salvarFila();
       const cbs = CALLBACKS_SYNC[op.opId];
@@ -1624,7 +1646,7 @@ async function processarFila() {
       } else {
         // erro "de verdade" devolvido pelo servidor (ex: comanda não existe) —
         // repetir não vai resolver, então tira da fila e avisa quem pediu.
-        if (cbs && cbs.aoFalhar) { try { cbs.aoFalhar((resp && resp.mensagem) || "Erro desconhecido."); } catch (e) {} }
+        if (cbs && cbs.aoFalhar) { try { cbs.aoFalhar(msgErro); } catch (e) {} }
       }
     } catch (erroRede) {
       // falha de rede/tempo esgotado — mantém na fila (não perde a operação)
@@ -1702,12 +1724,19 @@ function iniciarApp() {
   $("rotulo-usuario-minhas-comandas").textContent = USUARIO_LOGADO;
   $("badge-perfil").textContent = ehAdmin() ? "Administrador" : "Padrão";
   aplicarRestricoesDePerfil();
-  carregarCategorias();
-  carregarComandas();
-  carregarProdutos();
-  carregarEstoque();
-  carregarSaldoCaixa();
-  carregarResumoInicial();
+  // Prioriza o que a pessoa mais provavelmente vai precisar primeiro (abrir
+  // uma comanda: precisa da lista de comandas e do cardápio) — antes, o
+  // login disparava umas 10 chamadas simultâneas de uma vez só, e o
+  // cardápio podia demorar mais que o necessário por estar competindo com
+  // todo o resto pela mesma conexão. O resto (categorias, estoque, saldo em
+  // caixa, resumo financeiro) só começa depois que as duas primeiras já
+  // tiverem voltado.
+  Promise.all([carregarComandas(), carregarProdutos()]).then(() => {
+    carregarCategorias();
+    carregarEstoque();
+    carregarSaldoCaixa();
+    carregarResumoInicial();
+  });
   // retoma qualquer ação que ficou pendente de uma sessão anterior (ex:
   // internet caiu no meio do evento antes de sincronizar tudo)
   carregarFilaSalva();
@@ -1742,8 +1771,53 @@ document.querySelectorAll("nav.abas button").forEach(btn => {
     btn.classList.add("ativa");
     document.querySelectorAll(".secao").forEach(s => s.classList.remove("ativa"));
     $("secao-" + btn.dataset.aba).classList.add("ativa");
+    // Ao entrar em Comandas, atualiza a lista visível na hora — não espera
+    // a atualização periódica em segundo plano (até 30s) pra refletir o que
+    // outro usuário abriu/fechou enquanto você estava em outra aba. Não
+    // fazemos isso pra Cardápio/Estoque de propósito: lá tem campo editável
+    // (custo/preço/quantidade) e recarregar de repente apagaria uma edição
+    // que a pessoa ainda não salvou.
+    if (btn.dataset.aba === "comandas") {
+      const subAtivaEl = document.querySelector("#secao-comandas .sub-secao.ativa");
+      const idSub = subAtivaEl ? subAtivaEl.id : "";
+      if (idSub === "subsecao-comandas-hoje") carregarComandasHoje();
+      else carregarComandas();
+    }
   };
 });
+
+// =====================================================================
+// ATUALIZAÇÃO EM SEGUNDO PLANO — a cada 30s, refaz a busca de cardápio,
+// estoque e da lista de comandas visível, pra qualquer usuário logado
+// enxergar rápido o que outro mudou (preço, custo, estoque, comanda
+// aberta/fechada por outra pessoa) sem precisar recarregar a página ou
+// deslogar. Cardápio e Estoque só atualizam quando a pessoa NÃO está
+// olhando pra essa aba naquele momento — assim nunca some uma edição que
+// ainda não foi salva (o "Salvar tudo" continua recarregando na hora,
+// como sempre). Comandas atualiza sempre que a seção estiver visível,
+// porque a grade não tem campo editável — não tem o que perder.
+// =====================================================================
+let ATUALIZANDO_EM_SEGUNDO_PLANO = false;
+async function atualizarEmSegundoPlano() {
+  if (ATUALIZANDO_EM_SEGUNDO_PLANO) return; // evita empilhar chamadas se a rede estiver lenta
+  ATUALIZANDO_EM_SEGUNDO_PLANO = true;
+  try {
+    const secaoAtivaEl = document.querySelector(".secao.ativa");
+    const idSecao = secaoAtivaEl ? secaoAtivaEl.id : "";
+    const tarefas = [];
+    if (idSecao !== "secao-cardapio") tarefas.push(carregarProdutos());
+    if (idSecao !== "secao-estoque") tarefas.push(carregarEstoque());
+    if (idSecao === "secao-comandas") {
+      const subAtivaEl = document.querySelector("#secao-comandas .sub-secao.ativa");
+      const idSub = subAtivaEl ? subAtivaEl.id : "";
+      if (idSub === "subsecao-comandas-hoje") tarefas.push(carregarComandasHoje());
+      else if (idSub === "subsecao-comandas-lista") tarefas.push(carregarComandas());
+    }
+    await Promise.all(tarefas);
+  } catch (e) { /* atualização em segundo plano é silenciosa — não interrompe o uso */ }
+  ATUALIZANDO_EM_SEGUNDO_PLANO = false;
+}
+setInterval(atualizarEmSegundoPlano, 30000);
 
 // Sub-abas genéricas (Comandas: Comandas/Resumo do dia/Indicadores —
 // Financeiro: Resumo/Detalhes). Cada grupo de botões ".sub-abas" controla
@@ -2328,8 +2402,11 @@ async function abrirModalComanda(comandaId) {
   $("overlay-comanda").classList.add("aberto");
   $("modal-status").textContent = "";
   $("modal-lista-itens").innerHTML = `<div class="vazio-lista">Carregando...</div>`;
-  await popularSelectProdutos();
-  await recarregarComanda(comandaId);
+  // Busca o cardápio (pro dropdown "Adicionar item") e os dados da comanda
+  // ao mesmo tempo, não um depois do outro — são independentes, então
+  // esperar um terminar pra só então começar o outro só atrasa a lista de
+  // opções aparecer sem necessidade.
+  await Promise.all([popularSelectProdutos(), recarregarComanda(comandaId)]);
 }
 
 async function recarregarComanda(comandaId) {
