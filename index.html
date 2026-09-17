@@ -1452,7 +1452,7 @@
 // ar é realmente a versão mais nova ou se o GitHub Pages ainda está
 // servindo uma versão antiga em cache.
 // =====================================================================
-const VERSAO_APP = "6.9";
+const VERSAO_APP = "7.5";
 document.querySelectorAll(".badge-versao").forEach(el => el.textContent = "v" + VERSAO_APP);
 
 // =====================================================================
@@ -2929,6 +2929,7 @@ function montarTextoCupomComanda(payload) {
 
   let t = "";
   t += centralizarCupom("BRASERO 96") + "\n";
+  t += centralizarCupom("Buffet Móvel de Espetinhos") + "\n";
   t += centralizarCupom("Comanda de atendimento") + "\n";
   t += separador + "\n";
   t += "Comanda: " + c.identificacao + "\n";
@@ -2945,7 +2946,14 @@ function montarTextoCupomComanda(payload) {
           (it.comboVinagrete === "SIM" ? " + Vinagrete" : "") +
           (it.comboFarofa === "SIM" ? " + Farofa" : "") + " + Baiao\n";
       }
-      t += linhaCupom(it.quantidade + "x", fmt(it.valorTotal)) + "\n";
+      // Com mais de 1 unidade, mostra "2x R$ 3,50" (qtd x preço unitário) à
+      // esquerda e o total da linha à direita — ex: "Guaraná zero  2x R$ 3,50"
+      // com "R$ 7,00" alinhado à direita. Com 1 unidade só, unitário = total,
+      // então não repete o valor duas vezes.
+      const esquerda = it.quantidade > 1
+        ? it.quantidade + "x " + fmt(it.valorUnitario)
+        : it.quantidade + "x";
+      t += linhaCupom(esquerda, fmt(it.valorTotal)) + "\n";
     });
   } else {
     t += centralizarCupom("Nenhum item") + "\n";
@@ -2963,7 +2971,9 @@ function montarTextoCupomComanda(payload) {
     t += "PENDENTE - EM ABERTO\n";
   }
 
-  t += "\n" + centralizarCupom("Obrigado pela confiança!") + "\n";
+  // "ç" não sai certo nessa impressora (testado — vira "confiana" em vez de
+  // "confiança"), então usa "c" normal aqui, como combinado.
+  t += "\n" + centralizarCupom("Obrigado pela confianca!") + "\n";
   t += "\n\n\n"; // margem em branco no final, pra facilitar rasgar o papel
   return t;
 }
@@ -2986,10 +2996,13 @@ $("btn-visualizar-comanda").onclick = () => {
 
 function formatarDataHoraCupom(dataHoraBR) {
   // dataHoraBR já vem como "dd/MM/yyyy HH:mm:ss" (agoraBR()/agora() do
-  // Apps Script) — só precisamos trocar pro formato pedido "dd/mm/aaaa - HH:mm:ss"
+  // Apps Script) — troca pro formato pedido "dd/mm/aaaa - HH:mm", sem os
+  // segundos, pra "Aberta em" e "Impresso em" caberem numa linha só.
   if (!dataHoraBR) return "";
   const [data, hora] = dataHoraBR.toString().split(" ");
-  return hora ? `${data} - ${hora}` : data;
+  if (!hora) return data;
+  const horaSemSegundos = hora.slice(0, 5); // "HH:mm:ss" -> "HH:mm"
+  return `${data} - ${horaSemSegundos}`;
 }
 
 function abrirCupomComanda(payload) {
@@ -3025,6 +3038,7 @@ function abrirCupomComanda(payload) {
     <div class="cupom-comanda">
       <div class="cupom-cabecalho">
         <div class="cupom-marca">BRASERO 96</div>
+        <div class="cupom-subtitulo">Buffet Móvel de Espetinhos</div>
         <div class="cupom-subtitulo">Comanda de atendimento</div>
       </div>
       <div class="cupom-meta">
