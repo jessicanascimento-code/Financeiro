@@ -1336,7 +1336,10 @@
         <button class="btn-secundario" id="btn-reabrir-comanda" style="display:none;">Reabrir comanda</button>
         <button class="btn-secundario" id="btn-editar-pagamento" style="display:none;">Editar pagamento</button>
       </div>
-      <button class="btn-secundario" id="btn-imprimir-comanda">🧾 Imprimir comanda</button>
+      <button class="btn-secundario" id="btn-imprimir-comanda">🖨️ Imprimir comanda</button>
+      <div class="linha2">
+        <button class="btn-secundario" id="btn-visualizar-comanda" title="Ver antes de imprimir, sem mandar pra impressora">👁️ Visualizar</button>
+      </div>
       <button class="btn-perigo" id="btn-cancelar-comanda">Cancelar comanda</button>
     </div>
 
@@ -1449,7 +1452,7 @@
 // ar é realmente a versão mais nova ou se o GitHub Pages ainda está
 // servindo uma versão antiga em cache.
 // =====================================================================
-const VERSAO_APP = "7.3";
+const VERSAO_APP = "6.9";
 document.querySelectorAll(".badge-versao").forEach(el => el.textContent = "v" + VERSAO_APP);
 
 // =====================================================================
@@ -2875,13 +2878,108 @@ $("btn-fechar-modal").onclick = () => { $("overlay-comanda").classList.remove("a
 $("overlay-comanda").addEventListener("click", (e) => { if (e.target.id === "overlay-comanda") $("overlay-comanda").classList.remove("aberto"); });
 
 // =====================================================================
-// IMPRESSÃO DE COMANDA (cupom) — item extra da Fase 1
+// IMPRESSÃO DE COMANDA — RawBT, 1 clique, direto na impressora térmica
+// Bluetooth, sem abrir nenhuma tela intermediária. O RawBT precisa estar
+// instalado e configurado no aparelho (impressora escolhida + largura
+// 58mm) uma vez só: play.google.com/store/apps/details?id=ru.a402d.rawbtprinter
+// Testado e confirmado com a impressora Knup 58mm/BT em 17/09/2026.
 // =====================================================================
-// Reaproveita o mesmo padrão visual/impressão já usado no comprovante de
-// pacote: uma folha clara (".cupom-comanda"), preenchida 100% no navegador
-// com o que já está em COMANDA_ATUAL — não depende de nenhuma chamada nova
-// ao Apps Script.
+const RAWBT_PACOTE = "ru.a402d.rawbtprinter";
+const LARGURA_CUPOM_COLUNAS = 32; // Fonte A da impressora: 48mm de impressão / 1,5mm por caractere
+
+// btoa só entende Latin-1 — esse truque converte texto UTF-8 (acentos, ç
+// etc.) pra uma forma que o btoa aceita. O RawBT recebe o dado já
+// declarado como "text/plain" em UTF-8 e ele mesmo recodifica pro charset
+// da impressora — não precisamos nos preocupar com isso aqui.
+function base64Utf8(str) {
+  return btoa(unescape(encodeURIComponent(str)));
+}
+
+function imprimirTextoRawBT(texto) {
+  const base64 = base64Utf8(texto);
+  const dados = "data:text/plain;base64," + base64;
+  // Formato oficial do RawBT (rawbt.ru/start.html), via o esquema intent://
+  // do Chrome — se o RawBT não estiver instalado no aparelho, o navegador
+  // abre a Play Store dele sozinho, em vez de simplesmente falhar.
+  window.location.href = "intent:" + dados + "#Intent;scheme=rawbt;package=" + RAWBT_PACOTE + ";end;";
+}
+
+// Monta uma linha com texto na esquerda e na direita, preenchendo o meio
+// com espaços até completar a largura da coluna — é o "alinhar à direita"
+// possível em texto puro (sem tabela/CSS).
+function linhaCupom(esquerda, direita) {
+  const espacos = Math.max(1, LARGURA_CUPOM_COLUNAS - esquerda.length - direita.length);
+  return esquerda + " ".repeat(espacos) + direita;
+}
+function centralizarCupom(texto) {
+  const espacos = Math.max(0, Math.floor((LARGURA_CUPOM_COLUNAS - texto.length) / 2));
+  return " ".repeat(espacos) + texto;
+}
+
+// Monta o texto puro (sem HTML) que vai direto pra impressora térmica —
+// mesmo conteúdo do cupom visual (abrirCupomComanda, usado só no
+// "Visualizar"), só que formatado em colunas de largura fixa em vez de
+// tabela, do jeito que uma impressora térmica de verdade imprime.
+function montarTextoCupomComanda(payload) {
+  const c = payload.comanda;
+  const itens = payload.itens || [];
+  const fechada = c.status === "Fechada";
+  const cancelada = c.status === "Cancelada";
+  const separador = "-".repeat(LARGURA_CUPOM_COLUNAS);
+
+  let t = "";
+  t += centralizarCupom("BRASERO 96") + "\n";
+  t += centralizarCupom("Comanda de atendimento") + "\n";
+  t += separador + "\n";
+  t += "Comanda: " + c.identificacao + "\n";
+  t += "Atendente: " + (c.usuarioAbertura || USUARIO_LOGADO) + "\n";
+  t += "Aberta em: " + formatarDataHoraCupom(c.abertaEm) + "\n";
+  t += "Impresso em: " + formatarDataHoraCupom(agoraBR()) + "\n";
+  t += separador + "\n";
+
+  if (itens.length) {
+    itens.forEach(it => {
+      t += it.produto + "\n";
+      if (it.comboEspeto1) {
+        t += "  " + it.comboEspeto1 + " + " + it.comboEspeto2 + " + " + it.comboRefri +
+          (it.comboVinagrete === "SIM" ? " + Vinagrete" : "") +
+          (it.comboFarofa === "SIM" ? " + Farofa" : "") + " + Baiao\n";
+      }
+      t += linhaCupom(it.quantidade + "x", fmt(it.valorTotal)) + "\n";
+    });
+  } else {
+    t += centralizarCupom("Nenhum item") + "\n";
+  }
+
+  t += separador + "\n";
+  t += linhaCupom("TOTAL", fmt(payload.valorTotal)) + "\n";
+  t += separador + "\n";
+
+  if (fechada) {
+    t += "PAGO - " + (c.formaPagamento || "-") + "\n";
+  } else if (cancelada) {
+    t += "COMANDA CANCELADA\n";
+  } else {
+    t += "PENDENTE - EM ABERTO\n";
+  }
+
+  t += "\n" + centralizarCupom("Obrigado pela confiança!") + "\n";
+  t += "\n\n\n"; // margem em branco no final, pra facilitar rasgar o papel
+  return t;
+}
+
 $("btn-imprimir-comanda").onclick = () => {
+  if (!COMANDA_ATUAL) return;
+  const texto = montarTextoCupomComanda(COMANDA_ATUAL);
+  imprimirTextoRawBT(texto);
+  $("modal-status").textContent = "🖨️ Enviado para impressão.";
+  $("modal-status").className = "msg-status ok";
+};
+
+// "Visualizar" — abre a prévia visual em tela (a mesma folha estilizada de
+// antes), sem mandar nada pra impressora. Útil pra conferir o conteúdo ou
+// pra salvar em PDF pelo navegador, se precisar.
+$("btn-visualizar-comanda").onclick = () => {
   if (!COMANDA_ATUAL) return;
   abrirCupomComanda(COMANDA_ATUAL);
 };
