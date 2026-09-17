@@ -2345,7 +2345,7 @@ async function carregarIndicadores() {
 // =====================================================================
 // COMANDAS — NOMEAÇÃO AUTOMÁTICA ("Cliente 01", "Cliente 02", ...)
 // =====================================================================
-function proximoNomeCliente() {
+function proximoNomeMesa() {
   const chave = "brasero96_contador_cliente_" + dataHojeISO();
   const contador = parseInt(localStorage.getItem(chave) || "0", 10) + 1;
   localStorage.setItem(chave, String(contador));
@@ -2355,7 +2355,7 @@ function proximoNomeCliente() {
 $("btn-nova-comanda").onclick = () => {
   // nomeação automática — sem prompt, pra agilizar. Quem quiser um nome
   // diferente, renomeia depois clicando no lápis ao lado do título no modal.
-  const identificacao = proximoNomeCliente();
+  const identificacao = proximoNomeMesa();
 
   // registra local primeiro: o ID é gerado aqui mesmo, então a comanda que
   // já abre na tela do operador é a mesma linha que vai pra planilha depois
