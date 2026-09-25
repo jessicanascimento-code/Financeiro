@@ -3,7 +3,17 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#0c0a09">
 <title>Brasero 96 — Financeiro</title>
+<script>
+  // Aplica o tema salvo (claro/escuro) ANTES de desenhar a página, pra não
+  // piscar o tema errado ao abrir. O padrão continua sendo o escuro.
+  (function () {
+    var tema = "escuro";
+    try { var salvo = localStorage.getItem("brasero96_tema"); if (salvo === "claro" || salvo === "escuro") tema = salvo; } catch (e) {}
+    document.documentElement.setAttribute("data-tema", tema);
+  })();
+</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
@@ -12,18 +22,41 @@
     --vermelho:#e0231a; --laranja:#ff7a1a; --amarelo:#ffc42e;
     --creme:#fff6e9; --muted:#a89a8c; --verde:#2fbf71; --azul:#3aa0e8;
     --borda:#2a2119; --radius:14px;
+    --erro:#ff8a80; --scroll:#3a2e22; --travado:#0a0807;
+    color-scheme:dark;
   }
+  /* ---------- MODO CLARO ---------- */
+  :root[data-tema="claro"]{
+    --preto:#f6f1ea; --preto2:#ffffff; --preto3:#efe7dc;
+    --vermelho:#cf2219; --laranja:#e2640c; --amarelo:#a86400;
+    --creme:#2b1d12; --muted:#77675a; --borda:#e2d5c5;
+    --verde:#1c8f53; --azul:#1b6fb3;
+    --erro:#c62828; --scroll:#cdbca8; --travado:#eee6db;
+    color-scheme:light;
+  }
+  :root[data-tema="claro"] .card-comanda,
+  :root[data-tema="claro"] .resumo-caixa,
+  :root[data-tema="claro"] .resumo-dia-card,
+  :root[data-tema="claro"] .indicador-card,
+  :root[data-tema="claro"] .login-card{ box-shadow:0 2px 10px rgba(80,50,20,.08); }
+  :root[data-tema="claro"] .card-comanda:hover{ box-shadow:0 6px 18px rgba(80,50,20,.12); }
+  :root[data-tema="claro"] .status-pill.Cancelada{ background:rgba(0,0,0,.06); }
+  :root[data-tema="claro"] .btn-menu-comanda{ background:var(--preto3); }
+  :root[data-tema="claro"] .btn-produto-rapido{ background:var(--preto); }
+
   *{box-sizing:border-box;}
   html,body{margin:0;padding:0;}
   body{
     background:radial-gradient(ellipse 1000px 500px at 50% -10%, rgba(255,122,26,.18), transparent 60%), var(--preto);
     color:var(--creme); font-family:'Inter',system-ui,sans-serif; min-height:100vh;
+    transition:background-color .2s, color .2s;
   }
   h1,h2,h3{ font-family:'Poppins',sans-serif; margin:0; }
   button{ font-family:'Poppins',sans-serif; cursor:pointer; }
   input,select,textarea{ font-family:'Inter',sans-serif; }
   ::-webkit-scrollbar{ width:8px; height:8px; }
-  ::-webkit-scrollbar-thumb{ background:#3a2e22; border-radius:8px; }
+  ::-webkit-scrollbar-thumb{ background:var(--scroll); border-radius:8px; }
+  button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible{ outline:2px solid var(--laranja); outline-offset:1px; }
 
   /* Trava o scroll de fundo enquanto um modal está aberto (evita o
      "arrastão"/corte de tela ao rolar dentro do modal no celular) */
@@ -34,6 +67,13 @@
   @media(max-width:480px){
     input, select, textarea{ font-size:16px; }
   }
+
+  /* ---------- BOTÃO DE TEMA (claro/escuro) ---------- */
+  .btn-tema{
+    background:transparent; border:1px solid var(--borda); color:var(--creme); border-radius:8px;
+    padding:5px 9px; font-size:13px; line-height:1;
+  }
+  #btn-tema-login{ position:fixed; top:14px; right:14px; padding:8px 11px; font-size:15px; background:var(--preto2); }
 
   /* ---------- LOGIN ---------- */
   #tela-login{
@@ -60,7 +100,7 @@
     background:linear-gradient(90deg,var(--vermelho),var(--laranja)); color:#fff; border:none;
     border-radius:10px; padding:12px; font-weight:700; font-size:14px;
   }
-  #erro-login{ color:#ff8a80; font-size:12.5px; min-height:16px; text-align:center; }
+  #erro-login{ color:var(--erro); font-size:12.5px; min-height:16px; text-align:center; }
 
   /* ---------- APP ---------- */
   #app{ display:none; min-height:100vh; flex-direction:column; }
@@ -80,11 +120,12 @@
   }
   #tela-login .badge-versao{ font-size:11px; padding:3px 9px; }
   header .usuario-atual{ font-size:12px; color:var(--muted); display:flex; align-items:center; gap:8px; }
+  @media(max-width:430px){ #nome-usuario-logado{ display:none; } }
   .indicador-sync{
     font-size:11px; font-weight:700; padding:4px 9px; border-radius:8px; display:flex; align-items:center; gap:5px;
   }
   .indicador-sync.pendente{ background:rgba(255,196,46,.15); color:var(--amarelo); }
-  .indicador-sync.offline{ background:rgba(255,138,128,.15); color:#ff8a80; }
+  .indicador-sync.offline{ background:rgba(255,138,128,.15); color:var(--erro); }
   @keyframes girar{ from{ transform:rotate(0deg); } to{ transform:rotate(360deg); } }
   .indicador-sync .girando{ display:inline-block; animation:girar 1s linear infinite; }
   header .badge-perfil{
@@ -94,6 +135,7 @@
   header .usuario-atual button{
     background:transparent; border:1px solid var(--borda); color:var(--muted); border-radius:8px; padding:5px 9px; font-size:11.5px;
   }
+  header .usuario-atual button.btn-tema{ color:var(--creme); font-size:13px; }
 
   nav.abas{
     display:flex; gap:4px; padding:8px 12px; background:var(--preto2); border-bottom:1px solid var(--borda);
@@ -157,6 +199,28 @@
   .resumo-dia-card.clicavel:hover{ transform:translateY(-2px); box-shadow:0 8px 20px rgba(0,0,0,.3); }
   .resumo-dia-card.aberto{ outline:2px solid var(--laranja); }
 
+  /* Card de faturamento total do dia/mês (todas as comandas fechadas, de
+     todos os atendentes) — ocupa a linha inteira, acima dos cards por tipo */
+  .resumo-dia-total{
+    grid-column:1/-1; background:linear-gradient(120deg, rgba(255,122,26,.16), var(--preto2) 60%);
+    border:1px solid var(--borda); border-left:4px solid var(--laranja); border-radius:12px; padding:16px 18px;
+    display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:16px;
+  }
+  .resumo-dia-total .rotulo{ font-size:12px; color:var(--muted); font-weight:600; }
+  .resumo-dia-total .valor-principal{ font-family:'Poppins',sans-serif; font-size:28px; font-weight:800; color:var(--amarelo); line-height:1.15; margin-top:2px; }
+  .resumo-dia-total .sub{ font-size:11.5px; color:var(--muted); margin-top:3px; }
+  .resumo-dia-total .metricas{ display:flex; gap:22px; flex-wrap:wrap; }
+  .resumo-dia-total .metrica b{ display:block; font-size:17px; color:var(--creme); font-family:'Poppins',sans-serif; }
+  .resumo-dia-total .metrica span{ font-size:11px; color:var(--muted); }
+  .resumo-dia-linha{ grid-column:1/-1; display:flex; flex-wrap:wrap; gap:8px; align-items:center; }
+  .resumo-dia-linha .titulo-linha{ font-size:11.5px; font-weight:700; color:var(--muted); margin-right:2px; }
+  .chip-resumo{
+    display:inline-flex; align-items:center; gap:6px; background:var(--preto2); border:1px solid var(--borda);
+    border-left-width:3px; border-radius:9px; padding:7px 10px; font-size:12px; color:var(--creme);
+  }
+  .chip-resumo b{ color:var(--amarelo); }
+  .chip-resumo .qtd{ color:var(--muted); font-size:11px; }
+
   /* ---------- GRID DE COMANDAS ---------- */
   .grid-comandas{ display:grid; grid-template-columns:repeat(auto-fill, minmax(180px,1fr)); gap:14px; }
   .card-comanda{
@@ -210,7 +274,7 @@
     padding:9px 12px; font-size:12.5px; font-weight:600;
   }
   .menu-comanda button:hover{ background:rgba(255,122,26,.12); }
-  .menu-comanda button.excluir{ color:#ff8a80; }
+  .menu-comanda button.excluir{ color:var(--erro); }
 
   .btn-nova-comanda{
     background:linear-gradient(90deg,var(--vermelho),var(--laranja)); color:#fff; border:none; border-radius:10px;
@@ -221,6 +285,8 @@
     padding:10px 16px; font-weight:700; font-size:13.5px;
   }
   .vazio-lista{ color:var(--muted); font-size:13px; text-align:center; padding:30px 0; }
+  .resumo-comandas-dia{ font-size:12px; color:var(--muted); margin:0 0 12px; display:flex; flex-wrap:wrap; gap:14px; }
+  .resumo-comandas-dia b{ color:var(--creme); }
 
   /* ---------- MODAL VENDA DE PACOTE ---------- */
   .lista-sabores-pacote{ display:flex; flex-direction:column; gap:6px; margin-top:4px; max-height:260px; overflow-y:auto; }
@@ -255,7 +321,7 @@
   .linha-preco-pacote.total{ border-top:1px dashed var(--borda); padding-top:8px; margin-top:8px; font-size:16px; font-weight:800; color:var(--amarelo); }
   .linha-preco-pacote .lucro-positivo{ color:var(--verde); }
   .linha-preco-pacote .lucro-negativo{ color:#ff3b30; }
-  .badge-desconto-pacote{ background:rgba(224,35,26,.15); color:#ff8a80; font-size:11px; font-weight:800; padding:2px 8px; border-radius:6px; }
+  .badge-desconto-pacote{ background:rgba(224,35,26,.15); color:var(--erro); font-size:11px; font-weight:800; padding:2px 8px; border-radius:6px; }
   .aviso-calendario{
     background:rgba(58,160,232,.1); border:1px solid rgba(58,160,232,.4); border-radius:10px; padding:10px 12px;
     font-size:11.5px; color:var(--azul); margin-top:6px; line-height:1.5;
@@ -265,7 +331,7 @@
   /* ---------- CUSTO REALIZADO DO PACOTE (Fase 3, item 5) ---------- */
   .aviso-desvio-custo{
     background:rgba(255,59,48,.1); border:1.5px solid rgba(255,59,48,.5); border-radius:10px; padding:10px 12px;
-    font-size:11.5px; color:#ff8a80; margin-top:8px; line-height:1.5;
+    font-size:11.5px; color:var(--erro); margin-top:8px; line-height:1.5;
   }
   .grid-custo-realizado{ display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:8px; }
   .grid-custo-realizado label{ font-size:10.5px; font-weight:700; display:block; margin:0 0 4px; }
@@ -323,34 +389,68 @@
   .item-linha .combo-detalhe{ font-size:10.5px; color:var(--muted); margin-top:2px; }
   .qty-controle{ display:flex; align-items:center; gap:5px; }
   .qty-controle button{
-    width:26px; height:26px; border-radius:7px; border:1px solid var(--borda); background:var(--preto2); color:var(--creme); font-size:15px;
+    width:30px; height:30px; border-radius:8px; border:1px solid var(--borda); background:var(--preto2); color:var(--creme); font-size:16px;
+    touch-action:manipulation;
   }
   .qty-controle input{
-    width:38px; text-align:center; background:var(--preto2); border:1px solid var(--borda); border-radius:7px; color:var(--creme); padding:4px 2px; font-size:13px;
+    width:40px; text-align:center; background:var(--preto2); border:1px solid var(--borda); border-radius:7px; color:var(--creme); padding:5px 2px; font-size:13px;
   }
   .item-linha .subtotal{ font-size:13px; font-weight:700; color:var(--amarelo); min-width:66px; text-align:right; }
-  .item-linha .btn-remover{ background:transparent; border:none; color:#ff8a80; font-size:15px; padding:2px 4px; }
+  .item-linha .btn-remover{ background:transparent; border:none; color:var(--erro); font-size:15px; padding:2px 4px; }
   .item-linha.pendente{ border-style:dashed; }
+  .lista-itens.somente-leitura .qty-controle button,
+  .lista-itens.somente-leitura .btn-remover{ display:none; }
   @keyframes pulsar{ 0%,100%{ opacity:1; } 50%{ opacity:.25; } }
   .ponto-pendente{ color:var(--amarelo); font-size:9px; animation:pulsar 1.2s ease-in-out infinite; display:inline-block; }
 
+  /* ---------- LANÇAMENTO RÁPIDO (grade de itens na comanda) ---------- */
   .add-item-box{ background:var(--preto); border:1px dashed var(--borda); border-radius:10px; padding:10px; }
-  .add-item-box select, .add-item-box input{
+  .add-item-topo{ display:flex; align-items:baseline; justify-content:space-between; gap:8px; margin-bottom:8px; }
+  .add-item-topo label{ font-size:11.5px; font-weight:700; }
+  .add-item-topo .dica{ font-size:10.5px; color:var(--muted); }
+  .busca-produto{
     width:100%; background:var(--preto2); border:1.5px solid var(--borda); border-radius:9px; padding:9px 10px; color:var(--creme); font-size:13.5px; outline:none;
   }
-  .add-item-grid{ display:grid; grid-template-columns:1fr 70px auto; gap:8px; margin-top:8px; align-items:center; }
-  .add-item-grid button{ background:var(--laranja); color:#1a0e00; border:none; border-radius:9px; padding:9px 12px; font-weight:800; font-size:13px; }
+  .busca-produto:focus{ border-color:var(--laranja); }
+  .grade-produtos{ display:flex; flex-direction:column; gap:12px; margin-top:10px; max-height:330px; overflow-y:auto; padding:6px 4px 2px 0; }
+  .grupo-produtos-titulo{ font-size:11px; font-weight:700; color:var(--muted); margin-bottom:6px; }
+  .grade-produtos-botoes{ display:grid; grid-template-columns:repeat(auto-fill,minmax(112px,1fr)); gap:7px; }
+  .btn-produto-rapido{
+    position:relative; background:var(--preto2); border:1.5px solid var(--borda); border-radius:10px; padding:9px 9px 8px;
+    text-align:left; color:var(--creme); font-family:'Inter',sans-serif; min-height:58px;
+    display:flex; flex-direction:column; justify-content:space-between; gap:4px;
+    transition:transform .08s, border-color .12s, background .12s; -webkit-tap-highlight-color:transparent; touch-action:manipulation;
+  }
+  .btn-produto-rapido .nome{ font-size:12px; font-weight:700; line-height:1.25; }
+  .btn-produto-rapido .linha-inferior{ display:flex; align-items:center; justify-content:space-between; gap:4px; }
+  .btn-produto-rapido .preco{ font-size:11px; color:var(--amarelo); font-weight:700; }
+  .btn-produto-rapido .badge-estoque{ font-size:9.5px; color:var(--muted); font-weight:700; white-space:nowrap; }
+  .btn-produto-rapido .badge-estoque.baixo{ color:#f0793a; }
+  .btn-produto-rapido .badge-estoque.zerado{ color:#ff3b30; }
+  .btn-produto-rapido:active{ transform:scale(.95); }
+  .btn-produto-rapido.tocado{ border-color:var(--laranja); background:rgba(255,122,26,.14); }
+  .btn-produto-rapido.combo{ border-style:dashed; }
+  .btn-produto-rapido .qtd-na-comanda{
+    position:absolute; top:-7px; right:-6px; background:var(--laranja); color:#fff; border-radius:999px;
+    min-width:21px; height:21px; font-size:11px; font-weight:800; display:none; align-items:center; justify-content:center; padding:0 6px;
+    font-family:'Poppins',sans-serif; box-shadow:0 2px 6px rgba(0,0,0,.25);
+  }
+  .btn-produto-rapido.tem-na-comanda .qtd-na-comanda{ display:flex; }
+  .add-item-bloqueado{ font-size:12px; color:var(--muted); background:var(--preto); border:1px dashed var(--borda); border-radius:10px; padding:12px; text-align:center; }
 
-  .combo-config{ background:var(--preto2); border:1px solid var(--laranja); border-radius:10px; padding:10px; margin-top:8px; display:none; }
+  .combo-config{ background:var(--preto2); border:1px solid var(--laranja); border-radius:10px; padding:10px; margin-top:10px; display:none; }
   .combo-config.aberto{ display:block; }
+  .combo-config-titulo{ font-size:13px; font-weight:800; color:var(--amarelo); font-family:'Poppins',sans-serif; margin-bottom:4px; }
   .combo-config label{ font-size:11px; font-weight:700; display:block; margin:8px 0 4px; }
-  .combo-config label:first-child{ margin-top:0; }
   .combo-config select{
     width:100%; background:var(--preto); border:1.5px solid var(--borda); border-radius:8px; padding:8px 9px; color:var(--creme); font-size:13px; outline:none;
   }
   .combo-flags{ display:flex; gap:14px; margin-top:8px; }
   .combo-flags label{ display:flex !important; align-items:center; gap:6px; font-size:12px; font-weight:600; margin:0 !important; cursor:pointer; }
   .combo-flags input[type=checkbox]{ width:16px; height:16px; accent-color:var(--laranja); }
+  .combo-acoes{ display:grid; grid-template-columns:72px 1fr auto; gap:8px; margin-top:12px; align-items:center; }
+  .combo-acoes .btn-add-combo{ background:var(--laranja); color:#1a0e00; border:none; border-radius:9px; padding:10px 12px; font-weight:800; font-size:13px; }
+  .combo-acoes .btn-secundario{ padding:9px 10px; }
 
   .total-comanda{
     display:flex; justify-content:space-between; align-items:center; margin-top:14px; padding-top:14px; border-top:1px dashed var(--borda);
@@ -362,7 +462,7 @@
   .acoes-comanda .linha2 button{ flex:1; }
   .btn-fechar-comanda{ background:linear-gradient(90deg,var(--vermelho),var(--laranja)); color:#fff; border:none; border-radius:10px; padding:12px; font-weight:800; font-size:14px; }
   .btn-secundario{ background:transparent; border:1.5px solid var(--borda); color:var(--muted); border-radius:10px; padding:10px; font-weight:700; font-size:12.5px; }
-  .btn-perigo{ background:transparent; border:1.5px solid rgba(255,138,128,.4); color:#ff8a80; border-radius:10px; padding:10px; font-weight:700; font-size:12.5px; }
+  .btn-perigo{ background:transparent; border:1.5px solid rgba(255,138,128,.4); color:var(--erro); border-radius:10px; padding:10px; font-weight:700; font-size:12.5px; }
 
   .pagamento-box{ background:var(--preto); border:1px solid var(--laranja); border-radius:10px; padding:12px; margin-top:10px; display:none; }
   .pagamento-box.aberto{ display:block; }
@@ -370,6 +470,15 @@
   .pagamento-box select, .pagamento-box input{
     width:100%; background:var(--preto2); border:1.5px solid var(--borda); border-radius:9px; padding:9px 10px; color:var(--creme); font-size:13.5px; outline:none;
   }
+  .chips-pagamento{ display:grid; grid-template-columns:repeat(4,1fr); gap:6px; }
+  @media(max-width:420px){ .chips-pagamento{ grid-template-columns:repeat(2,1fr); } }
+  .chips-pagamento button, .atalhos-valor button{
+    background:var(--preto2); border:1.5px solid var(--borda); color:var(--muted); border-radius:9px; padding:10px 6px;
+    font-weight:700; font-size:12.5px; touch-action:manipulation;
+  }
+  .chips-pagamento button.ativo{ background:rgba(47,191,113,.15); border-color:var(--verde); color:var(--verde); }
+  .atalhos-valor{ display:grid; grid-template-columns:repeat(4,1fr); gap:6px; margin-top:6px; }
+  .atalhos-valor button{ padding:7px 4px; font-size:12px; }
   .troco-info{ font-size:12.5px; color:var(--muted); margin-top:6px; }
   .info-pagamento-atual{ font-size:12.5px; color:var(--verde); background:rgba(47,191,113,.1); border-radius:8px; padding:8px 10px; margin-top:8px; }
 
@@ -383,6 +492,15 @@
   .linha-tabela input[type=number], .linha-tabela input[type=text], .linha-tabela select{
     width:80px; background:var(--preto); border:1.5px solid var(--borda); border-radius:8px; padding:7px 8px; color:var(--creme); font-size:13px; outline:none;
   }
+  /* Cardápio: Visível/Oculto + Excluir ficam agrupados à direita, sem
+     sobrepor custo/preço (quebram juntos pra linha de baixo no celular) */
+  .acoes-produto{ display:flex; align-items:center; gap:6px; margin-left:auto; flex-shrink:0; }
+  .btn-excluir-produto{
+    background:transparent; border:1px solid rgba(255,138,128,.45); color:var(--erro); border-radius:8px;
+    padding:6px 10px; font-size:11px; font-weight:700; white-space:nowrap;
+  }
+  .btn-excluir-produto:hover{ background:rgba(255,138,128,.1); }
+  .tag-sistema{ display:inline-block; font-size:9px; font-weight:800; color:var(--azul); background:rgba(58,160,232,.14); border-radius:5px; padding:2px 6px; margin-left:6px; vertical-align:middle; text-transform:none; letter-spacing:0; }
 
   /* cabeçalho de colunas (Estoque) */
   .cabecalho-tabela{
@@ -412,7 +530,7 @@
   }
   .estoque-caixa .input-estoque::-webkit-outer-spin-button,
   .estoque-caixa .input-estoque::-webkit-inner-spin-button{ -webkit-appearance:none; margin:0; }
-  .estoque-caixa.baixo .valor-mini{ color:#ff8a80; }
+  .estoque-caixa.baixo .valor-mini{ color:var(--erro); }
   .estoque-caixa.critico{ background:rgba(194,65,12,.15); border-color:rgba(194,65,12,.5); }
   .estoque-caixa.critico .valor-mini{ color:#f0793a; }
   .estoque-caixa.zerado{ background:rgba(255,59,48,.15); border-color:rgba(255,59,48,.6); }
@@ -445,10 +563,10 @@
     padding:11px 18px; font-weight:800; font-size:13.5px; margin-bottom:12px;
   }
   .toggle-ativo{
-    display:inline-flex; align-items:center; gap:6px; font-size:11px; font-weight:700; cursor:pointer; padding:6px 10px; border-radius:8px; border:1px solid var(--borda);
+    display:inline-flex; align-items:center; gap:6px; font-size:11px; font-weight:700; cursor:pointer; padding:6px 10px; border-radius:8px; border:1px solid var(--borda); white-space:nowrap;
   }
   .toggle-ativo.on{ color:var(--verde); border-color:rgba(47,191,113,.4); background:rgba(47,191,113,.08); }
-  .toggle-ativo.off{ color:var(--muted); }
+  .toggle-ativo.off{ color:var(--muted); background:transparent; }
 
   .card-form{ background:var(--preto2); border:1px solid var(--borda); border-radius:var(--radius); padding:16px; margin-bottom:16px; }
   .card-form.sem-moldura{ background:transparent; border:none; padding:0; margin-bottom:0; }
@@ -463,7 +581,8 @@
 
   .msg-status{ font-size:12px; text-align:center; margin-top:8px; min-height:16px; }
   .msg-status.ok{ color:var(--verde); }
-  .msg-status.erro{ color:#ff8a80; }
+  .msg-status.erro{ color:var(--erro); }
+  .msg-status.aviso{ color:#f0793a; }
 
   /* ---------- FINANCEIRO ---------- */
   .resumo-grid{ display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:12px; margin-bottom:20px; }
@@ -474,7 +593,7 @@
   .resumo-caixa .rotulo{ font-size:10.5px; color:var(--muted); text-transform:uppercase; letter-spacing:.4px; }
   .resumo-caixa .valor{ font-size:20px; font-weight:800; margin-top:5px; }
   .resumo-caixa.venda{ border-top-color:var(--laranja); }
-  .resumo-caixa.saida{ border-top-color:#ff8a80; }
+  .resumo-caixa.saida{ border-top-color:var(--erro); }
   .resumo-caixa.entrada{ border-top-color:var(--azul); }
   .resumo-caixa.destaque{ border-top-color:var(--amarelo); background:linear-gradient(180deg, rgba(255,196,46,.08), var(--preto2)); }
   .resumo-caixa.destaque .valor{ color:var(--amarelo); font-size:22px; }
@@ -555,6 +674,26 @@
     display:flex; align-items:center; justify-content:center;
   }
 
+  /* ---------- CONTAS PAGAS x CONTAS A PAGAR (lado a lado, cada uma recolhível) ---------- */
+  .grid-contas{ display:grid; grid-template-columns:1fr 1fr; gap:16px; align-items:start; }
+  @media(max-width:760px){ .grid-contas{ grid-template-columns:1fr; } }
+  .painel-contas{ background:var(--preto2); border:1px solid var(--borda); border-radius:var(--radius); overflow:hidden; }
+  .painel-contas.pagas{ border-top:3px solid var(--verde); }
+  .painel-contas.a-pagar{ border-top:3px solid var(--amarelo); }
+  .painel-contas-topo{ display:flex; align-items:center; gap:10px; padding:12px 14px; cursor:pointer; user-select:none; }
+  .painel-contas-topo h3{ font-size:13.5px; color:var(--creme); flex:1; }
+  .painel-contas-topo .qtd{ font-size:11px; color:var(--muted); font-weight:600; font-family:'Inter',sans-serif; }
+  .painel-contas-total{ font-size:14px; font-weight:800; font-family:'Poppins',sans-serif; white-space:nowrap; }
+  .painel-contas.pagas .painel-contas-total{ color:var(--verde); }
+  .painel-contas.a-pagar .painel-contas-total{ color:var(--amarelo); }
+  .painel-contas-corpo{ padding:0 12px 12px; border-top:1px solid var(--borda); }
+  .painel-contas.recolhido .painel-contas-corpo{ display:none; }
+  .painel-contas-filtro{ display:flex; gap:6px; align-items:center; padding:10px 0; flex-wrap:wrap; }
+  .painel-contas-filtro span{ font-size:11px; color:var(--muted); font-weight:600; }
+  .painel-contas .tabela-cards{ max-height:420px; overflow-y:auto; }
+  .painel-contas .linha-tabela{ background:var(--preto); }
+  .tag-vencida{ display:inline-block; font-size:9px; font-weight:800; color:#fff; background:#d9342b; border-radius:5px; padding:2px 6px; margin-left:4px; text-transform:none; }
+
   .grid-duas-colunas{ display:grid; grid-template-columns:1fr 1fr; gap:16px; }
   @media(max-width:700px){ .grid-duas-colunas{ grid-template-columns:1fr; } }
 
@@ -567,7 +706,7 @@
     flex:1; background:var(--preto); border:1.5px solid var(--borda); border-radius:9px; padding:10px; color:var(--creme); font-size:15px; font-weight:700; outline:none;
   }
   .saldo-caixa-linha input:focus{ border-color:var(--laranja); }
-  .saldo-caixa-linha input.campo-travado{ opacity:.65; cursor:not-allowed; background:#0a0807; }
+  .saldo-caixa-linha input.campo-travado{ opacity:.65; cursor:not-allowed; background:var(--travado); }
   .saldo-caixa-meta{ font-size:10.5px; color:var(--muted); margin-top:5px; min-height:14px; }
   .saldo-caixa-total{
     display:flex; justify-content:space-between; align-items:center; margin-top:16px; padding-top:14px;
@@ -636,8 +775,12 @@
      a Comanda ser fechada. */
   #overlay-cupom-comanda{ z-index:60; }
 
+  @media (prefers-reduced-motion: reduce){
+    *{ transition:none !important; animation:none !important; }
+  }
+
   @media print{
-    .no-print, nav.abas, header, .indicador-sync{ display:none !important; }
+    .no-print, nav.abas, header, .indicador-sync, .btn-tema{ display:none !important; }
     body, #app, main, .secao{ background:#fff !important; padding:0 !important; margin:0 !important; }
     .relatorio-folha{ box-shadow:none; margin:0; max-width:100%; }
     .cupom-comanda{ box-shadow:none; margin:0; max-width:100%; }
@@ -650,6 +793,7 @@
 
 <!-- ================= LOGIN ================= -->
 <div id="tela-login">
+  <button class="btn-tema" id="btn-tema-login" type="button" title="Alternar modo claro/escuro">☀️</button>
   <img src="logo.png" alt="Brasero 96" class="logo-login">
   <div class="marca-login-nome">Brasero 96</div>
   <h1>Sistema Financeiro <span class="badge-versao" id="badge-versao-login"></span></h1>
@@ -683,7 +827,9 @@
     </div>
     <div class="usuario-atual">
       <span class="indicador-sync" id="indicador-sync" style="display:none;"></span>
-      <span id="nome-usuario-logado"></span><span class="badge-perfil" id="badge-perfil"></span><button id="btn-sair">Sair</button>
+      <span id="nome-usuario-logado"></span><span class="badge-perfil" id="badge-perfil"></span>
+      <button class="btn-tema" id="btn-tema" type="button" title="Alternar modo claro/escuro">☀️</button>
+      <button id="btn-sair">Sair</button>
     </div>
   </header>
 
@@ -709,13 +855,13 @@
 
       <div class="sub-abas">
         <button data-subaba="comandas-lista" class="ativa">Minhas Comandas</button>
-        <button data-subaba="comandas-hoje">🗓️ Comandas de Hoje</button>
+        <button data-subaba="comandas-hoje">🗓️ Comandas do Dia</button>
         <button data-subaba="comandas-resumo">📊 Resumo do dia</button>
         <button data-subaba="comandas-indicadores">📈 Indicadores</button>
       </div>
 
       <div class="sub-secao ativa" id="subsecao-comandas-lista">
-        <p style="font-size:11px; color:var(--muted); margin:0 0 8px;">Mostrando só as comandas abertas por <b id="rotulo-usuario-minhas-comandas"></b>. Pra ver de todo mundo, use a aba "Comandas de Hoje".</p>
+        <p style="font-size:11px; color:var(--muted); margin:0 0 8px;">Mostrando só as comandas abertas por <b id="rotulo-usuario-minhas-comandas"></b>. Pra ver de todo mundo, use a aba "Comandas do Dia".</p>
         <div class="filtros-status">
           <button data-status="Aberta" class="ativa">Abertas</button>
           <button data-status="Fechada">Fechadas hoje</button>
@@ -731,8 +877,14 @@
       </div>
 
       <div class="sub-secao" id="subsecao-comandas-hoje">
-        <p style="font-size:11px; color:var(--muted); margin:0 0 8px;">Todas as comandas de hoje, de todos os usuários — abertas ou fechadas hoje.</p>
-        <button class="btn-mini" id="btn-atualizar-comandas-hoje" style="margin-bottom:10px;">🔄 Atualizar</button>
+        <div class="filtro-resumo-dia">
+          <input type="date" id="cd-data-dia" title="Escolha o dia">
+          <button class="btn-mini salvar" id="btn-filtrar-comandas-dia">Buscar</button>
+          <button class="btn-mini" id="btn-comandas-dia-hoje">Hoje</button>
+          <button class="btn-mini" id="btn-atualizar-comandas-hoje">🔄 Atualizar</button>
+        </div>
+        <p style="font-size:11px; color:var(--muted); margin:0 0 8px;" id="rotulo-comandas-dia">Todas as comandas de hoje, de todos os usuários — abertas ou fechadas no dia.</p>
+        <div class="resumo-comandas-dia" id="resumo-comandas-dia"></div>
         <div class="grid-comandas" id="grid-comandas-hoje"><div class="vazio-lista">Carregando...</div></div>
       </div>
 
@@ -865,6 +1017,7 @@
         <div class="msg-status" id="status-add-produto"></div>
       </div>
       <button class="btn-salvar-tudo somente-admin" id="btn-salvar-cardapio-tudo" style="display:none;">💾 Salvar tudo</button>
+      <div class="msg-status" id="status-cardapio-lista"></div>
       <div class="tabela-cards" id="lista-cardapio"><div class="vazio-lista">Carregando...</div></div>
     </section>
 
@@ -960,13 +1113,42 @@
         </div>
 
         <div class="secao-titulo-financeiro">
-          <h3>📋 Contas a pagar (pendentes)</h3>
+          <h3>📋 Contas pagas e a pagar</h3>
           <div class="linha-divisoria"></div>
-          <input type="month" id="cp-filtro-mes" class="filtro-mes-vencimento" title="Filtrar por mês de vencimento">
-          <button class="btn-mini" id="btn-limpar-filtro-mes" title="Limpar filtro de mês" style="font-size:11px; padding:6px 8px;">✕</button>
-          <button class="btn-toggle-secao" id="btn-historico-pagar" title="Ver histórico completo (pagas também)" style="font-size:11px; width:auto; padding:0 8px;">Ver histórico</button>
         </div>
-        <div class="tabela-cards" id="lista-contas-pagar"><div class="vazio-lista">Carregando...</div></div>
+        <div class="grid-contas">
+          <div class="painel-contas pagas" id="painel-contas-pagas">
+            <div class="painel-contas-topo" data-painel="painel-contas-pagas">
+              <h3>✅ Contas pagas <span class="qtd" id="qtd-contas-pagas"></span></h3>
+              <span class="painel-contas-total" id="total-contas-pagas">—</span>
+              <button class="btn-toggle-secao" type="button" title="Mostrar/ocultar">−</button>
+            </div>
+            <div class="painel-contas-corpo">
+              <div class="painel-contas-filtro">
+                <span>Pagas em</span>
+                <input type="month" id="cpg-filtro-mes" class="filtro-mes-vencimento" title="Filtrar pelo mês do pagamento">
+                <button class="btn-mini" id="btn-limpar-filtro-mes-pagas" title="Ver todas" style="font-size:11px; padding:6px 8px;">Todas</button>
+              </div>
+              <div class="tabela-cards" id="lista-contas-pagas"><div class="vazio-lista">Carregando...</div></div>
+            </div>
+          </div>
+
+          <div class="painel-contas a-pagar" id="painel-contas-a-pagar">
+            <div class="painel-contas-topo" data-painel="painel-contas-a-pagar">
+              <h3>📋 Contas a pagar <span class="qtd" id="qtd-contas-pagar"></span></h3>
+              <span class="painel-contas-total" id="total-contas-pagar">—</span>
+              <button class="btn-toggle-secao" type="button" title="Mostrar/ocultar">−</button>
+            </div>
+            <div class="painel-contas-corpo">
+              <div class="painel-contas-filtro">
+                <span>Vencem em</span>
+                <input type="month" id="cp-filtro-mes" class="filtro-mes-vencimento" title="Filtrar por mês de vencimento">
+                <button class="btn-mini" id="btn-limpar-filtro-mes" title="Ver todas" style="font-size:11px; padding:6px 8px;">Todas</button>
+              </div>
+              <div class="tabela-cards" id="lista-contas-pagar"><div class="vazio-lista">Carregando...</div></div>
+            </div>
+          </div>
+        </div>
 
         <div class="secao-titulo-financeiro">
           <h3>📥 Contas a receber (pacotes)</h3>
@@ -989,6 +1171,7 @@
             <div><label>Quantidade</label><input type="number" id="ce-quantidade" step="1" min="1"></div>
             <div><label>Custo unitário (R$)</label><input type="number" id="ce-custo-unitario" step="0.5"></div>
           </div>
+          <p style="font-size:11px; color:var(--muted); margin:4px 0 0;">O custo unitário já vem preenchido com o custo cadastrado do produto — é só trocar se o preço dessa compra foi outro.</p>
           <button class="btn-mini salvar" style="width:100%; margin-top:8px;" id="btn-add-item-compra-estoque">+ Adicionar item à compra</button>
 
           <div class="tabela-cards" id="ce-carrinho-lista" style="margin-top:12px;"></div>
@@ -1279,41 +1462,49 @@
 
     <div class="lista-itens" id="modal-lista-itens"></div>
 
-    <div class="add-item-box">
-      <label style="font-size:11.5px; font-weight:700; display:block; margin-bottom:6px;">Adicionar item</label>
-      <select id="modal-select-produto"></select>
+    <div class="add-item-box" id="add-item-box">
+      <div class="add-item-topo">
+        <label>Adicionar item</label>
+        <span class="dica">Cada toque soma +1</span>
+      </div>
+      <input type="search" id="modal-busca-produto" class="busca-produto" placeholder="🔍 Buscar (ex: frango, coca...)" autocomplete="off" enterkeyhint="done">
+      <div class="grade-produtos" id="modal-grade-produtos"></div>
 
       <div class="combo-config" id="combo-config">
+        <div class="combo-config-titulo" id="combo-config-titulo">🍱 Montar combo</div>
         <label>Sabor do espeto 1</label>
         <select id="combo-espeto1"></select>
         <label>Sabor do espeto 2</label>
         <select id="combo-espeto2"></select>
-        <label>Sabor do refrigerante</label>
-        <select id="combo-refri"></select>
-        <p style="font-size:10.5px; color:var(--muted); margin:6px 0 0;">🍚 Baião de Dois entra automático no combo.</p>
+        <div id="bloco-combo-refri">
+          <label>Sabor do refrigerante</label>
+          <select id="combo-refri"></select>
+        </div>
+        <p style="font-size:10.5px; color:var(--muted); margin:6px 0 0;" id="combo-info-inclusos">🍚 Baião de Dois entra automático no combo.</p>
         <div class="combo-flags">
           <label><input type="checkbox" id="combo-vinagrete" checked> Vinagrete</label>
           <label><input type="checkbox" id="combo-farofa" checked> Farofa</label>
         </div>
-      </div>
-
-      <div class="add-item-grid">
-        <div></div>
-        <select id="modal-qtd-novo"></select>
-        <button id="btn-add-item-comanda">+ Add</button>
+        <div class="combo-acoes">
+          <select id="modal-qtd-novo" title="Quantidade de combos"></select>
+          <button class="btn-add-combo" id="btn-add-item-comanda" type="button">+ Adicionar combo</button>
+          <button class="btn-secundario" id="btn-cancelar-combo" type="button">Cancelar</button>
+        </div>
       </div>
     </div>
-
-    <label class="checkbox-linha" style="margin-top:10px;">
-      <input type="checkbox" id="modal-taxa-entrega" onchange="alternarTaxaEntregaModal()">
-      <span>🛵 Taxa de entrega (+R$3,00)</span>
-    </label>
+    <div class="add-item-bloqueado" id="add-item-bloqueado" style="display:none;"></div>
 
     <div class="total-comanda"><span>Total</span><span id="modal-total">R$ 0,00</span></div>
 
     <div class="pagamento-box" id="box-pagamento">
       <label>Forma de pagamento</label>
-      <select id="modal-forma-pagamento">
+      <div class="chips-pagamento" id="chips-pagamento">
+        <button type="button" data-forma="Dinheiro">💵 Dinheiro</button>
+        <button type="button" data-forma="Pix">⚡ Pix</button>
+        <button type="button" data-forma="Cartão de Débito">💳 Débito</button>
+        <button type="button" data-forma="Cartão de Crédito">💳 Crédito</button>
+      </div>
+      <select id="modal-forma-pagamento" style="display:none;">
         <option value="Dinheiro">Dinheiro</option>
         <option value="Pix">Pix</option>
         <option value="Cartão de Débito">Cartão de Débito</option>
@@ -1321,7 +1512,13 @@
       </select>
       <div id="bloco-troco">
         <label>Valor recebido (R$)</label>
-        <input type="number" id="modal-valor-recebido" step="1">
+        <input type="number" id="modal-valor-recebido" step="1" inputmode="decimal">
+        <div class="atalhos-valor" id="atalhos-valor">
+          <button type="button" data-valor="exato">Exato</button>
+          <button type="button" data-valor="20">R$ 20</button>
+          <button type="button" data-valor="50">R$ 50</button>
+          <button type="button" data-valor="100">R$ 100</button>
+        </div>
         <div class="troco-info" id="modal-troco-info"></div>
       </div>
       <div id="bloco-juros" class="troco-info" style="display:none;"></div>
@@ -1452,8 +1649,29 @@
 // ar é realmente a versão mais nova ou se o GitHub Pages ainda está
 // servindo uma versão antiga em cache.
 // =====================================================================
-const VERSAO_APP = "7.5";
+const VERSAO_APP = "7.6";
 document.querySelectorAll(".badge-versao").forEach(el => el.textContent = "v" + VERSAO_APP);
+
+// =====================================================================
+// TEMA CLARO / ESCURO — escolhido por cada usuário no próprio aparelho
+// (botão ☀️/🌙 no topo e na tela de login). Fica salvo no navegador.
+// =====================================================================
+function aplicarTema(tema) {
+  const t = tema === "claro" ? "claro" : "escuro";
+  document.documentElement.setAttribute("data-tema", t);
+  try { localStorage.setItem("brasero96_tema", t); } catch (e) { /* sem armazenamento, só não lembra */ }
+  document.querySelectorAll(".btn-tema").forEach(b => {
+    b.textContent = t === "claro" ? "🌙" : "☀️";
+    b.title = t === "claro" ? "Mudar para o modo escuro" : "Mudar para o modo claro";
+    b.setAttribute("aria-label", b.title);
+  });
+  const meta = document.querySelector('meta[name="theme-color"]');
+  if (meta) meta.setAttribute("content", t === "claro" ? "#ffffff" : "#0c0a09");
+}
+document.querySelectorAll(".btn-tema").forEach(b => {
+  b.onclick = () => aplicarTema(document.documentElement.getAttribute("data-tema") === "claro" ? "escuro" : "claro");
+});
+aplicarTema(document.documentElement.getAttribute("data-tema"));
 
 // =====================================================================
 // TRAVA DE SCROLL DE FUNDO ENQUANTO UM MODAL ESTIVER ABERTO
@@ -1494,6 +1712,26 @@ const CONFIG = {
 
 const $ = (id) => document.getElementById(id);
 const fmt = (v) => "R$ " + (Number(v) || 0).toFixed(2).replace(".", ",");
+// Protege nomes com aspas/acentos/"<" quando entram em HTML gerado pelo JS
+function escapeHtml(t) {
+  return (t == null ? "" : String(t)).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+}
+const escapeAttr = escapeHtml;
+
+// Preenche um <select> sem "roubar" a opção que a pessoa já escolheu: se a
+// lista não mudou, não mexe em nada; se a pessoa está com o select aberto
+// (foco nele), deixa pra próxima atualização; e se mudou, remonta mantendo
+// o item selecionado. É o que evita o item da Compra de Estoque "sumir e
+// aparecer outro" quando o sistema atualiza a lista em segundo plano.
+function preencherSelectPreservando(sel, html) {
+  if (!sel) return;
+  if (sel.dataset.assinatura === html) return;
+  if (document.activeElement === sel) return;
+  const valorAtual = sel.value;
+  sel.innerHTML = html;
+  sel.dataset.assinatura = html;
+  if (valorAtual && Array.from(sel.options).some(o => o.value === valorAtual)) sel.value = valorAtual;
+}
 
 let USUARIO_LOGADO = "";
 let PERFIL_USUARIO = "Padrão"; // "Admin" ou "Padrão" — vem do login e controla o que aparece na tela
@@ -1670,6 +1908,7 @@ window.addEventListener("online", () => processarFila());
 $("l-usuario").onchange = () => {
   $("l-usuario-outro").style.display = $("l-usuario").value === "__outro__" ? "block" : "none";
 };
+$("l-pin").addEventListener("keydown", (e) => { if (e.key === "Enter") $("btn-entrar").click(); });
 
 $("btn-entrar").onclick = async () => {
   const sel = $("l-usuario").value;
@@ -1693,6 +1932,7 @@ $("btn-entrar").onclick = async () => {
 };
 
 $("btn-sair").onclick = () => {
+  enviarLancamentosPendentes(); // não deixa nenhum toque recente de item pra trás
   localStorage.removeItem("brasero96_fin_sessao");
   localStorage.removeItem("brasero96_fin_usuario"); // sessão antiga, se existir
   location.reload();
@@ -1726,16 +1966,15 @@ function iniciarApp() {
   $("nome-usuario-logado").textContent = USUARIO_LOGADO;
   $("rotulo-usuario-minhas-comandas").textContent = USUARIO_LOGADO;
   $("badge-perfil").textContent = ehAdmin() ? "Administrador" : "Padrão";
+  $("cd-data-dia").value = dataHojeISO();
   aplicarRestricoesDePerfil();
   // Prioriza o que a pessoa mais provavelmente vai precisar primeiro (abrir
-  // uma comanda: precisa da lista de comandas e do cardápio) — antes, o
-  // login disparava umas 10 chamadas simultâneas de uma vez só, e o
-  // cardápio podia demorar mais que o necessário por estar competindo com
-  // todo o resto pela mesma conexão. O resto (categorias, estoque, saldo em
-  // caixa, resumo financeiro) só começa depois que as duas primeiras já
-  // tiverem voltado.
-  Promise.all([carregarComandas(), carregarProdutos()]).then(() => {
-    carregarCategorias();
+  // uma comanda: precisa da lista de comandas e do cardápio) — o resto
+  // (categorias, estoque, saldo em caixa, resumo financeiro) só começa
+  // depois que as duas primeiras já tiverem voltado. allSettled garante que
+  // uma falha pontual numa delas não impede o resto de carregar.
+  Promise.allSettled([carregarComandas(), carregarProdutos()]).then(() => {
+    carregarCategorias().catch(() => {});
     carregarEstoque();
     carregarSaldoCaixa();
     carregarResumoInicial();
@@ -1754,7 +1993,9 @@ function iniciarApp() {
       const sessao = JSON.parse(salvoNovo);
       USUARIO_LOGADO = sessao.usuario;
       PERFIL_USUARIO = sessao.perfil || "Padrão";
-      iniciarApp();
+      // espera o script inteiro ser lido antes de iniciar (as funções de
+      // lançamento rápido são declaradas mais abaixo)
+      setTimeout(iniciarApp, 0);
       return;
     } catch (e) { /* sessão corrompida, cai pro login normal */ }
   }
@@ -1796,13 +2037,16 @@ document.querySelectorAll("nav.abas button").forEach(btn => {
 // aberta/fechada por outra pessoa) sem precisar recarregar a página ou
 // deslogar. Cardápio e Estoque só atualizam quando a pessoa NÃO está
 // olhando pra essa aba naquele momento — assim nunca some uma edição que
-// ainda não foi salva (o "Salvar tudo" continua recarregando na hora,
-// como sempre). Comandas atualiza sempre que a seção estiver visível,
-// porque a grade não tem campo editável — não tem o que perder.
+// ainda não foi salva. Os selects de produto (Compra de estoque, Perda/
+// Cortesia) são atualizados preservando o item escolhido — veja
+// preencherSelectPreservando. Com uma comanda aberta na tela (e nada dela
+// ainda na fila), ela também é relida em silêncio, pra aparecerem itens
+// que outro atendente incluiu nela.
 // =====================================================================
 let ATUALIZANDO_EM_SEGUNDO_PLANO = false;
 async function atualizarEmSegundoPlano() {
   if (ATUALIZANDO_EM_SEGUNDO_PLANO) return; // evita empilhar chamadas se a rede estiver lenta
+  if (!USUARIO_LOGADO || $("app").style.display === "none") return;
   ATUALIZANDO_EM_SEGUNDO_PLANO = true;
   try {
     const secaoAtivaEl = document.querySelector(".secao.ativa");
@@ -1816,7 +2060,11 @@ async function atualizarEmSegundoPlano() {
       if (idSub === "subsecao-comandas-hoje") tarefas.push(carregarComandasHoje());
       else if (idSub === "subsecao-comandas-lista") tarefas.push(carregarComandas());
     }
-    await Promise.all(tarefas);
+    if ($("overlay-comanda").classList.contains("aberto") && COMANDA_ATUAL && COMANDA_ATUAL.comanda.status === "Aberta"
+        && !temPendenciaDaComanda(COMANDA_ATUAL.comanda.comandaId)) {
+      tarefas.push(recarregarComandaSilenciosa(COMANDA_ATUAL.comanda.comandaId));
+    }
+    await Promise.allSettled(tarefas);
   } catch (e) { /* atualização em segundo plano é silenciosa — não interrompe o uso */ }
   ATUALIZANDO_EM_SEGUNDO_PLANO = false;
 }
@@ -1835,6 +2083,7 @@ document.querySelectorAll(".sub-abas").forEach(grupo => {
       secoes.forEach(s => s.classList.toggle("ativa", s.id === `subsecao-${btn.dataset.subaba}`));
       if (btn.dataset.subaba === "comandas-resumo") carregarResumoDia();
       if (btn.dataset.subaba === "comandas-hoje") carregarComandasHoje();
+      if (btn.dataset.subaba === "comandas-lista") carregarComandas();
       if (btn.dataset.subaba === "comandas-indicadores") carregarIndicadores();
       if (btn.dataset.subaba === "fin-detalhes") { carregarContasAPagar(); carregarContasAReceber(); }
       if (btn.dataset.subaba === "estoque-movimentar") popularSelectProdutoMovimentoEstoque();
@@ -1871,7 +2120,7 @@ const CORES_USUARIO = {
   "Thiago Xavier": { borda: "#3aa0e8", fundo: "rgba(58,160,232,.16)" },      // azul
   "Diêgo Xavier": { borda: "#2fbf71", fundo: "rgba(47,191,113,.16)" }        // verde
 };
-const COR_USUARIO_PADRAO = { borda: "var(--borda)", fundo: "rgba(255,255,255,.06)" };
+const COR_USUARIO_PADRAO = { borda: "var(--borda)", fundo: "rgba(128,128,128,.12)" };
 function corDoUsuario(nome) {
   return CORES_USUARIO[(nome || "").trim()] || COR_USUARIO_PADRAO;
 }
@@ -1884,14 +2133,14 @@ function montarCardComanda(c, totalItens) {
   const [dataComanda, horaComanda] = (c.abertaEm || "").toString().split(" ");
   const cor = corDoUsuario(c.usuarioAbertura);
   card.style.borderLeftColor = cor.borda;
-  const badgeCriador = `<div class="badge-criador" style="background:${cor.fundo}; color:${cor.borda};">${c.usuarioAbertura || "-"}</div>`;
+  const badgeCriador = `<div class="badge-criador" style="background:${cor.fundo}; color:${cor.borda};">${escapeHtml(c.usuarioAbertura || "-")}</div>`;
 
   if (c.ehPacote) {
     card.innerHTML = `
       ${badgeCriador}
-      <div class="badge-pacote">📦 Pacote — ${c.tipoPacote}</div>
+      <div class="badge-pacote">📦 Pacote — ${escapeHtml(c.tipoPacote)}</div>
       <div class="card-topo">
-        <div class="id">${c.identificacao}</div>
+        <div class="id">${escapeHtml(c.identificacao)}</div>
         <span class="status-pill ${c.status}">${c.status}</span>
       </div>
       <div class="total">${fmt(c.valorTotal)}</div>
@@ -1910,7 +2159,7 @@ function montarCardComanda(c, totalItens) {
     </div>
     ${badgeCriador}
     <div class="card-topo">
-      <div class="id">${c.identificacao}</div>
+      <div class="id">${escapeHtml(c.identificacao)}</div>
       <span class="status-pill ${c.status}">${c.status}</span>
     </div>
     <div class="total">${fmt(c.valorTotal)}</div>
@@ -1961,16 +2210,16 @@ async function abrirDetalhesPacote(pacoteId) {
     if (resp.status !== "ok") { $("detalhes-pacote-container").innerHTML = `<div class="vazio-lista">❌ ${resp.mensagem}</div>`; return; }
     const p = resp.pacote;
     const admin = ehAdmin();
-    const linhasSabores = p.sabores.map(s => `<div class="linha-preco-pacote"><span>${s.produto}</span><b>${s.quantidade}</b></div>`).join("");
+    const linhasSabores = p.sabores.map(s => `<div class="linha-preco-pacote"><span>${escapeHtml(s.produto)}</span><b>${s.quantidade}</b></div>`).join("");
     const acompanhamentos = [p.baiao === "SIM" ? "Baião de Dois" : null, p.vinagrete === "SIM" ? "Vinagrete" : null, p.farofa === "SIM" ? "Farofa" : null].filter(Boolean);
 
     $("detalhes-pacote-container").innerHTML = `
       <div class="card-form sem-moldura">
         <div class="caixa-preco-pacote">
-          <div class="linha-preco-pacote"><span>Cliente</span><b>${p.cliente}</b></div>
-          <div class="linha-preco-pacote"><span>Tipo</span><b>${p.tipoPacote}</b></div>
+          <div class="linha-preco-pacote"><span>Cliente</span><b>${escapeHtml(p.cliente)}</b></div>
+          <div class="linha-preco-pacote"><span>Tipo</span><b>${escapeHtml(p.tipoPacote)}</b></div>
           <div class="linha-preco-pacote"><span>Data / Horário</span><b>${formatarDataHoraEvento(p.dataEvento, p.horarioEvento)}</b></div>
-          <div class="linha-preco-pacote"><span>Local</span><b>${p.local || "—"}</b></div>
+          <div class="linha-preco-pacote"><span>Local</span><b>${escapeHtml(p.local || "—")}</b></div>
           <div class="linha-preco-pacote"><span>Qtd. pessoas</span><b>${p.qtdPessoas}</b></div>
         </div>
 
@@ -1992,7 +2241,7 @@ async function abrirDetalhesPacote(pacoteId) {
           <div class="linha-preco-pacote"><span>Status do restante</span><b>${p.statusRestante === "Recebido" ? "✅ Recebido" + (p.dataRecebimentoRestante ? " em " + paraBRFlexivel(p.dataRecebimentoRestante) : "") : "⏳ Pendente"}</b></div>
         </div>
 
-        <p style="font-size:11.5px; color:${p.termoAceito === "SIM" ? "var(--verde)" : "#ff8a80"}; margin:10px 0 0;">
+        <p style="font-size:11.5px; color:${p.termoAceito === "SIM" ? "var(--verde)" : "var(--erro)"}; margin:10px 0 0;">
           ${p.termoAceito === "SIM" ? "✅ Termo de Adesão aceito" + (p.dataAceiteTermo ? " em " + paraBRFlexivel(p.dataAceiteTermo) : "") : "⚠️ Termo de Adesão não confirmado neste pacote"}
           — <a href="${LINK_TERMO_ADESAO}" target="_blank" rel="noopener" style="color:inherit; text-decoration:underline;">ver documento</a>
         </p>
@@ -2089,7 +2338,7 @@ function montarBlocoCustoRealizadoPacote(p, admin) {
     resumo += `
       <label style="margin-top:14px;">Detalhamento do custo realizado</label>
       <div class="caixa-preco-pacote">${linhasDetalhe}</div>
-      <p class="custo-realizado-meta">Preenchido em ${paraBRFlexivel(cr.preenchidoEm)}${cr.usuario ? " por " + cr.usuario : ""}.</p>
+      <p class="custo-realizado-meta">Preenchido em ${paraBRFlexivel(cr.preenchidoEm)}${cr.usuario ? " por " + escapeHtml(cr.usuario) : ""}.</p>
     `;
   }
 
@@ -2138,13 +2387,24 @@ function montarHandlersCustoRealizadoPacote(p) {
 $("btn-fechar-detalhes-pacote").onclick = () => { $("overlay-detalhes-pacote").classList.remove("aberto"); };
 $("overlay-detalhes-pacote").addEventListener("click", (e) => { if (e.target.id === "overlay-detalhes-pacote") $("overlay-detalhes-pacote").classList.remove("aberto"); });
 
-async function excluirComandaComConfirmacao(comandaId, identificacao) {
+// Exclusão definitiva passa pela mesma fila das outras ações da comanda —
+// assim ela sempre roda DEPOIS de qualquer item que ainda estava sendo
+// gravado, sem deixar item "órfão" na planilha.
+function excluirComandaComConfirmacao(comandaId, identificacao) {
   if (!confirm(`Excluir definitivamente a comanda "${identificacao}"? Isso remove tudo da planilha (diferente de Cancelar) e não pode ser desfeito.`)) return;
-  try {
-    const resp = await chamarAPI("excluirComanda", { comandaId, usuario: USUARIO_LOGADO });
-    if (resp.status === "ok") { carregarComandas(); }
-    else alert("❌ " + resp.mensagem);
-  } catch (e) { alert("❌ " + e.message); }
+  enviarLancamentosPendentes(comandaId);
+  document.querySelectorAll(`.card-comanda[data-comanda-id="${comandaId}"]`).forEach(c => c.remove());
+  enfileirar("excluirComanda", { comandaId },
+    () => { carregarComandas(); atualizarEstoqueSeSeguro(); carregarBannerEmAtendimento(); },
+    (msg) => { alert("❌ Não foi possível excluir a comanda: " + msg); carregarComandas(); }
+  );
+}
+
+// Guarda as comandas já vistas (de qualquer atendente) — usado pra numerar a
+// próxima "Cliente NN" sem repetir número de outra pessoa.
+const COMANDAS_CONHECIDAS = new Map();
+function registrarComandasConhecidas(lista) {
+  (lista || []).forEach(c => { if (!c.ehPacote && c.comandaId) COMANDAS_CONHECIDAS.set(c.comandaId, c); });
 }
 
 // Mostra só as comandas abertas pelo usuário logado (item novo: cada
@@ -2152,9 +2412,11 @@ async function excluirComandaComConfirmacao(comandaId, identificacao) {
 // filtro por "dono" — eles já têm seu próprio fluxo de Contas a Receber e
 // costumam ser combinados por qualquer um da equipe, então continuam
 // aparecendo aqui independente de quem os vendeu.
+// Recarregar a mesma lista (atualização em segundo plano) não mostra mais
+// o "Carregando..." piscando — só troca os cards quando a resposta chega.
+let TOKEN_CARREGAR_COMANDAS = 0;
 async function carregarComandas() {
   const grid = $("grid-comandas");
-  grid.innerHTML = `<div class="vazio-lista">Carregando...</div>`;
   const params = { status: FILTRO_STATUS_ATUAL };
   if (FILTRO_STATUS_ATUAL === "Fechada") {
     const iso = dataHojeISO(); // data LOCAL, não UTC — antes usava toISOString() e virava o dia errado à noite, fazendo a lista sumir
@@ -2165,39 +2427,68 @@ async function carregarComandas() {
     if (dataInicio) params.dataInicio = dataInicio;
     if (dataFim) params.dataFim = dataFim;
   }
+  const chaveFiltro = JSON.stringify(params);
+  if (grid.dataset.filtro !== chaveFiltro) grid.innerHTML = `<div class="vazio-lista">Carregando...</div>`;
+  const token = ++TOKEN_CARREGAR_COMANDAS;
   try {
     const resp = await chamarAPI("listarComandas", params);
-    if (resp.status !== "ok") { grid.innerHTML = `<div class="vazio-lista">❌ ${resp.mensagem}</div>`; return; }
+    if (token !== TOKEN_CARREGAR_COMANDAS) return; // chegou uma busca mais nova no meio do caminho
+    if (resp.status !== "ok") { if (!grid.querySelector(".card-comanda")) grid.innerHTML = `<div class="vazio-lista">❌ ${resp.mensagem}</div>`; return; }
+    grid.dataset.filtro = chaveFiltro;
+    registrarComandasConhecidas(resp.comandas);
     const minhas = resp.comandas.filter(c => c.ehPacote || c.usuarioAbertura === USUARIO_LOGADO);
-    if (!minhas.length) { grid.innerHTML = `<div class="vazio-lista">Nenhuma comanda sua por aqui ainda. Veja "Comandas de Hoje" pra conferir as de todo mundo.</div>`; return; }
+    if (!minhas.length) { grid.innerHTML = `<div class="vazio-lista">Nenhuma comanda sua por aqui ainda. Veja "Comandas do Dia" pra conferir as de todo mundo.</div>`; return; }
     grid.innerHTML = "";
     minhas.forEach(c => grid.appendChild(montarCardComanda(c)));
   } catch (e) {
-    grid.innerHTML = `<div class="vazio-lista">❌ ${e.message}</div>`;
+    if (token === TOKEN_CARREGAR_COMANDAS && !grid.querySelector(".card-comanda")) grid.innerHTML = `<div class="vazio-lista">❌ ${e.message}</div>`;
   }
 }
 
-// "Comandas de Hoje" — todas as comandas de todos os usuários, sempre do
-// dia de hoje (aberta hoje OU fechada hoje), sem filtro de dono. Item novo:
-// visão consolidada da operação do dia inteiro.
+// "Comandas do Dia" — todas as comandas de todos os usuários no dia
+// escolhido (aberta OU fechada naquele dia), sem filtro de dono. Por padrão
+// abre no dia de hoje; o filtro de data permite consultar qualquer outro dia.
+let TOKEN_COMANDAS_DIA = 0;
 async function carregarComandasHoje() {
   const grid = $("grid-comandas-hoje");
-  grid.innerHTML = `<div class="vazio-lista">Carregando...</div>`;
-  const iso = dataHojeISO();
+  const dataSel = $("cd-data-dia").value || dataHojeISO();
+  $("cd-data-dia").value = dataSel;
+  const ehHoje = dataSel === dataHojeISO();
+  $("rotulo-comandas-dia").textContent = ehHoje
+    ? "Todas as comandas de hoje, de todos os usuários — abertas ou fechadas no dia."
+    : `Todas as comandas de ${paraBR(dataSel)}, de todos os usuários — abertas ou fechadas nesse dia.`;
+  if (grid.dataset.data !== dataSel) { grid.innerHTML = `<div class="vazio-lista">Carregando...</div>`; $("resumo-comandas-dia").innerHTML = ""; }
+  const token = ++TOKEN_COMANDAS_DIA;
   try {
-    const resp = await chamarAPI("listarComandas", { status: "Todas", dataInicio: iso, dataFim: iso });
+    const resp = await chamarAPI("listarComandas", { status: "Todas", dataInicio: dataSel, dataFim: dataSel });
+    if (token !== TOKEN_COMANDAS_DIA) return;
     if (resp.status !== "ok") { grid.innerHTML = `<div class="vazio-lista">❌ ${resp.mensagem}</div>`; return; }
-    if (!resp.comandas.length) { grid.innerHTML = `<div class="vazio-lista">Nenhuma comanda hoje ainda.</div>`; return; }
+    grid.dataset.data = dataSel;
+    if (ehHoje) registrarComandasConhecidas(resp.comandas);
+    const comandas = resp.comandas.filter(c => !c.ehPacote);
+    const abertas = comandas.filter(c => c.status === "Aberta").length;
+    const fechadas = comandas.filter(c => c.status === "Fechada");
+    const totalFechado = fechadas.reduce((s, c) => s + (Number(c.valorTotal) || 0), 0);
+    $("resumo-comandas-dia").innerHTML = comandas.length ? `
+      <span><b>${comandas.length}</b> comanda(s)</span>
+      <span><b>${abertas}</b> aberta(s)</span>
+      <span><b>${fechadas.length}</b> fechada(s)</span>
+      <span>Faturado (fechadas): <b>${fmt(totalFechado)}</b></span>
+    ` : "";
+    if (!resp.comandas.length) { grid.innerHTML = `<div class="vazio-lista">Nenhuma comanda ${ehHoje ? "hoje ainda" : "nesse dia"}.</div>`; return; }
     grid.innerHTML = "";
     resp.comandas.forEach(c => grid.appendChild(montarCardComanda(c)));
   } catch (e) {
-    grid.innerHTML = `<div class="vazio-lista">❌ ${e.message}</div>`;
+    if (token === TOKEN_COMANDAS_DIA && !grid.querySelector(".card-comanda")) grid.innerHTML = `<div class="vazio-lista">❌ ${e.message}</div>`;
   }
 }
 $("btn-atualizar-comandas-hoje").onclick = carregarComandasHoje;
+$("btn-filtrar-comandas-dia").onclick = carregarComandasHoje;
+$("cd-data-dia").onchange = carregarComandasHoje;
+$("btn-comandas-dia-hoje").onclick = () => { $("cd-data-dia").value = dataHojeISO(); carregarComandasHoje(); };
 
 // =====================================================================
-// COMANDAS — SUB-ABA "RESUMO DO DIA" (Espeto / Bebida / Baião / Combo)
+// COMANDAS — SUB-ABA "RESUMO DO DIA" (Faturamento total + Espeto / Bebida / Baião / Combo)
 // =====================================================================
 let MODO_FILTRO_RESUMO_DIA = "dia";
 
@@ -2212,6 +2503,35 @@ document.querySelectorAll(".modo-filtro-resumo button[data-modo]").forEach(btn =
   };
 });
 $("btn-filtrar-resumo-dia").onclick = () => carregarResumoDia();
+
+// Card de destaque com o faturamento somado de TODAS as comandas fechadas
+// no período, de todos os atendentes — com a quebra por atendente e por
+// forma de pagamento logo abaixo (ajuda a conferir o caixa no fim do dia).
+function montarBlocoFaturamentoResumoDia(t) {
+  if (!t) return "";
+  const periodo = MODO_FILTRO_RESUMO_DIA === "mes" ? "do mês" : "do dia";
+  const chipsAtendentes = (t.porAtendente || []).map(a => {
+    const cor = corDoUsuario(a.nome);
+    return `<span class="chip-resumo" style="border-left-color:${cor.borda};">${escapeHtml(a.nome)} <b>${fmt(a.valor)}</b> <span class="qtd">${a.qtd} comanda(s)</span></span>`;
+  }).join("");
+  const chipsFormas = (t.porForma || []).map(f => `<span class="chip-resumo" style="border-left-color:var(--verde);">${escapeHtml(f.forma)} <b>${fmt(f.valor)}</b> <span class="qtd">${f.qtd}</span></span>`).join("");
+  return `
+    <div class="resumo-dia-total">
+      <div>
+        <div class="rotulo">💰 Faturamento total ${periodo} — todas as comandas fechadas, de todos os atendentes</div>
+        <div class="valor-principal">${fmt(t.faturamento)}</div>
+        ${t.juros > 0 ? `<div class="sub">+ ${fmt(t.juros)} de juros de cartão cobrados à parte</div>` : ""}
+        ${t.historico > 0 ? `<div class="sub">Inclui ${fmt(t.historico)} do histórico antigo (Vendas Diárias)</div>` : ""}
+      </div>
+      <div class="metricas">
+        <div class="metrica"><b>${t.qtdComandas}</b><span>Comandas fechadas</span></div>
+        <div class="metrica"><b>${fmt(t.ticketMedio)}</b><span>Ticket médio</span></div>
+      </div>
+    </div>
+    ${chipsAtendentes ? `<div class="resumo-dia-linha"><span class="titulo-linha">Por atendente:</span>${chipsAtendentes}</div>` : ""}
+    ${chipsFormas ? `<div class="resumo-dia-linha"><span class="titulo-linha">Recebido por forma:</span>${chipsFormas}</div>` : ""}
+  `;
+}
 
 async function carregarResumoDia() {
   const grid = $("resumo-dia-grid");
@@ -2240,7 +2560,7 @@ async function carregarResumoDia() {
     // agora "Espeto" conta só o avulso e "Combo" só o combo (ver comentário
     // em acumularVendaPorTipo no Codigo.gs) — cada card mostra o número
     // próprio dele, sem misturar um com o outro.
-    grid.innerHTML = ["Espeto", "Bebida", "Baião", "Combo"].map(tipo => {
+    const cardsTipo = ["Espeto", "Bebida", "Baião", "Combo"].map(tipo => {
       const t = resp.porTipo[tipo] || { quantidade: 0, valor: 0 };
       const clicavel = tipo === "Espeto" || tipo === "Combo";
       return `
@@ -2251,6 +2571,7 @@ async function carregarResumoDia() {
         </div>
       `;
     }).join("");
+    grid.innerHTML = montarBlocoFaturamentoResumoDia(resp.totais) + cardsTipo;
     grid.querySelectorAll('.resumo-dia-card[data-tipo="Espeto"], .resumo-dia-card[data-tipo="Combo"]').forEach(card => {
       card.onclick = () => alternarDetalheSaborResumoDia(card.dataset.tipo, dataInicio, dataFim, card);
     });
@@ -2286,7 +2607,7 @@ async function alternarDetalheSaborResumoDia(tipo, dataInicio, dataFim, cardEl) 
       ${lista.length ? `
         <table>
           <thead><tr><th>Sabor</th><th style="text-align:right;">Quantidade</th></tr></thead>
-          <tbody>${lista.map(s => `<tr><td>${s.produto}</td><td class="valor">${s.quantidade}</td></tr>`).join("")}</tbody>
+          <tbody>${lista.map(s => `<tr><td>${escapeHtml(s.produto)}</td><td class="valor">${s.quantidade}</td></tr>`).join("")}</tbody>
         </table>
       ` : `<div class="vazio-lista">Nenhum item nesse período.</div>`}
     `;
@@ -2343,13 +2664,28 @@ async function carregarIndicadores() {
 }
 
 // =====================================================================
-// COMANDAS — NOMEAÇÃO AUTOMÁTICA ("Cliente 01", "Cliente 02", ...)
+// COMANDAS — NOMEAÇÃO AUTOMÁTICA ("Cliente 01 · JN", "Cliente 02 · TX", ...)
 // =====================================================================
+// Com mais de um atendente, cada aparelho contava sozinho e dois celulares
+// podiam criar "Cliente 01" ao mesmo tempo. Agora o número segue o maior já
+// visto no dia (de qualquer atendente) e leva as iniciais de quem abriu, o
+// que garante que nunca fiquem duas comandas com o mesmo nome.
+function iniciaisDoUsuario(nome) {
+  return (nome || "").split(/\s+/).filter(Boolean).slice(0, 2).map(p => p[0]).join("").toUpperCase();
+}
 function proximoNomeMesa() {
   const chave = "brasero96_contador_cliente_" + dataHojeISO();
-  const contador = parseInt(localStorage.getItem(chave) || "0", 10) + 1;
-  localStorage.setItem(chave, String(contador));
-  return "Cliente " + String(contador).padStart(2, "0");
+  let maior = parseInt(localStorage.getItem(chave) || "0", 10) || 0;
+  const hojeBR = paraBR(dataHojeISO());
+  COMANDAS_CONHECIDAS.forEach(c => {
+    if (!(c.abertaEm || "").toString().startsWith(hojeBR)) return;
+    const m = /^Cliente\s+(\d+)/i.exec(c.identificacao || "");
+    if (m) maior = Math.max(maior, parseInt(m[1], 10));
+  });
+  const numero = maior + 1;
+  localStorage.setItem(chave, String(numero));
+  const iniciais = iniciaisDoUsuario(USUARIO_LOGADO);
+  return "Cliente " + String(numero).padStart(2, "0") + (iniciais ? " · " + iniciais : "");
 }
 
 $("btn-nova-comanda").onclick = () => {
@@ -2368,8 +2704,9 @@ $("btn-nova-comanda").onclick = () => {
     },
     itens: [], totalQuantidade: 0, valorTotal: 0, custoTotal: 0, lucro: 0
   };
-  popularSelectProdutos();
+  COMANDAS_CONHECIDAS.set(comandaId, payloadOtimista.comanda);
   abrirModalComPayload(payloadOtimista);
+  popularSelectProdutos();
   inserirCardComandaLocal(payloadOtimista.comanda);
 
   enfileirar("abrirComanda", { comandaId, identificacao },
@@ -2383,7 +2720,7 @@ function inserirCardComandaLocal(comanda) {
   if (FILTRO_STATUS_ATUAL !== "Aberta" && FILTRO_STATUS_ATUAL !== "Todas") return;
   const vazio = document.querySelector("#grid-comandas .vazio-lista");
   if (vazio) $("grid-comandas").innerHTML = "";
-  const existente = document.querySelector(`.card-comanda[data-comanda-id="${comanda.comandaId}"]`);
+  const existente = document.querySelector(`#grid-comandas .card-comanda[data-comanda-id="${comanda.comandaId}"]`);
   if (existente) existente.remove();
   const card = montarCardComanda(comanda, comanda.totalQuantidade || 0);
   $("grid-comandas").prepend(card);
@@ -2396,8 +2733,10 @@ function inserirCardComandaLocal(comanda) {
 // fechar) devolveu, sem precisar de uma 2ª chamada de rede.
 function abrirModalComPayload(payload) {
   COMANDA_ATUAL = payload;
+  VERSAO_LOCAL_COMANDA++;
   $("overlay-comanda").classList.add("aberto");
   $("modal-status").textContent = "";
+  prepararAreaDeLancamento();
   renderModalComanda();
 }
 
@@ -2405,10 +2744,9 @@ async function abrirModalComanda(comandaId) {
   $("overlay-comanda").classList.add("aberto");
   $("modal-status").textContent = "";
   $("modal-lista-itens").innerHTML = `<div class="vazio-lista">Carregando...</div>`;
-  // Busca o cardápio (pro dropdown "Adicionar item") e os dados da comanda
-  // ao mesmo tempo, não um depois do outro — são independentes, então
-  // esperar um terminar pra só então começar o outro só atrasa a lista de
-  // opções aparecer sem necessidade.
+  prepararAreaDeLancamento();
+  // Busca o cardápio (pra grade de itens) e os dados da comanda ao mesmo
+  // tempo, não um depois do outro — são independentes.
   await Promise.all([popularSelectProdutos(), recarregarComanda(comandaId)]);
 }
 
@@ -2417,10 +2755,31 @@ async function recarregarComanda(comandaId) {
     const resp = await chamarAPI("obterComanda", { comandaId });
     if (resp.status !== "ok") { $("modal-status").textContent = "❌ " + resp.mensagem; return; }
     COMANDA_ATUAL = resp;
+    VERSAO_LOCAL_COMANDA++;
     renderModalComanda();
   } catch (e) {
     $("modal-status").textContent = "❌ " + e.message;
   }
+}
+
+// Relê a comanda do servidor sem piscar nada e SEM atropelar o que a pessoa
+// está fazendo: se alguém tocou num item (ou ainda tem coisa na fila) desde
+// que a busca começou, o resultado é descartado. Serve pra trazer itens que
+// outro atendente incluiu na mesma comanda.
+async function recarregarComandaSilenciosa(comandaId) {
+  const versaoNoInicio = VERSAO_LOCAL_COMANDA;
+  try {
+    const resp = await chamarAPI("obterComanda", { comandaId });
+    if (resp.status !== "ok") return;
+    if (!COMANDA_ATUAL || COMANDA_ATUAL.comanda.comandaId !== comandaId) return;
+    if (!$("overlay-comanda").classList.contains("aberto")) return;
+    if (VERSAO_LOCAL_COMANDA !== versaoNoInicio || temPendenciaDaComanda(comandaId)) return;
+    const ativo = document.activeElement;
+    if (ativo && ativo.classList && ativo.classList.contains("qtd-valor")) return; // está digitando uma quantidade
+    if ($("box-pagamento").classList.contains("aberto")) return; // no meio do fechamento, não mexe
+    COMANDA_ATUAL = resp;
+    renderModalComanda();
+  } catch (e) { /* silencioso */ }
 }
 
 $("btn-editar-nome-comanda").onclick = () => {
@@ -2429,8 +2788,9 @@ $("btn-editar-nome-comanda").onclick = () => {
   if (!novo || !novo.trim() || novo.trim() === COMANDA_ATUAL.comanda.identificacao) return;
   const comandaId = COMANDA_ATUAL.comanda.comandaId;
   COMANDA_ATUAL.comanda.identificacao = novo.trim();
+  VERSAO_LOCAL_COMANDA++;
   renderModalComanda();
-  carregarComandas();
+  document.querySelectorAll(`.card-comanda[data-comanda-id="${comandaId}"] .id`).forEach(el => el.textContent = novo.trim());
   enfileirar("editarComanda", { comandaId, identificacao: novo.trim() },
     () => { carregarComandas(); },
     (msg) => { alert("❌ Não foi possível renomear: " + msg); recarregarComanda(comandaId); }
@@ -2440,6 +2800,7 @@ $("btn-editar-nome-comanda").onclick = () => {
 function renderModalComanda() {
   const c = COMANDA_ATUAL.comanda;
   const itens = COMANDA_ATUAL.itens;
+  const aberta = c.status === "Aberta";
   const fechada = c.status === "Fechada";
   const cancelada = c.status === "Cancelada";
 
@@ -2447,45 +2808,50 @@ function renderModalComanda() {
   $("modal-badge-status").textContent = c.status;
   $("modal-badge-status").className = "badge-status status-pill " + c.status;
 
-  // Sincroniza a checkbox de taxa de entrega com o que realmente está na
-  // comanda (sem disparar o próprio handler de novo).
-  const temTaxaEntrega = itens.some(it => it.produto === "Taxa de Entrega");
-  $("modal-taxa-entrega").checked = temTaxaEntrega;
-
+  $("modal-lista-itens").classList.toggle("somente-leitura", !aberta);
   $("modal-lista-itens").innerHTML = itens.length ? itens.map(it => {
     const detalheCombo = it.comboEspeto1
-      ? `<div class="combo-detalhe">🍱 ${it.comboEspeto1} + ${it.comboEspeto2} + ${it.comboRefri}${it.comboVinagrete === "SIM" ? " + Vinagrete" : ""}${it.comboFarofa === "SIM" ? " + Farofa" : ""} + Baião</div>`
+      ? `<div class="combo-detalhe">🍱 ${escapeHtml(it.comboEspeto1)} + ${escapeHtml(it.comboEspeto2)} + ${escapeHtml(it.comboRefri)}${it.comboVinagrete === "SIM" ? " + Vinagrete" : ""}${it.comboFarofa === "SIM" ? " + Farofa" : ""} + Baião</div>`
       : "";
+    const sincronizado = !!it.linha && !PENDENTES_ITEM[it.itemId];
     return `
-    <div class="item-linha${it.linha ? '' : ' pendente'}" data-item-id="${it.itemId}" data-linha="${it.linha || ''}">
+    <div class="item-linha${sincronizado ? '' : ' pendente'}" data-item-id="${it.itemId}">
       <div class="info">
-        <div class="nome">${it.produto}${it.linha ? '' : ' <span class="ponto-pendente" title="Sincronizando...">●</span>'}</div>
+        <div class="nome">${escapeHtml(it.produto)}${sincronizado ? '' : ' <span class="ponto-pendente" title="Sincronizando...">●</span>'}</div>
         <div class="preco">${fmt(it.valorUnitario)} / un.</div>
         ${detalheCombo}
       </div>
       <div class="qty-controle">
-        <button class="qtd-menos">−</button>
-        <input type="number" class="qtd-valor" value="${it.quantidade}" min="1">
-        <button class="qtd-mais">+</button>
+        <button class="qtd-menos" type="button" aria-label="Diminuir">−</button>
+        <input type="number" class="qtd-valor" value="${it.quantidade}" min="1" inputmode="numeric" ${aberta ? "" : "disabled"}>
+        <button class="qtd-mais" type="button" aria-label="Aumentar">+</button>
       </div>
       <div class="subtotal">${fmt(it.valorTotal)}</div>
-      <button class="btn-remover" title="Remover item">🗑</button>
+      <button class="btn-remover" type="button" title="Remover item">🗑</button>
     </div>
   `;
-  }).join("") : `<div class="vazio-lista">Nenhum item ainda. Adicione abaixo.</div>`;
+  }).join("") : `<div class="vazio-lista" style="padding:14px 0;">Nenhum item ainda. Toque nos itens abaixo pra incluir.</div>`;
 
   $("modal-total").textContent = fmt(COMANDA_ATUAL.valorTotal);
 
   // ações por item
   $("modal-lista-itens").querySelectorAll(".item-linha").forEach(linhaEl => {
     const itemId = linhaEl.dataset.itemId;
-    const linhaPlanilha = linhaEl.dataset.linha;
     const inputQtd = linhaEl.querySelector(".qtd-valor");
-    linhaEl.querySelector(".qtd-menos").onclick = () => ajustarQtdItem(itemId, linhaPlanilha, Math.max(1, parseInt(inputQtd.value) - 1));
-    linhaEl.querySelector(".qtd-mais").onclick = () => ajustarQtdItem(itemId, linhaPlanilha, parseInt(inputQtd.value) + 1);
-    inputQtd.onchange = () => ajustarQtdItem(itemId, linhaPlanilha, Math.max(1, parseInt(inputQtd.value) || 1));
-    linhaEl.querySelector(".btn-remover").onclick = () => removerItem(itemId, linhaPlanilha);
+    linhaEl.querySelector(".qtd-menos").onclick = () => ajustarQtdItem(itemId, null, Math.max(1, (parseInt(inputQtd.value) || 1) - 1));
+    linhaEl.querySelector(".qtd-mais").onclick = () => ajustarQtdItem(itemId, null, (parseInt(inputQtd.value) || 0) + 1);
+    inputQtd.onchange = () => ajustarQtdItem(itemId, null, Math.max(1, parseInt(inputQtd.value) || 1));
+    linhaEl.querySelector(".btn-remover").onclick = () => removerItem(itemId);
   });
+
+  // área de lançamento: só com a comanda aberta (fechada/cancelada precisa
+  // ser reaberta antes — evita mudar o valor depois do pagamento)
+  $("add-item-box").style.display = aberta ? "" : "none";
+  $("add-item-bloqueado").style.display = aberta ? "none" : "block";
+  $("add-item-bloqueado").textContent = cancelada
+    ? "Comanda cancelada — reabra pra incluir itens."
+    : "Comanda fechada — pra incluir ou alterar itens, reabra a comanda.";
+  if (!aberta) fecharConfigCombo();
 
   // caixa de pagamento / botões conforme status
   $("box-pagamento").classList.remove("aberto");
@@ -2493,292 +2859,445 @@ function renderModalComanda() {
     $("btn-abrir-pagamento").style.display = "none";
     $("btn-reabrir-comanda").style.display = "block";
     $("btn-editar-pagamento").style.display = "block";
-    $("info-pagamento-atual").innerHTML = `<div class="info-pagamento-atual">✓ Fechada — ${c.formaPagamento}${c.troco ? " · Troco: " + fmt(c.troco) : ""}${c.juros ? " · Juros cartão: " + fmt(c.juros) + " · Cobrado: " + fmt(c.valorCobrado) : ""} (${c.fechadaEm})</div>`;
+    $("info-pagamento-atual").innerHTML = `<div class="info-pagamento-atual">✓ Fechada — ${escapeHtml(c.formaPagamento)}${c.troco ? " · Troco: " + fmt(c.troco) : ""}${c.juros ? " · Juros cartão: " + fmt(c.juros) + " · Cobrado: " + fmt(c.valorCobrado) : ""} (${c.fechadaEm})</div>`;
   } else if (cancelada) {
     $("btn-abrir-pagamento").style.display = "none";
     $("btn-reabrir-comanda").style.display = "block";
     $("btn-editar-pagamento").style.display = "none";
-    $("info-pagamento-atual").innerHTML = `<div class="info-pagamento-atual" style="color:var(--muted); background:rgba(255,255,255,.05);">Comanda cancelada.</div>`;
+    $("info-pagamento-atual").innerHTML = `<div class="info-pagamento-atual" style="color:var(--muted); background:rgba(128,128,128,.1);">Comanda cancelada.</div>`;
   } else {
     $("btn-abrir-pagamento").style.display = "block";
     $("btn-reabrir-comanda").style.display = "none";
     $("btn-editar-pagamento").style.display = "none";
     $("info-pagamento-atual").innerHTML = "";
   }
+
+  atualizarBadgesGrade();
 }
 
+// =====================================================================
+// LANÇAMENTO RÁPIDO DE ITENS NA COMANDA
+// =====================================================================
+// Em vez de "escolher na lista → escolher quantidade → clicar em Add", cada
+// item vira um botão: um toque soma +1 na hora. Vários toques seguidos no
+// mesmo item são juntados numa gravação só (espera ~0,7s sem toque antes de
+// mandar pra planilha), o que deixa a fila curta mesmo com vários
+// atendentes lançando ao mesmo tempo. O mesmo item tocado de novo aumenta a
+// quantidade da linha que já existe, em vez de criar outra linha.
+const NOME_REFRIGERANTE_PEQUENO = "Refrigerante Pequeno"; // mesmo nome usado no Codigo.gs
+const DEBOUNCE_SYNC_ITEM_MS = 700;
+const PENDENTES_ITEM = {}; // itemId -> { tipo:"adicionar"|"editar", item, comandaId, timer }
+let VERSAO_LOCAL_COMANDA = 0; // muda a cada alteração local — protege contra releitura atrasada
+let PRODUTO_COMBO_EM_MONTAGEM = null;
+
+function ehRefrigerantePequeno(p) {
+  return p && p.nome.trim().toLowerCase() === NOME_REFRIGERANTE_PEQUENO.toLowerCase();
+}
+function refrigerantePequenoAtivo() {
+  return PRODUTOS_CACHE.find(ehRefrigerantePequeno) || null;
+}
+// Sabores de refrigerante que ficam escondidos na comanda (continuam no
+// Estoque pra contagem/conferência): só os que têm o MESMO preço do
+// "Refrigerante Pequeno" — um refrigerante de outro valor (ex: 1L) continua
+// aparecendo normalmente. Se o "Refrigerante Pequeno" for marcado como
+// Oculto no Cardápio, os sabores voltam a aparecer.
+function ehSaborAgrupadoNoRefriPequeno(p, generico) {
+  return !!generico && p.tipo === "Bebida" && p.refrigerante && !ehRefrigerantePequeno(p)
+    && Number(p.preco) === Number(generico.preco);
+}
+function produtosParaLancamento() {
+  const generico = refrigerantePequenoAtivo();
+  return PRODUTOS_CACHE.filter(p => p.tipo !== "Taxa" && !ehSaborAgrupadoNoRefriPequeno(p, generico));
+}
+function normalizarBusca(t) {
+  return (t || "").toString().normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+}
+
+function avisoModal(texto, tipo) {
+  const el = $("modal-status");
+  el.textContent = texto;
+  el.className = "msg-status " + (tipo || "");
+  clearTimeout(avisoModal._t);
+  avisoModal._t = setTimeout(() => { if (el.textContent === texto) { el.textContent = ""; el.className = "msg-status"; } }, 3500);
+}
+
+function prepararAreaDeLancamento() {
+  $("modal-busca-produto").value = "";
+  fecharConfigCombo();
+  $("box-pagamento").classList.remove("aberto");
+  if (PRODUTOS_CACHE.length) renderGradeProdutos();
+  // no computador já deixa o cursor na busca; no celular não (abriria o teclado)
+  if (window.matchMedia && window.matchMedia("(pointer:fine)").matches) {
+    setTimeout(() => { if ($("add-item-box").style.display !== "none") $("modal-busca-produto").focus(); }, 60);
+  }
+}
+
+// Mantém o nome antigo porque é chamado de vários lugares: agora monta a
+// grade de botões e os selects do combo.
 async function popularSelectProdutos() {
   if (!PRODUTOS_CACHE.length) await carregarProdutos();
-  const sel = $("modal-select-produto");
-  sel.innerHTML = PRODUTOS_CACHE.map(p => `<option value="${p.nome}" data-tipo="${p.tipo}">${p.nome} — ${fmt(p.preco)}</option>`).join("");
   popularSelectsCombo();
-  atualizarVisibilidadeCombo();
-};
-
-function popularSelectsCombo() {
-  const espetos = PRODUTOS_CACHE.filter(p => p.tipo === "Espeto");
-  // só refrigerante entra na escolha do combo — cerveja e água ficam de fora
-  const refrigerantes = PRODUTOS_CACHE.filter(p => p.tipo === "Bebida" && p.refrigerante);
-  const opcoesEspeto = espetos.map(p => `<option value="${p.nome}">${p.nome}</option>`).join("");
-  const opcoesRefri = refrigerantes.map(p => `<option value="${p.nome}">${p.nome}</option>`).join("");
-  $("combo-espeto1").innerHTML = opcoesEspeto;
-  $("combo-espeto2").innerHTML = opcoesEspeto;
-  $("combo-refri").innerHTML = opcoesRefri;
+  renderGradeProdutos();
 }
 
-$("modal-select-produto").onchange = atualizarVisibilidadeCombo;
-function atualizarVisibilidadeCombo() {
-  const opt = $("modal-select-produto").selectedOptions[0];
-  const ehCombo = opt && opt.dataset.tipo === "Combo";
-  $("combo-config").classList.toggle("aberto", !!ehCombo);
+const GRUPOS_LANCAMENTO = [["Espeto", "🍢 Espetos"], ["Bebida", "🥤 Bebidas"], ["Baião", "🍚 Baião"], ["Combo", "🍱 Combos"], ["Outros", "Outros"]];
+function renderGradeProdutos() {
+  const grade = $("modal-grade-produtos");
+  const termo = normalizarBusca($("modal-busca-produto").value.trim());
+  const produtos = produtosParaLancamento().filter(p => !termo || normalizarBusca(p.nome).includes(termo));
+  if (!produtos.length) {
+    grade.innerHTML = `<div class="vazio-lista" style="padding:14px 0;">${PRODUTOS_CACHE.length ? "Nenhum item encontrado." : "Carregando cardápio..."}</div>`;
+    return;
+  }
+  const grupos = {};
+  produtos.forEach(p => {
+    const g = GRUPOS_LANCAMENTO.some(([t]) => t === p.tipo) ? p.tipo : "Outros";
+    (grupos[g] = grupos[g] || []).push(p);
+  });
+  grade.innerHTML = GRUPOS_LANCAMENTO.filter(([t]) => grupos[t]).map(([t, titulo]) => `
+    <div class="grupo-produtos">
+      <div class="grupo-produtos-titulo">${titulo}</div>
+      <div class="grade-produtos-botoes">
+        ${grupos[t].sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR")).map(p => `
+          <button type="button" class="btn-produto-rapido${p.tipo === "Combo" ? " combo" : ""}" data-nome="${escapeAttr(p.nome)}">
+            <span class="qtd-na-comanda"></span>
+            <span class="nome">${escapeHtml(p.nome)}</span>
+            <span class="linha-inferior"><span class="preco">${fmt(p.preco)}</span><span class="badge-estoque"></span></span>
+          </button>
+        `).join("")}
+      </div>
+    </div>
+  `).join("");
+  grade.querySelectorAll(".btn-produto-rapido").forEach(btn => { btn.onclick = () => tocarProdutoRapido(btn.dataset.nome, btn); });
+  atualizarBadgesGrade();
 }
 
-// lista de 1 a 20 pra escolher a quantidade rapidinho, sem precisar digitar
-$("modal-qtd-novo").innerHTML = Array.from({ length: 20 }, (_, i) => i + 1).map(n => `<option value="${n}">${n}</option>`).join("");
+// Quantidade já lançada na comanda (bolinha laranja) + estoque disponível
+// (canto de baixo) em cada botão — sem precisar redesenhar a grade.
+function atualizarBadgesGrade() {
+  const botoes = document.querySelectorAll("#modal-grade-produtos .btn-produto-rapido");
+  if (!botoes.length) return;
+  const qtdPorProduto = {};
+  ((COMANDA_ATUAL && COMANDA_ATUAL.itens) || []).forEach(it => { qtdPorProduto[it.produto] = (qtdPorProduto[it.produto] || 0) + (Number(it.quantidade) || 0); });
+  botoes.forEach(btn => {
+    const nome = btn.dataset.nome;
+    const qtd = qtdPorProduto[nome] || 0;
+    btn.classList.toggle("tem-na-comanda", qtd > 0);
+    btn.querySelector(".qtd-na-comanda").textContent = qtd;
+    const badge = btn.querySelector(".badge-estoque");
+    const disp = ESTOQUE_MAP[nome];
+    if (disp === undefined) { badge.textContent = ""; badge.className = "badge-estoque"; return; }
+    badge.textContent = disp <= 0 ? "sem estoque" : "est. " + disp;
+    badge.className = "badge-estoque" + (disp <= 0 ? " zerado" : (disp <= 3 ? " baixo" : ""));
+  });
+}
 
-$("btn-add-item-comanda").onclick = () => {
-  const nomeProduto = $("modal-select-produto").value;
-  const quantidade = parseInt($("modal-qtd-novo").value) || 1;
-  if (!nomeProduto || !COMANDA_ATUAL) return;
-  const produto = PRODUTOS_CACHE.find(p => p.nome === nomeProduto);
-  if (!produto) return;
-
-  const ehCombo = produto.tipo === "Combo";
-  let comboEspeto1 = "", comboEspeto2 = "", comboRefri = "", comboVinagrete = "NÃO", comboFarofa = "NÃO";
-  if (ehCombo) {
-    comboEspeto1 = $("combo-espeto1").value;
-    comboEspeto2 = $("combo-espeto2").value;
-    comboRefri = $("combo-refri").value;
-    comboVinagrete = $("combo-vinagrete").checked ? "SIM" : "NÃO";
-    comboFarofa = $("combo-farofa").checked ? "SIM" : "NÃO";
-    if (!comboEspeto1 || !comboEspeto2 || !comboRefri) { alert("Escolha os 2 sabores de espeto e o refrigerante do combo."); return; }
+$("modal-busca-produto").oninput = renderGradeProdutos;
+$("modal-busca-produto").addEventListener("keydown", (e) => {
+  if (e.key === "Enter") {
+    e.preventDefault();
+    const primeiro = document.querySelector("#modal-grade-produtos .btn-produto-rapido");
+    if (primeiro) primeiro.click();
+  } else if (e.key === "Escape") {
+    $("modal-busca-produto").value = ""; renderGradeProdutos();
   }
+});
 
-  // avisa na hora se o item já está zerado no estoque (a venda continua
-  // acontecendo mesmo assim — é só um aviso, não trava)
-  if (ESTOQUE_MAP[nomeProduto] !== undefined && ESTOQUE_MAP[nomeProduto] <= 0) {
-    alert("⚠️ Atenção: \"" + nomeProduto + "\" está com estoque ZERADO. O item será adicionado mesmo assim.");
-  }
-
-  const comandaId = COMANDA_ATUAL.comanda.comandaId;
-  const itemId = gerarId("I");
-  const valorUnitario = produto.preco;
-  // custo local (otimista) — se for combo, soma os custos dos componentes
-  // escolhidos; o servidor recalcula do mesmo jeito ao sincronizar (inclusive
-  // vinagrete/farofa como fração do lote do dia, não o lote inteiro — mesma
-  // proporção 50ml/1L e 50g/1kg usada no Codigo.gs; se mudar lá, muda aqui também).
-  const FRACAO_PORCAO_COMBO = 50 / 1000;
-  let custoUnitario = produto.custo || 0;
-  if (ehCombo) {
-    const custoDe = (nome) => { const p = PRODUTOS_CACHE_TODOS.find(x => x.nome === nome); return p ? (p.custo || 0) : 0; };
-    const baiao = PRODUTOS_CACHE_TODOS.find(p => p.tipo === "Baião");
-    custoUnitario = custoDe(comboEspeto1) + custoDe(comboEspeto2) + custoDe(comboRefri) + (baiao ? baiao.custo : 0);
-    if (comboVinagrete === "SIM") custoUnitario += custoDe("Vinagrete") * FRACAO_PORCAO_COMBO;
-    if (comboFarofa === "SIM") custoUnitario += custoDe("Farofa") * FRACAO_PORCAO_COMBO;
-  }
-  const valorTotal = quantidade * valorUnitario;
-  const custoTotal = quantidade * custoUnitario;
+function recalcItem(it) {
+  it.valorTotal = it.quantidade * it.valorUnitario;
+  it.custoTotal = it.quantidade * it.custoUnitario;
+}
+function recalcularTotaisLocais() {
+  const itens = COMANDA_ATUAL.itens;
+  const totalQuantidade = itens.reduce((s, i) => s + (Number(i.quantidade) || 0), 0);
+  const valorTotal = itens.reduce((s, i) => s + (Number(i.valorTotal) || 0), 0);
+  const custoTotal = itens.reduce((s, i) => s + (Number(i.custoTotal) || 0), 0);
+  COMANDA_ATUAL.totalQuantidade = totalQuantidade;
+  COMANDA_ATUAL.valorTotal = valorTotal;
+  COMANDA_ATUAL.custoTotal = custoTotal;
+  COMANDA_ATUAL.lucro = valorTotal - custoTotal;
+  COMANDA_ATUAL.comanda.totalQuantidade = totalQuantidade;
+  COMANDA_ATUAL.comanda.valorTotal = valorTotal;
+  COMANDA_ATUAL.comanda.custoTotal = custoTotal;
+}
+function novoItemLocal(comandaId, produto, quantidade, custoUnitario, combo) {
+  const c = combo || {};
   const item = {
-    linha: null, itemId, comandaId, produto: produto.nome, categoria: produto.categoria,
-    quantidade, valorUnitario, valorTotal, custoUnitario, custoTotal, removido: false,
+    linha: null, itemId: gerarId("I"), comandaId, produto: produto.nome, categoria: produto.categoria, tipo: produto.tipo,
+    quantidade, valorUnitario: produto.preco, valorTotal: 0, custoUnitario, custoTotal: 0, removido: false,
     adicionadoEm: agoraBR(), usuario: USUARIO_LOGADO,
-    comboEspeto1, comboEspeto2, comboRefri, comboVinagrete, comboFarofa
+    comboEspeto1: c.comboEspeto1 || "", comboEspeto2: c.comboEspeto2 || "", comboRefri: c.comboRefri || "",
+    comboVinagrete: c.comboVinagrete || "", comboFarofa: c.comboFarofa || ""
   };
+  recalcItem(item);
+  return item;
+}
 
-  // atualiza o cache local de estoque na hora, pra próxima venda já refletir
-  if (ESTOQUE_MAP[nomeProduto] !== undefined) ESTOQUE_MAP[nomeProduto] -= quantidade;
+function temPendenciaDaComanda(comandaId) {
+  return Object.values(PENDENTES_ITEM).some(p => p.comandaId === comandaId)
+    || FILA_SYNC.some(op => op.params && op.params.comandaId === comandaId);
+}
 
-  // registra local primeiro: item aparece na comanda instantaneamente
-  COMANDA_ATUAL.itens.push(item);
-  COMANDA_ATUAL.valorTotal += valorTotal;
-  COMANDA_ATUAL.custoTotal += custoTotal;
-  COMANDA_ATUAL.totalQuantidade += quantidade;
-  COMANDA_ATUAL.comanda.valorTotal = COMANDA_ATUAL.valorTotal;
-  COMANDA_ATUAL.comanda.custoTotal = COMANDA_ATUAL.custoTotal;
-  COMANDA_ATUAL.comanda.totalQuantidade = COMANDA_ATUAL.totalQuantidade;
-  renderModalComanda();
-  $("modal-qtd-novo").value = 1;
+function agendarSyncItem(item, tipo) {
+  const atual = PENDENTES_ITEM[item.itemId];
+  if (atual) {
+    clearTimeout(atual.timer);
+    if (atual.tipo === "adicionar") tipo = "adicionar"; // ainda nem foi pra planilha: vai direto com a quantidade final
+  }
+  PENDENTES_ITEM[item.itemId] = {
+    tipo, item, comandaId: item.comandaId,
+    timer: setTimeout(() => dispararSyncItem(item.itemId), DEBOUNCE_SYNC_ITEM_MS)
+  };
+}
 
-  enfileirar("adicionarItemComanda", { comandaId, itemId, produto: produto.nome, quantidade, comboEspeto1, comboEspeto2, comboRefri, comboVinagrete, comboFarofa },
-    (resp) => {
-      // sincronizou: guarda a linha da planilha (deixa próximas edições rápidas)
-      // e corrige os totais com o valor oficial do servidor
-      const alvo = COMANDA_ATUAL && COMANDA_ATUAL.itens.find(it => it.itemId === itemId);
-      if (alvo) alvo.linha = resp.item.linha;
-      if (COMANDA_ATUAL && COMANDA_ATUAL.comanda.comandaId === comandaId) {
-        COMANDA_ATUAL.comanda = resp.comanda;
-        COMANDA_ATUAL.valorTotal = resp.valorTotal;
-        COMANDA_ATUAL.custoTotal = resp.custoTotal;
-        COMANDA_ATUAL.totalQuantidade = resp.totalQuantidade;
-        renderModalComanda();
-      }
-      carregarComandas();
-      carregarEstoque();
+function dispararSyncItem(itemId) {
+  const p = PENDENTES_ITEM[itemId];
+  if (!p) return;
+  clearTimeout(p.timer);
+  delete PENDENTES_ITEM[itemId];
+  const it = p.item;
+  const comandaId = it.comandaId;
+  if (p.tipo === "adicionar") {
+    enfileirar("adicionarItemComanda", {
+      comandaId, itemId: it.itemId, produto: it.produto, quantidade: it.quantidade,
+      comboEspeto1: it.comboEspeto1, comboEspeto2: it.comboEspeto2, comboRefri: it.comboRefri,
+      comboVinagrete: it.comboVinagrete || "NÃO", comboFarofa: it.comboFarofa || "NÃO"
     },
-    (msg) => {
-      // erro definitivo (não é rede) — desfaz na tela e avisa
-      if (COMANDA_ATUAL && COMANDA_ATUAL.comanda.comandaId === comandaId) {
-        COMANDA_ATUAL.itens = COMANDA_ATUAL.itens.filter(it => it.itemId !== itemId);
-        COMANDA_ATUAL.valorTotal -= valorTotal; COMANDA_ATUAL.custoTotal -= custoTotal; COMANDA_ATUAL.totalQuantidade -= quantidade;
-        COMANDA_ATUAL.comanda.valorTotal = COMANDA_ATUAL.valorTotal;
-        COMANDA_ATUAL.comanda.custoTotal = COMANDA_ATUAL.custoTotal;
-        COMANDA_ATUAL.comanda.totalQuantidade = COMANDA_ATUAL.totalQuantidade;
-        renderModalComanda();
-      }
-      alert("❌ Não foi possível adicionar " + produto.nome + ": " + msg);
-    }
-  );
-};
-
-// Taxa de entrega: liga/desliga um item fixo "Taxa de Entrega" (R$3,00,
-// sem custo) na comanda — reaproveita o mesmo fluxo de add/remover item
-// normal, só que sem precisar escolher no dropdown nem confirmar remoção.
-function alternarTaxaEntregaModal() {
-  if (!COMANDA_ATUAL) return;
-  const ligar = $("modal-taxa-entrega").checked;
-  const comandaId = COMANDA_ATUAL.comanda.comandaId;
-  const existente = COMANDA_ATUAL.itens.find(it => it.produto === "Taxa de Entrega");
-
-  if (ligar && !existente) {
-    const itemId = gerarId("I");
-    const valorUnitario = 3, custoUnitario = 0, quantidade = 1;
-    const item = {
-      linha: null, itemId, comandaId, produto: "Taxa de Entrega", categoria: "Taxa",
-      quantidade, valorUnitario, valorTotal: valorUnitario, custoUnitario, custoTotal: 0, removido: false,
-      adicionadoEm: agoraBR(), usuario: USUARIO_LOGADO
-    };
-    COMANDA_ATUAL.itens.push(item);
-    COMANDA_ATUAL.valorTotal += valorUnitario;
-    COMANDA_ATUAL.comanda.valorTotal = COMANDA_ATUAL.valorTotal;
-    renderModalComanda();
-
-    enfileirar("adicionarItemComanda", { comandaId, itemId, produto: "Taxa de Entrega", quantidade },
-      (resp) => {
-        const alvo = COMANDA_ATUAL && COMANDA_ATUAL.itens.find(it => it.itemId === itemId);
-        if (alvo) alvo.linha = resp.item.linha;
-        if (COMANDA_ATUAL && COMANDA_ATUAL.comanda.comandaId === comandaId) {
-          COMANDA_ATUAL.comanda = resp.comanda;
-          COMANDA_ATUAL.valorTotal = resp.valorTotal;
-          COMANDA_ATUAL.custoTotal = resp.custoTotal;
-          COMANDA_ATUAL.totalQuantidade = resp.totalQuantidade;
-          renderModalComanda();
-        }
-        carregarComandas();
-      },
+      (resp) => { if (resp.item) it.linha = resp.item.linha; aoConcluirSyncComanda(comandaId); },
       (msg) => {
         if (COMANDA_ATUAL && COMANDA_ATUAL.comanda.comandaId === comandaId) {
-          COMANDA_ATUAL.itens = COMANDA_ATUAL.itens.filter(it => it.itemId !== itemId);
-          COMANDA_ATUAL.valorTotal -= valorUnitario;
-          COMANDA_ATUAL.comanda.valorTotal = COMANDA_ATUAL.valorTotal;
-          renderModalComanda();
+          COMANDA_ATUAL.itens = COMANDA_ATUAL.itens.filter(x => x.itemId !== it.itemId);
+          recalcularTotaisLocais(); VERSAO_LOCAL_COMANDA++; renderModalComanda();
         }
-        alert("❌ Não foi possível adicionar a taxa de entrega: " + msg);
+        alert("❌ Não foi possível adicionar " + it.produto + ": " + msg);
       }
     );
-  } else if (!ligar && existente) {
-    COMANDA_ATUAL.itens = COMANDA_ATUAL.itens.filter(it => it.itemId !== existente.itemId);
-    COMANDA_ATUAL.valorTotal -= existente.valorTotal;
-    COMANDA_ATUAL.comanda.valorTotal = COMANDA_ATUAL.valorTotal;
-    renderModalComanda();
-
-    enfileirar("removerItemComanda", { itemId: existente.itemId, linha: existente.linha },
-      (resp) => {
-        if (COMANDA_ATUAL && COMANDA_ATUAL.comanda.comandaId === comandaId) {
-          COMANDA_ATUAL.comanda = resp.comanda;
-          COMANDA_ATUAL.valorTotal = resp.valorTotal;
-          COMANDA_ATUAL.custoTotal = resp.custoTotal;
-          COMANDA_ATUAL.totalQuantidade = resp.totalQuantidade;
-          renderModalComanda();
-        }
-        carregarComandas();
-      },
-      (msg) => { alert("❌ Não foi possível remover a taxa de entrega: " + msg); recarregarComanda(comandaId); }
+  } else {
+    enfileirar("editarItemComanda", { comandaId, itemId: it.itemId, linha: it.linha || "", quantidade: it.quantidade },
+      (resp) => { if (resp.item) it.linha = resp.item.linha; aoConcluirSyncComanda(comandaId); },
+      (msg) => { alert("❌ Não foi possível atualizar a quantidade de " + it.produto + ": " + msg); recarregarComanda(comandaId); }
     );
+  }
+  if (COMANDA_ATUAL && COMANDA_ATUAL.comanda.comandaId === comandaId) renderModalComanda();
+}
+
+// Manda na hora tudo que ainda estava esperando os ~0,7s (antes de fechar,
+// cancelar, sair ou quando o celular troca de app/tela).
+function enviarLancamentosPendentes(comandaId) {
+  Object.keys(PENDENTES_ITEM).forEach(id => {
+    if (!comandaId || PENDENTES_ITEM[id].comandaId === comandaId) dispararSyncItem(id);
+  });
+}
+window.addEventListener("pagehide", () => enviarLancamentosPendentes());
+document.addEventListener("visibilitychange", () => { if (document.visibilityState === "hidden") enviarLancamentosPendentes(); });
+
+// Estoque só é recarregado quando a pessoa não está editando nele
+function atualizarEstoqueSeSeguro() {
+  const secaoAtiva = document.querySelector(".secao.ativa");
+  if (secaoAtiva && secaoAtiva.id === "secao-estoque") return;
+  carregarEstoque();
+}
+
+// Quando TUDO daquela comanda terminou de gravar: atualiza a lista, o
+// estoque e relê a comanda (pega itens de outro atendente, se houver).
+function aoConcluirSyncComanda(comandaId) {
+  if (COMANDA_ATUAL && COMANDA_ATUAL.comanda.comandaId === comandaId) renderModalComanda();
+  if (temPendenciaDaComanda(comandaId)) return;
+  carregarComandas();
+  atualizarEstoqueSeSeguro();
+  if (COMANDA_ATUAL && COMANDA_ATUAL.comanda.comandaId === comandaId) recarregarComandaSilenciosa(comandaId);
+}
+
+function tocarProdutoRapido(nome, btnEl) {
+  if (!COMANDA_ATUAL) return;
+  if (COMANDA_ATUAL.comanda.status !== "Aberta") { avisoModal("Reabra a comanda pra incluir itens.", "erro"); return; }
+  const produto = PRODUTOS_CACHE.find(p => p.nome === nome);
+  if (!produto) return;
+  if (produto.tipo === "Combo") { abrirConfigCombo(produto); return; }
+
+  if (btnEl) {
+    btnEl.classList.remove("tocado"); void btnEl.offsetWidth; btnEl.classList.add("tocado");
+    setTimeout(() => btnEl.classList.remove("tocado"), 320);
+  }
+  try { if (navigator.vibrate) navigator.vibrate(10); } catch (e) {}
+
+  // aviso de estoque zerado sem travar a tela (antes era um alert que
+  // obrigava a tocar em OK no meio do atendimento)
+  if (ESTOQUE_MAP[nome] !== undefined && ESTOQUE_MAP[nome] <= 0) avisoModal(`⚠️ "${nome}" está com estoque zerado — incluído mesmo assim.`, "aviso");
+  if (ESTOQUE_MAP[nome] !== undefined) ESTOQUE_MAP[nome] -= 1;
+
+  const comandaId = COMANDA_ATUAL.comanda.comandaId;
+  const existente = COMANDA_ATUAL.itens.find(it => it.produto === produto.nome && !it.comboEspeto1 && Number(it.valorUnitario) === Number(produto.preco));
+  if (existente) {
+    existente.quantidade += 1;
+    recalcItem(existente);
+    agendarSyncItem(existente, "editar");
+  } else {
+    const item = novoItemLocal(comandaId, produto, 1, produto.custo || 0, null);
+    COMANDA_ATUAL.itens.push(item);
+    agendarSyncItem(item, "adicionar");
+  }
+  recalcularTotaisLocais();
+  VERSAO_LOCAL_COMANDA++;
+  renderModalComanda();
+}
+
+// ---------- Combo ----------
+function popularSelectsCombo() {
+  const espetos = PRODUTOS_CACHE.filter(p => p.tipo === "Espeto").sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR"));
+  const opcoesEspeto = espetos.map(p => `<option value="${escapeAttr(p.nome)}">${escapeHtml(p.nome)}</option>`).join("");
+  preencherSelectPreservando($("combo-espeto1"), opcoesEspeto);
+  preencherSelectPreservando($("combo-espeto2"), opcoesEspeto);
+  // Com o "Refrigerante Pequeno" ativo, o combo usa ele direto (sem
+  // perguntar sabor) — mesma regra da grade. Sem ele, volta a lista de sabores.
+  const generico = refrigerantePequenoAtivo();
+  if (generico) {
+    preencherSelectPreservando($("combo-refri"), `<option value="${escapeAttr(generico.nome)}">${escapeHtml(generico.nome)}</option>`);
+    $("combo-refri").value = generico.nome;
+    $("bloco-combo-refri").style.display = "none";
+    $("combo-info-inclusos").textContent = "🍚 Baião de Dois e 🥤 Refrigerante Pequeno entram automático no combo.";
+  } else {
+    // só refrigerante entra na escolha do combo — cerveja e água ficam de fora
+    const refrigerantes = PRODUTOS_CACHE.filter(p => p.tipo === "Bebida" && p.refrigerante).sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR"));
+    preencherSelectPreservando($("combo-refri"), refrigerantes.map(p => `<option value="${escapeAttr(p.nome)}">${escapeHtml(p.nome)}</option>`).join(""));
+    $("bloco-combo-refri").style.display = "";
+    $("combo-info-inclusos").textContent = "🍚 Baião de Dois entra automático no combo.";
   }
 }
 
-function ajustarQtdItem(itemId, linhaPlanilha, novaQuantidade) {
+function abrirConfigCombo(produto) {
+  PRODUTO_COMBO_EM_MONTAGEM = produto;
+  popularSelectsCombo();
+  $("combo-config-titulo").textContent = "🍱 " + produto.nome + " — " + fmt(produto.preco);
+  $("modal-qtd-novo").value = 1;
+  $("combo-config").classList.add("aberto");
+  try { $("combo-config").scrollIntoView({ behavior: "smooth", block: "nearest" }); } catch (e) {}
+}
+function fecharConfigCombo() {
+  PRODUTO_COMBO_EM_MONTAGEM = null;
+  $("combo-config").classList.remove("aberto");
+}
+$("btn-cancelar-combo").onclick = fecharConfigCombo;
+
+// lista de 1 a 20 pra escolher a quantidade de combos rapidinho
+$("modal-qtd-novo").innerHTML = Array.from({ length: 20 }, (_, i) => i + 1).map(n => `<option value="${n}">${n}x</option>`).join("");
+
+$("btn-add-item-comanda").onclick = () => {
+  const produto = PRODUTO_COMBO_EM_MONTAGEM;
+  if (!produto || !COMANDA_ATUAL) return;
+  if (COMANDA_ATUAL.comanda.status !== "Aberta") { avisoModal("Reabra a comanda pra incluir itens.", "erro"); return; }
+  const quantidade = parseInt($("modal-qtd-novo").value) || 1;
+  const combo = {
+    comboEspeto1: $("combo-espeto1").value,
+    comboEspeto2: $("combo-espeto2").value,
+    comboRefri: $("combo-refri").value,
+    comboVinagrete: $("combo-vinagrete").checked ? "SIM" : "NÃO",
+    comboFarofa: $("combo-farofa").checked ? "SIM" : "NÃO"
+  };
+  if (!combo.comboEspeto1 || !combo.comboEspeto2 || !combo.comboRefri) { alert("Escolha os 2 sabores de espeto e o refrigerante do combo."); return; }
+
+  // custo local (otimista) — soma os custos dos componentes escolhidos; o
+  // servidor recalcula do mesmo jeito ao sincronizar (inclusive vinagrete/
+  // farofa como fração do lote do dia — mesma proporção 50ml/1L e 50g/1kg
+  // usada no Codigo.gs; se mudar lá, muda aqui também).
+  const FRACAO_PORCAO_COMBO = 50 / 1000;
+  const custoDe = (nome) => { const p = PRODUTOS_CACHE_TODOS.find(x => x.nome === nome); return p ? (p.custo || 0) : 0; };
+  const baiao = PRODUTOS_CACHE_TODOS.find(p => p.tipo === "Baião");
+  let custoUnitario = custoDe(combo.comboEspeto1) + custoDe(combo.comboEspeto2) + custoDe(combo.comboRefri) + (baiao ? baiao.custo : 0);
+  if (combo.comboVinagrete === "SIM") custoUnitario += custoDe("Vinagrete") * FRACAO_PORCAO_COMBO;
+  if (combo.comboFarofa === "SIM") custoUnitario += custoDe("Farofa") * FRACAO_PORCAO_COMBO;
+
+  [produto.nome, combo.comboEspeto1, combo.comboEspeto2, combo.comboRefri].forEach(n => { if (ESTOQUE_MAP[n] !== undefined) ESTOQUE_MAP[n] -= quantidade; });
+
+  const item = novoItemLocal(COMANDA_ATUAL.comanda.comandaId, produto, quantidade, custoUnitario, combo);
+  COMANDA_ATUAL.itens.push(item);
+  recalcularTotaisLocais();
+  VERSAO_LOCAL_COMANDA++;
+  agendarSyncItem(item, "adicionar");
+  dispararSyncItem(item.itemId); // combo já vai direto, não precisa esperar
+  fecharConfigCombo();
+  renderModalComanda();
+  avisoModal(`✓ ${quantidade}x ${produto.nome} incluído.`, "ok");
+};
+
+function ajustarQtdItem(itemId, _linhaIgnorada, novaQuantidade) {
   if (!COMANDA_ATUAL) return;
   const item = COMANDA_ATUAL.itens.find(it => it.itemId === itemId);
   if (!item) return;
-  const quantidadeAntiga = item.quantidade;
-  const valorTotalAntigo = item.valorTotal;
-  const custoTotalAntigo = item.custoTotal;
-
-  // atualiza local na hora
+  if (COMANDA_ATUAL.comanda.status !== "Aberta") { avisoModal("Reabra a comanda pra alterar itens.", "erro"); renderModalComanda(); return; }
+  novaQuantidade = Math.max(1, parseInt(novaQuantidade) || 1);
+  const diferenca = novaQuantidade - item.quantidade;
+  if (!diferenca) { renderModalComanda(); return; }
+  if (ESTOQUE_MAP[item.produto] !== undefined) ESTOQUE_MAP[item.produto] -= diferenca;
   item.quantidade = novaQuantidade;
-  item.valorTotal = novaQuantidade * item.valorUnitario;
-  item.custoTotal = novaQuantidade * item.custoUnitario;
-  const deltaValor = item.valorTotal - valorTotalAntigo;
-  const deltaCusto = item.custoTotal - custoTotalAntigo;
-  COMANDA_ATUAL.valorTotal += deltaValor;
-  COMANDA_ATUAL.custoTotal += deltaCusto;
-  COMANDA_ATUAL.totalQuantidade += (novaQuantidade - quantidadeAntiga);
-  COMANDA_ATUAL.comanda.valorTotal = COMANDA_ATUAL.valorTotal;
-  COMANDA_ATUAL.comanda.custoTotal = COMANDA_ATUAL.custoTotal;
-  COMANDA_ATUAL.comanda.totalQuantidade = COMANDA_ATUAL.totalQuantidade;
+  recalcItem(item);
+  agendarSyncItem(item, "editar");
+  recalcularTotaisLocais();
+  VERSAO_LOCAL_COMANDA++;
   renderModalComanda();
-
-  enfileirar("editarItemComanda", { itemId, linha: linhaPlanilha, quantidade: novaQuantidade },
-    (resp) => {
-      const alvo = COMANDA_ATUAL && COMANDA_ATUAL.itens.find(it => it.itemId === itemId);
-      if (alvo) alvo.linha = resp.item.linha;
-      if (COMANDA_ATUAL && COMANDA_ATUAL.comanda.comandaId === item.comandaId) {
-        COMANDA_ATUAL.comanda = resp.comanda;
-        COMANDA_ATUAL.valorTotal = resp.valorTotal;
-        COMANDA_ATUAL.custoTotal = resp.custoTotal;
-        COMANDA_ATUAL.totalQuantidade = resp.totalQuantidade;
-        renderModalComanda();
-      }
-      carregarComandas();
-      carregarEstoque();
-    },
-    (msg) => { alert("❌ Não foi possível atualizar a quantidade: " + msg); recarregarComanda(item.comandaId); }
-  );
 }
 
-function removerItem(itemId, linhaPlanilha) {
-  if (!confirm("Remover este item da comanda? O estoque será devolvido.")) return;
+function removerItem(itemId) {
   if (!COMANDA_ATUAL) return;
   const item = COMANDA_ATUAL.itens.find(it => it.itemId === itemId);
   if (!item) return;
+  if (COMANDA_ATUAL.comanda.status !== "Aberta") { avisoModal("Reabra a comanda pra alterar itens.", "erro"); return; }
+  if (!confirm(`Remover "${item.produto}" da comanda? O estoque será devolvido.`)) return;
 
   // remove local na hora
   COMANDA_ATUAL.itens = COMANDA_ATUAL.itens.filter(it => it.itemId !== itemId);
-  COMANDA_ATUAL.valorTotal -= item.valorTotal;
-  COMANDA_ATUAL.custoTotal -= item.custoTotal;
-  COMANDA_ATUAL.totalQuantidade -= item.quantidade;
-  COMANDA_ATUAL.comanda.valorTotal = COMANDA_ATUAL.valorTotal;
-  COMANDA_ATUAL.comanda.custoTotal = COMANDA_ATUAL.custoTotal;
-  COMANDA_ATUAL.comanda.totalQuantidade = COMANDA_ATUAL.totalQuantidade;
+  if (ESTOQUE_MAP[item.produto] !== undefined) ESTOQUE_MAP[item.produto] += item.quantidade;
+  recalcularTotaisLocais();
+  VERSAO_LOCAL_COMANDA++;
   renderModalComanda();
 
-  enfileirar("removerItemComanda", { itemId, linha: linhaPlanilha },
-    (resp) => {
-      if (COMANDA_ATUAL && COMANDA_ATUAL.comanda.comandaId === item.comandaId) {
-        COMANDA_ATUAL.comanda = resp.comanda;
-        COMANDA_ATUAL.valorTotal = resp.valorTotal;
-        COMANDA_ATUAL.custoTotal = resp.custoTotal;
-        COMANDA_ATUAL.totalQuantidade = resp.totalQuantidade;
-        renderModalComanda();
-      }
-      carregarComandas();
-      carregarEstoque();
-    },
+  // se ainda nem tinha ido pra planilha, basta descartar — não precisa
+  // gravar nada
+  const pendente = PENDENTES_ITEM[itemId];
+  if (pendente) {
+    clearTimeout(pendente.timer);
+    delete PENDENTES_ITEM[itemId];
+    if (pendente.tipo === "adicionar") return;
+  }
+
+  enfileirar("removerItemComanda", { comandaId: item.comandaId, itemId, linha: item.linha || "" },
+    () => aoConcluirSyncComanda(item.comandaId),
     (msg) => { alert("❌ Não foi possível remover o item: " + msg); recarregarComanda(item.comandaId); }
   );
 }
 
-// abrir/fechar caixa de pagamento
-$("btn-abrir-pagamento").onclick = () => { $("box-pagamento").classList.add("aberto"); atualizarTroco(); atualizarJuros(); };
+// ---------- Pagamento ----------
+function atualizarChipsPagamento() {
+  const forma = $("modal-forma-pagamento").value;
+  document.querySelectorAll("#chips-pagamento button").forEach(b => b.classList.toggle("ativo", b.dataset.forma === forma));
+}
+document.querySelectorAll("#chips-pagamento button").forEach(b => {
+  b.onclick = () => { $("modal-forma-pagamento").value = b.dataset.forma; $("modal-forma-pagamento").onchange(); };
+});
+document.querySelectorAll("#atalhos-valor button").forEach(b => {
+  b.onclick = () => {
+    const total = COMANDA_ATUAL ? COMANDA_ATUAL.valorTotal : 0;
+    $("modal-valor-recebido").value = b.dataset.valor === "exato" ? total.toFixed(2) : b.dataset.valor;
+    atualizarTroco();
+  };
+});
+
+$("btn-abrir-pagamento").onclick = () => {
+  if (COMANDA_ATUAL && !COMANDA_ATUAL.itens.length && !confirm("Essa comanda está sem itens. Fechar mesmo assim?")) return;
+  $("box-pagamento").classList.add("aberto");
+  $("modal-valor-recebido").value = "";
+  $("modal-forma-pagamento").onchange();
+  try { $("box-pagamento").scrollIntoView({ behavior: "smooth", block: "nearest" }); } catch (e) {}
+};
 $("btn-editar-pagamento").onclick = () => {
   $("box-pagamento").classList.add("aberto");
   $("modal-forma-pagamento").value = COMANDA_ATUAL.comanda.formaPagamento || "Dinheiro";
-  atualizarTroco();
-  atualizarJuros();
+  $("modal-valor-recebido").value = "";
+  $("modal-forma-pagamento").onchange();
 };
 $("modal-forma-pagamento").onchange = () => {
   $("bloco-troco").style.display = $("modal-forma-pagamento").value === "Dinheiro" ? "block" : "none";
+  atualizarChipsPagamento();
   atualizarTroco();
   atualizarJuros();
 };
@@ -2816,9 +3335,14 @@ function atualizarJuros() {
 $("btn-confirmar-fechamento").onclick = () => {
   const forma = $("modal-forma-pagamento").value;
   const recebido = parseFloat($("modal-valor-recebido").value) || 0;
+  if (forma === "Dinheiro" && recebido > 0 && recebido < COMANDA_ATUAL.valorTotal
+      && !confirm(`O valor recebido (${fmt(recebido)}) é menor que o total (${fmt(COMANDA_ATUAL.valorTotal)}). Fechar mesmo assim?`)) return;
   const troco = forma === "Dinheiro" ? Math.max(0, recebido - COMANDA_ATUAL.valorTotal) : 0;
   const juros = calcularJurosCartao(forma, COMANDA_ATUAL.valorTotal);
   const comandaId = COMANDA_ATUAL.comanda.comandaId;
+
+  // garante que todo item tocado há pouco vai pra planilha ANTES do fechamento
+  enviarLancamentosPendentes(comandaId);
 
   // fecha local na hora
   COMANDA_ATUAL.comanda.status = "Fechada";
@@ -2828,12 +3352,13 @@ $("btn-confirmar-fechamento").onclick = () => {
   COMANDA_ATUAL.comanda.valorCobrado = COMANDA_ATUAL.valorTotal + juros;
   COMANDA_ATUAL.comanda.fechadaEm = agoraBR();
   COMANDA_ATUAL.comanda.usuarioFechamento = USUARIO_LOGADO;
+  VERSAO_LOCAL_COMANDA++;
   renderModalComanda();
-  carregarComandas();
+  document.querySelectorAll(`#grid-comandas .card-comanda[data-comanda-id="${comandaId}"]`).forEach(c => { if (FILTRO_STATUS_ATUAL === "Aberta") c.remove(); });
 
   enfileirar("fecharComanda", { comandaId, formaPagamento: forma, troco },
     (resp) => {
-      if (COMANDA_ATUAL && COMANDA_ATUAL.comanda.comandaId === comandaId) { COMANDA_ATUAL = resp; renderModalComanda(); }
+      if (COMANDA_ATUAL && COMANDA_ATUAL.comanda.comandaId === comandaId && !temPendenciaDaComanda(comandaId)) { COMANDA_ATUAL = resp; renderModalComanda(); }
       carregarComandas();
       // fechar comanda muda o que conta como venda — força o resumo financeiro
       // a ignorar o cache de 45s e recalcular já com esse fechamento
@@ -2847,12 +3372,13 @@ $("btn-confirmar-fechamento").onclick = () => {
 $("btn-reabrir-comanda").onclick = () => {
   const comandaId = COMANDA_ATUAL.comanda.comandaId;
   COMANDA_ATUAL.comanda.status = "Aberta";
+  VERSAO_LOCAL_COMANDA++;
   renderModalComanda();
-  carregarComandas();
+  renderGradeProdutos();
 
   enfileirar("reabrirComanda", { comandaId },
     (resp) => {
-      if (COMANDA_ATUAL && COMANDA_ATUAL.comanda.comandaId === comandaId) { COMANDA_ATUAL = resp; renderModalComanda(); }
+      if (COMANDA_ATUAL && COMANDA_ATUAL.comanda.comandaId === comandaId && !temPendenciaDaComanda(comandaId)) { COMANDA_ATUAL = resp; renderModalComanda(); }
       carregarComandas();
       gerarResumoEExibir($("rf-data-inicio").value, $("rf-data-fim").value, true);
       carregarBannerEmAtendimento();
@@ -2861,21 +3387,27 @@ $("btn-reabrir-comanda").onclick = () => {
   );
 };
 
-$("btn-cancelar-comanda").onclick = async () => {
+// Cancelar também passa pela fila: assim sempre roda DEPOIS dos itens que
+// ainda estavam sendo gravados (senão um item atrasado podia ficar "vivo"
+// numa comanda já cancelada).
+$("btn-cancelar-comanda").onclick = () => {
   if (!confirm("Cancelar esta comanda? Todos os itens voltam pro estoque.")) return;
-  try {
-    const resp = await chamarAPI("cancelarComanda", { comandaId: COMANDA_ATUAL.comanda.comandaId, usuario: USUARIO_LOGADO });
-    if (resp.status === "ok") {
-      $("overlay-comanda").classList.remove("aberto");
-      await carregarComandas();
-      await carregarEstoque();
-      carregarBannerEmAtendimento();
-    } else { alert("❌ " + resp.mensagem); }
-  } catch (e) { alert("❌ " + e.message); }
+  const comandaId = COMANDA_ATUAL.comanda.comandaId;
+  enviarLancamentosPendentes(comandaId);
+  $("overlay-comanda").classList.remove("aberto");
+  document.querySelectorAll(`.card-comanda[data-comanda-id="${comandaId}"]`).forEach(c => c.remove());
+  enfileirar("cancelarComanda", { comandaId },
+    () => { carregarComandas(); atualizarEstoqueSeSeguro(); carregarBannerEmAtendimento(); },
+    (msg) => { alert("❌ Não foi possível cancelar a comanda: " + msg); carregarComandas(); }
+  );
 };
 
-$("btn-fechar-modal").onclick = () => { $("overlay-comanda").classList.remove("aberto"); };
-$("overlay-comanda").addEventListener("click", (e) => { if (e.target.id === "overlay-comanda") $("overlay-comanda").classList.remove("aberto"); });
+function fecharModalComanda() {
+  if (COMANDA_ATUAL) enviarLancamentosPendentes(COMANDA_ATUAL.comanda.comandaId);
+  $("overlay-comanda").classList.remove("aberto");
+}
+$("btn-fechar-modal").onclick = fecharModalComanda;
+$("overlay-comanda").addEventListener("click", (e) => { if (e.target.id === "overlay-comanda") fecharModalComanda(); });
 
 // =====================================================================
 // IMPRESSÃO DE COMANDA — RawBT, 1 clique, direto na impressora térmica
@@ -2982,8 +3514,7 @@ $("btn-imprimir-comanda").onclick = () => {
   if (!COMANDA_ATUAL) return;
   const texto = montarTextoCupomComanda(COMANDA_ATUAL);
   imprimirTextoRawBT(texto);
-  $("modal-status").textContent = "🖨️ Enviado para impressão.";
-  $("modal-status").className = "msg-status ok";
+  avisoModal("🖨️ Enviado para impressão.", "ok");
 };
 
 // "Visualizar" — abre a prévia visual em tela (a mesma folha estilizada de
@@ -3014,11 +3545,11 @@ function abrirCupomComanda(payload) {
 
   const linhasItens = itens.length ? itens.map(it => {
     const detalheCombo = it.comboEspeto1
-      ? `<div class="combo-detalhe-cupom">${it.comboEspeto1} + ${it.comboEspeto2} + ${it.comboRefri}${it.comboVinagrete === "SIM" ? " + Vinagrete" : ""}${it.comboFarofa === "SIM" ? " + Farofa" : ""} + Baião</div>`
+      ? `<div class="combo-detalhe-cupom">${escapeHtml(it.comboEspeto1)} + ${escapeHtml(it.comboEspeto2)} + ${escapeHtml(it.comboRefri)}${it.comboVinagrete === "SIM" ? " + Vinagrete" : ""}${it.comboFarofa === "SIM" ? " + Farofa" : ""} + Baião</div>`
       : "";
     return `
       <tr>
-        <td>${it.produto}${detalheCombo}</td>
+        <td>${escapeHtml(it.produto)}${detalheCombo}</td>
         <td class="qtd">${it.quantidade}</td>
         <td class="valor">${fmt(it.valorTotal)}</td>
       </tr>
@@ -3027,7 +3558,7 @@ function abrirCupomComanda(payload) {
 
   let blocoPagamento;
   if (fechada) {
-    blocoPagamento = `<div class="cupom-pagamento pago">✅ Pago — ${c.formaPagamento || "—"}</div>`;
+    blocoPagamento = `<div class="cupom-pagamento pago">✅ Pago — ${escapeHtml(c.formaPagamento || "—")}</div>`;
   } else if (cancelada) {
     blocoPagamento = `<div class="cupom-pagamento pendente">🚫 Comanda cancelada</div>`;
   } else {
@@ -3042,8 +3573,8 @@ function abrirCupomComanda(payload) {
         <div class="cupom-subtitulo">Comanda de atendimento</div>
       </div>
       <div class="cupom-meta">
-        <div class="linha-meta"><span>Comanda</span><b>${c.identificacao} (${c.comandaId})</b></div>
-        <div class="linha-meta"><span>Atendente</span><b>${c.usuarioAbertura || USUARIO_LOGADO}</b></div>
+        <div class="linha-meta"><span>Comanda</span><b>${escapeHtml(c.identificacao)} (${c.comandaId})</b></div>
+        <div class="linha-meta"><span>Atendente</span><b>${escapeHtml(c.usuarioAbertura || USUARIO_LOGADO)}</b></div>
         <div class="linha-meta"><span>Aberta em</span><b>${formatarDataHoraCupom(c.abertaEm)}</b></div>
         <div class="linha-meta"><span>Impresso em</span><b>${formatarDataHoraCupom(agora)}</b></div>
       </div>
@@ -3076,9 +3607,9 @@ const LINK_TERMO_ADESAO = "https://jessicanascimento-code.github.io/Financeiro/T
 function popularSaboresPacote() {
   const espetos = PRODUTOS_CACHE.filter(p => p.tipo === "Espeto");
   $("pac-lista-sabores").innerHTML = espetos.map(p => `
-    <div class="linha-sabor-pacote" data-nome="${p.nome}" data-custo="${p.custo}">
+    <div class="linha-sabor-pacote" data-nome="${escapeAttr(p.nome)}" data-custo="${p.custo}">
       <div class="linha-sabor-topo">
-        <label class="checkbox-sabor-pacote"><input type="checkbox" onchange="atualizarCustoEstimadoPacote()"> ${p.nome}</label>
+        <label class="checkbox-sabor-pacote"><input type="checkbox" onchange="atualizarCustoEstimadoPacote()"> ${escapeHtml(p.nome)}</label>
         <input type="number" class="qtd-sabor-pacote" value="0" disabled oninput="atualizarCustoEstimadoPacote()">
       </div>
       <div class="custo-sabor-pacote">Custo: <b class="custo-sabor-valor">R$ 0,00</b></div>
@@ -3281,7 +3812,7 @@ $("btn-confirmar-pacote").onclick = async () => {
 // Comprovante pra imprimir/salvar em PDF e mandar pro cliente — só
 // informações de interesse do cliente (sem custo/lucro interno).
 function abrirComprovantePacote(d) {
-  const linhasSabores = d.sabores.map(s => `<tr><td>${s.produto}</td><td style="text-align:right;">${s.quantidade}</td></tr>`).join("");
+  const linhasSabores = d.sabores.map(s => `<tr><td>${escapeHtml(s.produto)}</td><td style="text-align:right;">${s.quantidade}</td></tr>`).join("");
   const restanteTexto = d.valorRestante > 0
     ? `<tr><td>Restante (a pagar no dia do evento)</td><td class="valor">${fmt(d.valorRestante)}</td></tr>`
     : `<tr><td>Restante</td><td class="valor">Pacote quitado</td></tr>`;
@@ -3292,16 +3823,16 @@ function abrirComprovantePacote(d) {
         <img src="logo.png" alt="Brasero 96">
         <div class="titulos">
           <h1>Comprovante de Contratação — Pacote de Serviço</h1>
-          <div class="subtitulo">Brasero 96 — ${d.tipoPacote}</div>
+          <div class="subtitulo">Brasero 96 — ${escapeHtml(d.tipoPacote)}</div>
         </div>
       </div>
-      <div class="relatorio-periodo">Cliente: <b>${d.cliente}</b> · Emitido em ${dataHojeFormatadaHora()}</div>
+      <div class="relatorio-periodo">Cliente: <b>${escapeHtml(d.cliente)}</b> · Emitido em ${dataHojeFormatadaHora()}</div>
 
       <div class="relatorio-secao-titulo">Dados do evento</div>
       <table>
         <tbody>
           <tr><td>Data e horário</td><td class="valor">${formatarDataHoraEvento(d.dataEvento, d.horarioEvento)}</td></tr>
-          <tr><td>Local</td><td class="valor">${d.local || "a combinar"}</td></tr>
+          <tr><td>Local</td><td class="valor">${escapeHtml(d.local || "a combinar")}</td></tr>
           <tr><td>Quantidade de pessoas</td><td class="valor">${d.qtdPessoas}</td></tr>
         </tbody>
       </table>
@@ -3317,7 +3848,7 @@ function abrirComprovantePacote(d) {
       <table>
         <tbody>
           <tr><td>Valor cheio</td><td class="valor">${fmt(d.valorCheio)}</td></tr>
-          <tr><td>Desconto</td><td class="valor">${fmt(d.descontoValor)} (${d.descontoPercentual.toFixed(1).replace(".", ",")}%)</td></tr>
+          <tr><td>Desconto</td><td class="valor">${fmt(d.descontoValor)} (${Number(d.descontoPercentual || 0).toFixed(1).replace(".", ",")}%)</td></tr>
           <tr class="total-linha"><td>Valor final</td><td class="valor">${fmt(d.valorFinal)}</td></tr>
           <tr><td>Valor por pessoa</td><td class="valor">${fmt(d.qtdPessoas > 0 ? d.valorFinal / d.qtdPessoas : 0)}</td></tr>
         </tbody>
@@ -3369,7 +3900,7 @@ function classeEstoque(qtdDisponivel) {
 
 async function carregarEstoque() {
   const lista = $("lista-estoque");
-  lista.innerHTML = `<div class="vazio-lista">Carregando...</div>`;
+  if (!lista.querySelector(".linha-tabela")) lista.innerHTML = `<div class="vazio-lista">Carregando...</div>`;
   try {
     const resp = await chamarAPI("listarEstoque", {});
     if (resp.status !== "ok") { lista.innerHTML = `<div class="vazio-lista">❌ ${resp.mensagem}</div>`; return; }
@@ -3392,7 +3923,7 @@ async function carregarEstoque() {
         // Padrão: só consulta, sem campo pra editar. As caixinhas ficam
         // sempre juntas no mesmo grid, do mesmo tamanho.
         linha.innerHTML = `
-          <div class="nome-item">${it.produto}<div class="cat-item">${it.categoria}</div></div>
+          <div class="nome-item">${escapeHtml(it.produto)}<div class="cat-item">${escapeHtml(it.categoria)}</div></div>
           <div class="estoque-boxes">
             <div class="estoque-caixa"><div class="rotulo-mini">Vendido</div><div class="valor-mini">${it.qtdVendido}</div></div>
             <div class="estoque-caixa"><div class="rotulo-mini">Total</div><div class="valor-mini">${it.qtdTotal}</div></div>
@@ -3405,7 +3936,7 @@ async function carregarEstoque() {
       }
 
       linha.innerHTML = `
-        <div class="nome-item">${it.produto}<div class="cat-item">${it.categoria}</div></div>
+        <div class="nome-item">${escapeHtml(it.produto)}<div class="cat-item">${escapeHtml(it.categoria)}</div></div>
         <div class="estoque-boxes">
           <div class="estoque-caixa"><div class="rotulo-mini">Vendido</div><div class="valor-mini">${it.qtdVendido}</div></div>
           <div class="estoque-caixa editavel">
@@ -3418,8 +3949,9 @@ async function carregarEstoque() {
       `;
       lista.appendChild(linha);
     });
+    atualizarBadgesGrade();
   } catch (e) {
-    lista.innerHTML = `<div class="vazio-lista">❌ ${e.message}</div>`;
+    if (!lista.querySelector(".linha-tabela")) lista.innerHTML = `<div class="vazio-lista">❌ ${e.message}</div>`;
   }
 }
 
@@ -3447,11 +3979,19 @@ $("btn-salvar-estoque-tudo").onclick = async () => {
 // Histórico de movimentações.
 // =====================================================================
 
+// Lista de produtos em ordem alfabética, pros selects de Estoque/Compra —
+// "Taxa" fica de fora porque não é produto físico.
+function opcoesProdutosFisicos(comCusto) {
+  return [...PRODUTOS_CACHE_TODOS]
+    .filter(p => p.tipo !== "Taxa")
+    .sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR"))
+    .map(p => `<option value="${escapeAttr(p.nome)}" data-categoria="${escapeAttr(p.categoria)}"${comCusto ? ` data-custo="${p.custo}"` : ""}>${escapeHtml(p.nome)}</option>`)
+    .join("");
+}
+
 // ---------- Perda / Cortesia / Consumo Interno ----------
 function popularSelectProdutoMovimentoEstoque() {
-  const sel = $("mv-produto");
-  if (!sel) return;
-  sel.innerHTML = PRODUTOS_CACHE_TODOS.map(p => `<option value="${p.nome}" data-categoria="${p.categoria}">${p.nome}</option>`).join("");
+  preencherSelectPreservando($("mv-produto"), `<option value="">Selecione o produto...</option>` + opcoesProdutosFisicos(false));
 }
 
 $("btn-registrar-movimento-estoque").onclick = async () => {
@@ -3497,7 +4037,7 @@ async function carregarConferenciaEstoque() {
       linha.dataset.categoria = it.categoria;
       linha.dataset.calculado = calculado;
       linha.innerHTML = `
-        <div class="nome-item">${it.produto}<div class="cat-item">${it.categoria} · Calculado: ${calculado}</div></div>
+        <div class="nome-item">${escapeHtml(it.produto)}<div class="cat-item">${escapeHtml(it.categoria)} · Calculado: ${calculado}</div></div>
         <input type="number" class="input-fisico-conferencia" placeholder="Físico" step="1">
         <div class="conferencia-diferenca"></div>
         <select class="select-motivo-conferencia" style="display:none;">
@@ -3520,7 +4060,7 @@ async function carregarConferenciaEstoque() {
         if (isNaN(fisico)) { diferencaEl.textContent = ""; selectMotivo.style.display = "none"; inputObs.style.display = "none"; return; }
         const diferenca = fisico - calculado;
         diferencaEl.textContent = diferenca === 0 ? "OK" : (diferenca > 0 ? "+" + diferenca : String(diferenca));
-        diferencaEl.style.color = diferenca === 0 ? "var(--verde)" : "#ff8a80";
+        diferencaEl.style.color = diferenca === 0 ? "var(--verde)" : "var(--erro)";
         const precisaMotivo = diferenca !== 0;
         selectMotivo.style.display = precisaMotivo ? "inline-block" : "none";
         inputObs.style.display = precisaMotivo ? "block" : "none";
@@ -3580,10 +4120,10 @@ async function carregarHistoricoEstoque() {
       const linha = document.createElement("div");
       linha.className = "linha-tabela";
       const positivo = r.quantidade >= 0;
-      const motivoExtra = r.motivo && r.motivo !== r.tipoMovimento ? ` (${r.motivo})` : "";
+      const motivoExtra = r.motivo && r.motivo !== r.tipoMovimento ? ` (${escapeHtml(r.motivo)})` : "";
       linha.innerHTML = `
-        <div class="nome-item">${r.produto} — ${r.tipoMovimento}${motivoExtra}<div class="cat-item">${(r.dataHora || "").toString()} · ${r.usuario}${r.observacao ? " · " + r.observacao : ""}</div></div>
-        <div style="font-weight:800; color:${positivo ? "var(--verde)" : "#ff8a80"};">${positivo ? "+" : ""}${r.quantidade}</div>
+        <div class="nome-item">${escapeHtml(r.produto)} — ${escapeHtml(r.tipoMovimento)}${motivoExtra}<div class="cat-item">${(r.dataHora || "").toString()} · ${escapeHtml(r.usuario)}${r.observacao ? " · " + escapeHtml(r.observacao) : ""}</div></div>
+        <div style="font-weight:800; color:${positivo ? "var(--verde)" : "var(--erro)"};">${positivo ? "+" : ""}${r.quantidade}</div>
       `;
       lista.appendChild(linha);
     });
@@ -3603,36 +4143,61 @@ async function carregarProdutos() {
     PRODUTOS_CACHE = resp.produtos.filter(p => p.ativo);
     renderCardapio(resp.produtos);
     popularSelectProdutoCompraEstoque();
+    popularSelectProdutoMovimentoEstoque();
   }
 }
 
 function renderCardapio(produtos) {
   const lista = $("lista-cardapio");
-  $("btn-salvar-cardapio-tudo").style.display = ehAdmin() ? "block" : "none";
+  const admin = ehAdmin();
+  $("btn-salvar-cardapio-tudo").style.display = admin ? "block" : "none";
   if (!produtos.length) { lista.innerHTML = `<div class="vazio-lista">Nenhum item cadastrado.</div>`; return; }
   lista.innerHTML = "";
   // Cardápio é editável por Admin e Padrão — só Estoque e Financeiro têm a
-  // edição travada pro perfil Padrão.
+  // edição travada pro perfil Padrão. Excluir (definitivo) é só Admin.
   const opcoesTipo = ["Espeto", "Bebida", "Baião", "Combo"];
-  produtos.sort((a, b) => a.categoria.localeCompare(b.categoria) || a.nome.localeCompare(b.nome)).forEach(p => {
+  [...produtos].sort((a, b) => a.categoria.localeCompare(b.categoria) || a.nome.localeCompare(b.nome)).forEach(p => {
     const linha = document.createElement("div");
     linha.className = "linha-tabela";
     linha.dataset.nome = p.nome;
+    const ehGenerico = ehRefrigerantePequeno(p);
     linha.innerHTML = `
-      <div class="nome-item">${p.nome}<div class="cat-item">${p.categoria}</div></div>
+      <div class="nome-item">${escapeHtml(p.nome)}${ehGenerico ? `<span class="tag-sistema" title="Agrupa os sabores de refrigerante na comanda">agrupa os sabores</span>` : ""}<div class="cat-item">${escapeHtml(p.categoria)}</div></div>
       <select class="select-tipo" title="Tipo (pro resumo do dia)">
         ${opcoesTipo.map(t => `<option value="${t}" ${p.tipo === t ? "selected" : ""}>${t}</option>`).join("")}
       </select>
       <input type="number" class="input-custo" value="${p.custo}" title="Custo" step="0.5">
       <input type="number" class="input-preco" value="${p.preco}" title="Preço" step="0.5">
-      <button class="toggle-ativo ${p.ativo ? 'on' : 'off'}">${p.ativo ? '● Visível' : '○ Oculto'}</button>
+      <div class="acoes-produto">
+        <button class="toggle-ativo ${p.ativo ? 'on' : 'off'}" type="button">${p.ativo ? '● Visível' : '○ Oculto'}</button>
+        ${admin ? `<button class="btn-excluir-produto" type="button" title="Excluir do cardápio">🗑 Excluir</button>` : ""}
+      </div>
     `;
     linha.querySelector(".toggle-ativo").onclick = async () => {
       await chamarAPI("alternarAtivoProduto", { nome: p.nome, usuario: USUARIO_LOGADO });
       carregarProdutos();
     };
+    const btnExcluir = linha.querySelector(".btn-excluir-produto");
+    if (btnExcluir) btnExcluir.onclick = () => excluirProdutoDoCardapio(p);
     lista.appendChild(linha);
   });
+}
+
+async function excluirProdutoDoCardapio(p) {
+  const status = $("status-cardapio-lista");
+  if (!confirm(`Excluir "${p.nome}" do cardápio?\n\nIsso remove o item da lista de venda de vez (diferente de "Oculto", que só esconde). As vendas já registradas não são afetadas.`)) return;
+  const removerEstoque = confirm(`Remover "${p.nome}" também da lista do Estoque?\n\nOK = remove do Estoque também\nCancelar = mantém no Estoque (pra contagem e conferência)`);
+  status.textContent = "Excluindo...";
+  status.className = "msg-status";
+  try {
+    const resp = await chamarAPI("excluirProduto", { nome: p.nome, removerEstoque: removerEstoque ? "1" : "0", usuario: USUARIO_LOGADO });
+    if (resp.status === "ok") {
+      status.textContent = `✓ "${p.nome}" excluído do cardápio${removerEstoque ? " e do estoque" : ""}.`;
+      status.className = "msg-status ok";
+      carregarProdutos();
+      if (removerEstoque) carregarEstoque();
+    } else { status.textContent = "❌ " + resp.mensagem; status.className = "msg-status erro"; }
+  } catch (e) { status.textContent = "❌ " + e.message; status.className = "msg-status erro"; }
 }
 
 // Salva custo/preço/tipo de todos os itens do cardápio de uma vez.
@@ -3881,12 +4446,25 @@ $("btn-custos-fixos").onclick = async () => {
 // estoque, sem precisar cadastrar a mesma compra 2 vezes. Suporta vários
 // itens numa mesma compra (carrinho), parcelamento e um toggle pra pular a
 // atualização do estoque (compra que já foi lançada nele antes).
+// O select de produto é atualizado sem perder o item escolhido (antes a
+// atualização automática a cada 30s remontava a lista e trocava o item).
 // ---------------------------------------------------------------------
 function popularSelectProdutoCompraEstoque() {
-  const sel = $("ce-produto");
-  if (!sel) return;
-  sel.innerHTML = PRODUTOS_CACHE_TODOS.map(p => `<option value="${p.nome}" data-categoria="${p.categoria}">${p.nome}</option>`).join("");
+  preencherSelectPreservando($("ce-produto"), `<option value="">Selecione o produto...</option>` + opcoesProdutosFisicos(true));
 }
+
+// Ao escolher o produto, já sugere o custo unitário cadastrado — só se o
+// campo estiver vazio ou com a sugestão anterior (nunca apaga o que a
+// pessoa digitou).
+$("ce-produto").onchange = () => {
+  const opt = $("ce-produto").selectedOptions[0];
+  const campoCusto = $("ce-custo-unitario");
+  if (opt && opt.value && (campoCusto.value === "" || campoCusto.dataset.auto === "1")) {
+    campoCusto.value = opt.dataset.custo || "";
+    campoCusto.dataset.auto = "1";
+  }
+};
+$("ce-custo-unitario").oninput = () => { $("ce-custo-unitario").dataset.auto = "0"; };
 
 // Carrinho da compra atual — cada item fica aqui até o "Registrar compra".
 let CARRINHO_COMPRA_ESTOQUE = [];
@@ -3906,8 +4484,8 @@ function renderCarrinhoCompraEstoque() {
     const linha = document.createElement("div");
     linha.className = "linha-tabela";
     linha.innerHTML = `
-      <div class="nome-item">${item.produto}<div class="cat-item">${item.quantidade}x ${fmt(item.custoUnitario)} = ${fmt(subtotal)}</div></div>
-      <button class="btn-mini" style="color:#ff8a80;">🗑 Remover</button>
+      <div class="nome-item">${escapeHtml(item.produto)}<div class="cat-item">${item.quantidade}x ${fmt(item.custoUnitario)} = ${fmt(subtotal)}</div></div>
+      <button class="btn-mini" type="button" style="color:var(--erro);">🗑 Remover</button>
     `;
     linha.querySelector("button").onclick = () => {
       CARRINHO_COMPRA_ESTOQUE.splice(idx, 1);
@@ -3929,7 +4507,8 @@ $("btn-add-item-compra-estoque").onclick = () => {
   if (quantidade <= 0) { alert("Informe a quantidade."); return; }
   CARRINHO_COMPRA_ESTOQUE.push({ produto, categoria, quantidade, custoUnitario });
   renderCarrinhoCompraEstoque();
-  $("ce-quantidade").value = ""; $("ce-custo-unitario").value = "";
+  $("ce-produto").value = "";
+  $("ce-quantidade").value = ""; $("ce-custo-unitario").value = ""; $("ce-custo-unitario").dataset.auto = "0";
 };
 
 // Parcelar × à vista — mesmo padrão já usado em "Lançar saída" (sd-*).
@@ -3958,6 +4537,9 @@ $("btn-registrar-compra-estoque").onclick = async () => {
   const vencimento = parcelar ? $("ce-vencimento-parcela").value : $("ce-vencimento").value;
   if (!jaPaga && !vencimento) { status.textContent = "Informe o vencimento."; status.className = "msg-status erro"; return; }
 
+  const btn = $("btn-registrar-compra-estoque");
+  if (btn.disabled) return;
+  btn.disabled = true;
   status.textContent = "Salvando...";
   status.className = "msg-status";
   try {
@@ -3981,75 +4563,143 @@ $("btn-registrar-compra-estoque").onclick = async () => {
       gerarResumoEExibir($("rf-data-inicio").value, $("rf-data-fim").value, true);
     } else { status.textContent = "❌ " + resp.mensagem; status.className = "msg-status erro"; }
   } catch (e) { status.textContent = "❌ " + e.message; status.className = "msg-status erro"; }
+  finally { btn.disabled = false; }
 };
 
-// ---------- Contas a pagar (pendentes — visível pra todo mundo, mas só
-// Admin marca como paga) ----------
-let VER_HISTORICO_PAGAR = false;
-// Filtro de mês de vencimento (yyyy-mm) — útil pra contas parceladas, pra
-// ver só as parcelas que vencem num mês específico em vez de tudo junto.
-// Vazio = sem filtro (mostra todas as pendentes, como antes).
+// ---------------------------------------------------------------------
+// CONTAS PAGAS × CONTAS A PAGAR — lado a lado, cada painel pode ser
+// mostrado/ocultado (fica lembrado no aparelho). Uma chamada só busca as
+// saídas e separa nos dois painéis. "Contas pagas" abre no mês atual
+// (filtrado pela data do pagamento); "Contas a pagar" mostra todas as
+// pendentes, com filtro opcional por mês de vencimento. Visível pra todo
+// mundo; só Admin marca como paga.
+// ---------------------------------------------------------------------
 let FILTRO_MES_CONTAS_PAGAR = "";
+let FILTRO_MES_CONTAS_PAGAS = dataHojeISO().slice(0, 7);
+$("cpg-filtro-mes").value = FILTRO_MES_CONTAS_PAGAS;
 
+function configurarPainelRecolhivel(idPainel) {
+  const painel = $(idPainel);
+  const chave = "brasero96_painel_" + idPainel;
+  const botao = painel.querySelector(".painel-contas-topo .btn-toggle-secao");
+  const aplicar = (recolhido) => {
+    painel.classList.toggle("recolhido", recolhido);
+    botao.textContent = recolhido ? "+" : "−";
+    botao.title = recolhido ? "Mostrar" : "Ocultar";
+  };
+  try { aplicar(localStorage.getItem(chave) === "1"); } catch (e) { aplicar(false); }
+  painel.querySelector(".painel-contas-topo").onclick = () => {
+    const recolhido = !painel.classList.contains("recolhido");
+    aplicar(recolhido);
+    try { localStorage.setItem(chave, recolhido ? "1" : "0"); } catch (e) {}
+  };
+}
+configurarPainelRecolhivel("painel-contas-pagas");
+configurarPainelRecolhivel("painel-contas-a-pagar");
+
+function dataPagamentoDaSaida(r) {
+  // "Pago em" (quando a conta foi marcada como paga) — nas contas antigas,
+  // ou nas que já nasceram pagas, usa a data do lançamento.
+  const texto = (r.pagoEm || r.dataHora || "").toString();
+  const [data] = texto.split(" ");
+  const partes = data.split("/");
+  return partes.length === 3 ? { br: data, mes: `${partes[2]}-${partes[1]}` } : { br: data, mes: "" };
+}
+
+let TOKEN_CONTAS = 0;
 async function carregarContasAPagar() {
-  const lista = $("lista-contas-pagar");
-  lista.innerHTML = `<div class="vazio-lista">Carregando...</div>`;
+  const listaPagar = $("lista-contas-pagar");
+  const listaPagas = $("lista-contas-pagas");
+  if (!listaPagar.querySelector(".linha-tabela")) listaPagar.innerHTML = `<div class="vazio-lista">Carregando...</div>`;
+  if (!listaPagas.querySelector(".linha-tabela")) listaPagas.innerHTML = `<div class="vazio-lista">Carregando...</div>`;
+  const token = ++TOKEN_CONTAS;
   try {
-    const resp = await chamarAPI("listarSaidas", VER_HISTORICO_PAGAR ? {} : { somentePendentes: "1" });
-    if (resp.status !== "ok") { lista.innerHTML = `<div class="vazio-lista">❌ ${resp.mensagem}</div>`; return; }
-    let registros = resp.registros;
-    // o filtro de mês só faz sentido olhando vencimento, então só se aplica
-    // na visão de pendentes (contas pagas não têm vencimento preenchido)
-    if (!VER_HISTORICO_PAGAR && FILTRO_MES_CONTAS_PAGAR) {
-      registros = registros.filter(r => (r.vencimento || "").slice(0, 7) === FILTRO_MES_CONTAS_PAGAR);
-    }
-    if (!registros.length) {
-      const msgVazio = VER_HISTORICO_PAGAR
-        ? "Nenhuma saída registrada ainda."
-        : (FILTRO_MES_CONTAS_PAGAR ? "Nenhuma conta pendente com vencimento nesse mês." : "Nenhuma conta pendente 🎉");
-      lista.innerHTML = `<div class="vazio-lista">${msgVazio}</div>`;
+    const resp = await chamarAPI("listarSaidas", {});
+    if (token !== TOKEN_CONTAS) return;
+    if (resp.status !== "ok") {
+      listaPagar.innerHTML = listaPagas.innerHTML = `<div class="vazio-lista">❌ ${resp.mensagem}</div>`;
       return;
     }
-    lista.innerHTML = "";
-    const admin = ehAdmin();
-    registros.forEach(r => {
-      const linha = document.createElement("div");
-      linha.className = "linha-tabela";
-      const pendente = r.statusPagamento === "Pendente";
-      linha.innerHTML = `
-        <div class="nome-item">${r.categoria} — ${r.descricao || "sem descrição"}${r.fornecedor ? ` <span style="color:var(--muted); font-weight:400;">(${r.fornecedor})</span>` : ""}<div class="cat-item">${pendente ? "Vence " + (r.vencimento ? paraBR(r.vencimento) : "?") : "Pago em " + (r.dataHora || "").toString().split(" ")[0]}</div></div>
-        <div style="font-weight:800; color:${pendente ? "var(--amarelo)" : "var(--verde)"};">${fmt(r.valor)} ${pendente ? "" : "✅"}</div>
-        ${admin && pendente ? `<button class="btn-mini salvar">Marcar como pago</button>` : ""}
-      `;
-      if (admin && pendente) {
-        linha.querySelector("button").onclick = async () => {
-          if (!confirm(`Confirmar pagamento de ${fmt(r.valor)} (${r.categoria})?`)) return;
-          await chamarAPI("marcarSaidaComoPaga", { linha: r.linha, usuario: USUARIO_LOGADO });
-          carregarContasAPagar();
-          gerarResumoEExibir($("rf-data-inicio").value, $("rf-data-fim").value, true);
-          carregarSaldoLivre();
-        };
-      }
-      lista.appendChild(linha);
-    });
+    const pendentes = resp.registros.filter(r => r.statusPagamento === "Pendente");
+    const pagas = resp.registros.filter(r => r.statusPagamento !== "Pendente");
+    renderContasAPagar(pendentes);
+    renderContasPagas(pagas);
   } catch (e) {
-    lista.innerHTML = `<div class="vazio-lista">❌ ${e.message}</div>`;
+    if (token !== TOKEN_CONTAS) return;
+    listaPagar.innerHTML = listaPagas.innerHTML = `<div class="vazio-lista">❌ ${e.message}</div>`;
   }
 }
-$("cp-filtro-mes").onchange = () => {
-  FILTRO_MES_CONTAS_PAGAR = $("cp-filtro-mes").value || "";
-  carregarContasAPagar();
-};
-$("btn-limpar-filtro-mes").onclick = () => {
-  $("cp-filtro-mes").value = "";
-  FILTRO_MES_CONTAS_PAGAR = "";
-  carregarContasAPagar();
-};
-$("btn-historico-pagar").onclick = () => {
-  VER_HISTORICO_PAGAR = !VER_HISTORICO_PAGAR;
-  $("btn-historico-pagar").textContent = VER_HISTORICO_PAGAR ? "Ver só pendentes" : "Ver histórico";
-  carregarContasAPagar();
-};
+
+function renderContasAPagar(pendentes) {
+  const lista = $("lista-contas-pagar");
+  let registros = [...pendentes].sort((a, b) => (a.vencimento || "9999").localeCompare(b.vencimento || "9999"));
+  if (FILTRO_MES_CONTAS_PAGAR) registros = registros.filter(r => (r.vencimento || "").slice(0, 7) === FILTRO_MES_CONTAS_PAGAR);
+  const total = registros.reduce((s, r) => s + r.valor, 0);
+  $("total-contas-pagar").textContent = fmt(total);
+  $("qtd-contas-pagar").textContent = registros.length ? `(${registros.length})` : "";
+  if (!registros.length) {
+    lista.innerHTML = `<div class="vazio-lista">${FILTRO_MES_CONTAS_PAGAR ? "Nenhuma conta pendente com vencimento nesse mês." : "Nenhuma conta pendente 🎉"}</div>`;
+    return;
+  }
+  const hoje = dataHojeISO();
+  const admin = ehAdmin();
+  lista.innerHTML = "";
+  registros.forEach(r => {
+    const vencida = r.vencimento && r.vencimento < hoje;
+    const linha = document.createElement("div");
+    linha.className = "linha-tabela";
+    linha.innerHTML = `
+      <div class="nome-item">${escapeHtml(r.categoria)} — ${escapeHtml(r.descricao || "sem descrição")}${r.fornecedor ? ` <span style="color:var(--muted); font-weight:400;">(${escapeHtml(r.fornecedor)})</span>` : ""}
+        <div class="cat-item">Vence ${r.vencimento ? paraBR(r.vencimento) : "?"}${vencida ? '<span class="tag-vencida">vencida</span>' : ""} · ${escapeHtml(r.formaPagamento)}</div></div>
+      <div style="font-weight:800; color:var(--amarelo);">${fmt(r.valor)}</div>
+      ${admin ? `<button class="btn-mini salvar" type="button">Marcar como pago</button>` : ""}
+    `;
+    if (admin) {
+      linha.querySelector("button").onclick = async () => {
+        if (!confirm(`Confirmar pagamento de ${fmt(r.valor)} (${r.categoria})?`)) return;
+        await chamarAPI("marcarSaidaComoPaga", { linha: r.linha, usuario: USUARIO_LOGADO });
+        carregarContasAPagar();
+        gerarResumoEExibir($("rf-data-inicio").value, $("rf-data-fim").value, true);
+        carregarSaldoLivre();
+      };
+    }
+    lista.appendChild(linha);
+  });
+}
+
+function renderContasPagas(pagas) {
+  const lista = $("lista-contas-pagas");
+  let registros = pagas.map(r => Object.assign({ _pag: dataPagamentoDaSaida(r) }, r));
+  if (FILTRO_MES_CONTAS_PAGAS) registros = registros.filter(r => r._pag.mes === FILTRO_MES_CONTAS_PAGAS);
+  registros.sort((a, b) => (b._pag.mes + b._pag.br.split("/")[0]).localeCompare(a._pag.mes + a._pag.br.split("/")[0]));
+  const total = registros.reduce((s, r) => s + r.valor, 0);
+  $("total-contas-pagas").textContent = fmt(total);
+  $("qtd-contas-pagas").textContent = registros.length ? `(${registros.length})` : "";
+  if (!registros.length) {
+    lista.innerHTML = `<div class="vazio-lista">${FILTRO_MES_CONTAS_PAGAS ? "Nenhuma conta paga nesse mês." : "Nenhuma conta paga registrada ainda."}</div>`;
+    return;
+  }
+  lista.innerHTML = "";
+  registros.forEach(r => {
+    const linha = document.createElement("div");
+    linha.className = "linha-tabela";
+    linha.innerHTML = `
+      <div class="nome-item">${escapeHtml(r.categoria)} — ${escapeHtml(r.descricao || "sem descrição")}${r.fornecedor ? ` <span style="color:var(--muted); font-weight:400;">(${escapeHtml(r.fornecedor)})</span>` : ""}
+        <div class="cat-item">Pago em ${r._pag.br || "?"} · ${escapeHtml(r.formaPagamento)}</div></div>
+      <div style="font-weight:800; color:var(--verde);">${fmt(r.valor)} ✅</div>
+    `;
+    lista.appendChild(linha);
+  });
+}
+
+// Os filtros ficam dentro do painel — clicar neles não deve recolher o painel
+["cp-filtro-mes", "btn-limpar-filtro-mes", "cpg-filtro-mes", "btn-limpar-filtro-mes-pagas"].forEach(id => {
+  $(id).addEventListener("click", (e) => e.stopPropagation());
+});
+$("cp-filtro-mes").onchange = () => { FILTRO_MES_CONTAS_PAGAR = $("cp-filtro-mes").value || ""; carregarContasAPagar(); };
+$("btn-limpar-filtro-mes").onclick = () => { $("cp-filtro-mes").value = ""; FILTRO_MES_CONTAS_PAGAR = ""; carregarContasAPagar(); };
+$("cpg-filtro-mes").onchange = () => { FILTRO_MES_CONTAS_PAGAS = $("cpg-filtro-mes").value || ""; carregarContasAPagar(); };
+$("btn-limpar-filtro-mes-pagas").onclick = () => { $("cpg-filtro-mes").value = ""; FILTRO_MES_CONTAS_PAGAS = ""; carregarContasAPagar(); };
 
 // "Contas a Receber" (pacotes de serviço com o restante ainda pendente) —
 // mesma ideia da Contas a Pagar, só que ao contrário: dinheiro que ainda
@@ -4069,7 +4719,7 @@ async function carregarContasAReceber() {
       linha.className = "linha-tabela";
       const pendente = r.statusRestante !== "Recebido";
       linha.innerHTML = `
-        <div class="nome-item">${r.cliente} — ${r.tipoPacote}<div class="cat-item">${pendente ? "Evento em " + (paraBR(r.dataEvento) || r.dataEvento) : "Recebido em " + paraBRFlexivel(r.dataRecebimentoRestante)}</div></div>
+        <div class="nome-item">${escapeHtml(r.cliente)} — ${escapeHtml(r.tipoPacote)}<div class="cat-item">${pendente ? "Evento em " + (paraBR(r.dataEvento) || r.dataEvento) : "Recebido em " + paraBRFlexivel(r.dataRecebimentoRestante)}</div></div>
         <div style="font-weight:800; color:${pendente ? "var(--azul)" : "var(--verde)"};">${fmt(r.valorRestante)} ${pendente ? "" : "✅"}</div>
         ${admin && pendente ? `<button class="btn-mini salvar">Marcar como recebido</button>` : ""}
       `;
@@ -4371,9 +5021,9 @@ function montarHtmlRelatorio(r, dataInicioIso, dataFimIso, observacoes, assinant
   const linhasContasPagas = r.saidasPagasPeriodo.map(s => `
     <tr>
       <td>${(s.data || "").toString().split(" ")[0]}</td>
-      <td>${s.categoria}</td>
-      <td>${s.descricao || "—"}</td>
-      <td>${s.formaPagamento || "—"}</td>
+      <td>${escapeHtml(s.categoria)}</td>
+      <td>${escapeHtml(s.descricao || "—")}</td>
+      <td>${escapeHtml(s.formaPagamento || "—")}</td>
       <td class="valor">${fmt(s.valor)}</td>
     </tr>
   `);
@@ -4381,8 +5031,8 @@ function montarHtmlRelatorio(r, dataInicioIso, dataFimIso, observacoes, assinant
 
   const linhasContasPendentes = r.contasPendentes.map(c => `
     <tr>
-      <td>${c.categoria}</td>
-      <td>${c.descricao || "—"}</td>
+      <td>${escapeHtml(c.categoria)}</td>
+      <td>${escapeHtml(c.descricao || "—")}</td>
       <td>${c.vencimento || "—"}</td>
       <td class="valor">${fmt(c.valor)}</td>
     </tr>
@@ -4401,7 +5051,7 @@ function montarHtmlRelatorio(r, dataInicioIso, dataFimIso, observacoes, assinant
           <div class="subtitulo">Documento gerado automaticamente pelo Sistema Financeiro</div>
         </div>
       </div>
-      <div class="relatorio-periodo">Período: <b>${paraBR(dataInicioIso)} a ${paraBR(dataFimIso)}</b> · Gerado em ${geradoEm} por <b>${USUARIO_LOGADO}</b></div>
+      <div class="relatorio-periodo">Período: <b>${paraBR(dataInicioIso)} a ${paraBR(dataFimIso)}</b> · Gerado em ${geradoEm} por <b>${escapeHtml(USUARIO_LOGADO)}</b></div>
 
       <div class="relatorio-secao-titulo">Resumo Financeiro do Período</div>
       <div class="relatorio-cards">
@@ -4446,16 +5096,16 @@ function montarHtmlRelatorio(r, dataInicioIso, dataFimIso, observacoes, assinant
           <tr class="total-linha"><td>Diferença (Informado − Esperado)</td><td class="valor">${fmt(r.saldoCaixa.total - res.valorEmCaixa)}</td></tr>
         </tbody>
       </table>
-      ${r.justificativaDiferencaCaixa ? `<p style="font-size:11.5px; color:#7a4d00; background:#fff8ec; border:1px solid #f0d9a8; border-radius:8px; padding:8px 10px;">⚠️ Justificativa registrada: ${r.justificativaDiferencaCaixa}</p>` : ""}
+      ${r.justificativaDiferencaCaixa ? `<p style="font-size:11.5px; color:#7a4d00; background:#fff8ec; border:1px solid #f0d9a8; border-radius:8px; padding:8px 10px;">⚠️ Justificativa registrada: ${escapeHtml(r.justificativaDiferencaCaixa)}</p>` : ""}
 
       ${observacoes ? `
       <div class="relatorio-secao-titulo">Observações</div>
-      <div style="background:#fff8ec; border:1px solid #f0d9a8; border-radius:8px; padding:10px 12px; font-size:12.5px; color:#7a4d00; white-space:pre-wrap;">⚠️ ${observacoes}</div>
+      <div style="background:#fff8ec; border:1px solid #f0d9a8; border-radius:8px; padding:10px 12px; font-size:12.5px; color:#7a4d00; white-space:pre-wrap;">⚠️ ${escapeHtml(observacoes)}</div>
       ` : ""}
 
       <div class="relatorio-assinaturas">
-        <div>${assinante || "Jessica Nascimento"}</div>
-        ${(socios && socios.length ? socios : ["Sócio(a)", "Sócio(a)"]).map(nome => `<div>${nome}</div>`).join("")}
+        <div>${escapeHtml(assinante || "Jessica Nascimento")}</div>
+        ${(socios && socios.length ? socios : ["Sócio(a)", "Sócio(a)"]).map(nome => `<div>${escapeHtml(nome)}</div>`).join("")}
       </div>
       <div class="relatorio-rodape">Relatório gerado automaticamente pelo Sistema Financeiro Brasero 96 — valores extraídos diretamente do controle de comandas, saídas e entradas.</div>
     </div>
@@ -4475,8 +5125,8 @@ function blocoCabecalhoRelatorio(titulo, periodoTexto, observacoes) {
         <div class="subtitulo">Documento gerado automaticamente pelo Sistema Financeiro</div>
       </div>
     </div>
-    <div class="relatorio-periodo">Período: <b>${periodoTexto}</b> · Gerado em ${dataHojeFormatadaHora()} por <b>${USUARIO_LOGADO}</b></div>
-    ${observacoes ? `<div style="background:#fff8ec; border:1px solid #f0d9a8; border-radius:8px; padding:10px 12px; font-size:12.5px; color:#7a4d00; white-space:pre-wrap; margin-bottom:16px;">⚠️ ${observacoes}</div>` : ""}
+    <div class="relatorio-periodo">Período: <b>${periodoTexto}</b> · Gerado em ${dataHojeFormatadaHora()} por <b>${escapeHtml(USUARIO_LOGADO)}</b></div>
+    ${observacoes ? `<div style="background:#fff8ec; border:1px solid #f0d9a8; border-radius:8px; padding:10px 12px; font-size:12.5px; color:#7a4d00; white-space:pre-wrap; margin-bottom:16px;">⚠️ ${escapeHtml(observacoes)}</div>` : ""}
   `;
 }
 function dataHojeFormatadaHora() {
@@ -4487,7 +5137,7 @@ function textoPeriodo(dataInicioIso, dataFimIso, todoPeriodo) {
   return todoPeriodo ? "Todo o período" : `${paraBR(dataInicioIso)} a ${paraBR(dataFimIso)}`;
 }
 
-// desabilita os campos de data quando "Todo o período" está marcado, nos 3 relatórios novos
+// desabilita os campos de data quando "Todo o período" está marcado, nos relatórios
 [["rv-todo-periodo", "rv-data-inicio", "rv-data-fim"], ["re-todo-periodo", "re-data-inicio", "re-data-fim"], ["rsa-todo-periodo", "rsa-data-inicio", "rsa-data-fim"], ["rp-todo-periodo", "rp-data-inicio", "rp-data-fim"]].forEach(([chk, ini, fim]) => {
   $(chk).onchange = () => { $(ini).disabled = $(chk).checked; $(fim).disabled = $(chk).checked; };
 });
@@ -4509,7 +5159,7 @@ $("btn-gerar-rel-vendas").onclick = async () => {
     const linhasComandas = r.comandas.map(c => `
       <tr>
         <td>${(c.data || "").toString().split(" ")[0]}</td>
-        <td>${c.identificacao}</td>
+        <td>${escapeHtml(c.identificacao)}</td>
         <td>${c.status}</td>
         <td style="text-align:right;">${c.totalItens}</td>
         <td class="valor">${fmt(c.valorTotal)}</td>
@@ -4546,8 +5196,8 @@ $("btn-gerar-rel-vendas").onclick = async () => {
 
     // Quebra por sabor de espeto — avulso e o que saiu dentro de combos,
     // contados separadamente (cada um no seu próprio card/seção).
-    const linhasSaboresAvulso = (r.saboresEspetoAvulso || []).map(s => `<tr><td>${s.produto}</td><td style="text-align:right;">${s.quantidade}</td></tr>`);
-    const linhasSaboresCombo = (r.saboresEspetoCombo || []).map(s => `<tr><td>${s.produto}</td><td style="text-align:right;">${s.quantidade}</td></tr>`);
+    const linhasSaboresAvulso = (r.saboresEspetoAvulso || []).map(s => `<tr><td>${escapeHtml(s.produto)}</td><td style="text-align:right;">${s.quantidade}</td></tr>`);
+    const linhasSaboresCombo = (r.saboresEspetoCombo || []).map(s => `<tr><td>${escapeHtml(s.produto)}</td><td style="text-align:right;">${s.quantidade}</td></tr>`);
 
     container.innerHTML = `
       <div class="relatorio-folha">
@@ -4560,7 +5210,7 @@ $("btn-gerar-rel-vendas").onclick = async () => {
           <div class="relatorio-card"><div class="rotulo">Ticket Médio p/ Dia</div><div class="valor">${fmt(r.ticketMedioPorDia)}</div></div>
           <div class="relatorio-card"><div class="rotulo">Itens Vendidos</div><div class="valor">${r.totalItensVendidos}</div></div>
         </div>
-        <p style="font-size:11.5px; color:#666; margin:-8px 0 18px;">Considera só comandas fechadas. Dias com venda no período: <b>${r.qtdDiasComVenda}</b>${r.maiorComanda ? ` · Maior comanda: <b>${r.maiorComanda.identificacao}</b> (${fmt(r.maiorComanda.valorTotal)})` : ""}${r.menorComanda ? ` · Menor: <b>${r.menorComanda.identificacao}</b> (${fmt(r.menorComanda.valorTotal)})` : ""}</p>
+        <p style="font-size:11.5px; color:#666; margin:-8px 0 18px;">Considera só comandas fechadas. Dias com venda no período: <b>${r.qtdDiasComVenda}</b>${r.maiorComanda ? ` · Maior comanda: <b>${escapeHtml(r.maiorComanda.identificacao)}</b> (${fmt(r.maiorComanda.valorTotal)})` : ""}${r.menorComanda ? ` · Menor: <b>${escapeHtml(r.menorComanda.identificacao)}</b> (${fmt(r.menorComanda.valorTotal)})` : ""}</p>
 
         ${blocoSimulador}
 
@@ -4616,9 +5266,9 @@ $("btn-gerar-rel-entradas").onclick = async () => {
     const linhas = r.registros.map(e => `
       <tr>
         <td>${(e.data || "").toString().split(" ")[0]}</td>
-        <td>${e.categoria}</td>
-        <td>${e.descricao || "—"}</td>
-        <td>${e.observacao || "—"}</td>
+        <td>${escapeHtml(e.categoria)}</td>
+        <td>${escapeHtml(e.descricao || "—")}</td>
+        <td>${escapeHtml(e.observacao || "—")}</td>
         <td class="valor">${fmt(e.valor)}</td>
       </tr>
     `);
@@ -4663,15 +5313,15 @@ $("btn-gerar-rel-saidas").onclick = async () => {
     const linhas = r.registros.map(s => `
       <tr>
         <td>${(s.data || "").toString().split(" ")[0]}</td>
-        <td>${s.categoria}</td>
-        <td>${s.descricao || "—"}</td>
+        <td>${escapeHtml(s.categoria)}</td>
+        <td>${escapeHtml(s.descricao || "—")}</td>
         <td>${s.statusPagamento === "Pago" ? "✅ Pago" : "⏳ Pendente"}</td>
         <td class="valor">${fmt(s.valor)}</td>
       </tr>
     `);
     const linhasCategoria = Object.keys(r.porCategoria).sort().map(cat => `
       <tr>
-        <td>${cat}</td>
+        <td>${escapeHtml(cat)}</td>
         <td class="valor">${fmt(r.porCategoria[cat].pago)}</td>
         <td class="valor">${fmt(r.porCategoria[cat].pendente)}</td>
       </tr>
@@ -4728,8 +5378,8 @@ $("btn-gerar-rel-pacotes").onclick = async () => {
       return `
       <tr>
         <td>${paraBR(p.dataEvento) || p.dataEvento}</td>
-        <td>${p.cliente}</td>
-        <td>${p.tipoPacote}</td>
+        <td>${escapeHtml(p.cliente)}</td>
+        <td>${escapeHtml(p.tipoPacote)}</td>
         <td style="text-align:right;">${p.qtdPessoas}</td>
         <td class="valor">${fmt(p.valorFinal)}</td>
         <td class="valor">${fmt(p.custoEstimado)}</td>
@@ -4739,7 +5389,7 @@ $("btn-gerar-rel-pacotes").onclick = async () => {
       </tr>
     `;
     });
-    const linhasSaboresAgregados = (r.saboresAgregados || []).map(s => `<tr><td>${s.produto}</td><td style="text-align:right;">${s.quantidade}</td></tr>`);
+    const linhasSaboresAgregados = (r.saboresAgregados || []).map(s => `<tr><td>${escapeHtml(s.produto)}</td><td style="text-align:right;">${s.quantidade}</td></tr>`);
     const temAlgumRealizado = (r.qtdComCustoRealizado || 0) > 0;
     container.innerHTML = `
       <div class="relatorio-folha">
