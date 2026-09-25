@@ -1757,7 +1757,7 @@
 // ar é realmente a versão mais nova ou se o GitHub Pages ainda está
 // servindo uma versão antiga em cache.
 // =====================================================================
-const VERSAO_APP = "7.7";
+const VERSAO_APP = "7.8";
 document.querySelectorAll(".badge-versao").forEach(el => el.textContent = "v" + VERSAO_APP);
 
 // =====================================================================
@@ -1968,12 +1968,79 @@ function enfileirar(acao, params, aoConcluir, aoFalhar) {
   return opId;
 }
 
+// Ações de comanda que podem ir juntas numa requisição só ("lote"): em vez
+// de 1 ida e volta ao Google por toque (1,5 a 4s cada, uma esperando a
+// outra), tudo o que se acumulou na fila vai de uma vez. Se o servidor
+// ainda for a versão antiga (sem "lote"), volta sozinho pro modo 1 por 1.
+const ACOES_EM_LOTE = new Set(["abrirComanda", "adicionarItemComanda", "editarItemComanda", "removerItemComanda",
+  "fecharComanda", "reabrirComanda", "cancelarComanda", "editarComanda", "excluirComanda"]);
+const MAX_ACOES_POR_LOTE = 15;
+const MAX_TAMANHO_LOTE = 5500; // caracteres — mantém o endereço da requisição num tamanho seguro
+let LOTE_DISPONIVEL = true;
+
+function montarLoteDaFila() {
+  const lote = [];
+  let tamanho = 0;
+  for (const op of FILA_SYNC) {
+    if (!ACOES_EM_LOTE.has(op.acao) || lote.length >= MAX_ACOES_POR_LOTE) break;
+    const pedaco = JSON.stringify({ opId: op.opId, acao: op.acao, params: op.params });
+    const pedacoCodificado = encodeURIComponent(pedaco).length;
+    if (lote.length && tamanho + pedacoCodificado > MAX_TAMANHO_LOTE) break;
+    lote.push(op);
+    tamanho += pedacoCodificado;
+  }
+  return lote;
+}
+
+function concluirOperacaoDaFila(op, resp) {
+  const idx = FILA_SYNC.findIndex(x => x.opId === op.opId);
+  if (idx !== -1) FILA_SYNC.splice(idx, 1);
+  salvarFila();
+  const cbs = CALLBACKS_SYNC[op.opId];
+  delete CALLBACKS_SYNC[op.opId];
+  if (resp && resp.status === "ok") {
+    if (cbs && cbs.aoConcluir) { try { cbs.aoConcluir(resp); } catch (e) { /* não deixa um erro de UI travar a fila */ } }
+  } else if (cbs && cbs.aoFalhar) { try { cbs.aoFalhar((resp && resp.mensagem) || "Erro desconhecido."); } catch (e) {} }
+}
+
 async function processarFila() {
   if (PROCESSANDO_FILA) return;
   PROCESSANDO_FILA = true;
   while (FILA_SYNC.length > 0) {
-    const op = FILA_SYNC[0];
     atualizarIndicadorSync();
+    let lote = LOTE_DISPONIVEL ? montarLoteDaFila() : [];
+    // Se ainda tem toque "esperando" (os ~0,7s de juntar toques repetidos),
+    // aguarda ele entrar na fila pra ir tudo na mesma requisição.
+    if (LOTE_DISPONIVEL && lote.length === 1 && ACOES_EM_LOTE.has(lote[0].acao) && Object.keys(PENDENTES_ITEM).length > 0) {
+      await new Promise(r => setTimeout(r, DEBOUNCE_SYNC_ITEM_MS + 150));
+      lote = montarLoteDaFila();
+    }
+    if (lote.length > 1) {
+      try {
+        const resp = await chamarAPIUmaVez("lote", {
+          ops: JSON.stringify(lote.map(op => ({ opId: op.opId, acao: op.acao, params: op.params })))
+        }, 30000);
+        if (resp && resp.status === "erro" && /não reconhecida/i.test(resp.mensagem || "")) { LOTE_DISPONIVEL = false; continue; }
+        if (resp && resp.status === "erro" && /lock|timeout/i.test(resp.mensagem || "")) {
+          atualizarIndicadorSync(resp.mensagem);
+          await new Promise(r => setTimeout(r, 1500));
+          continue;
+        }
+        if (!resp || resp.status !== "ok" || !Array.isArray(resp.resultados)) throw new Error((resp && resp.mensagem) || "Resposta inválida.");
+        const porOpId = {};
+        resp.resultados.forEach(r => { porOpId[r.opId] = r.resp; });
+        for (const op of lote) {
+          const r = porOpId[op.opId];
+          if (!r) break; // não processado (não deveria acontecer) — fica na fila pra próxima rodada
+          concluirOperacaoDaFila(op, r);
+        }
+      } catch (erroRede) {
+        atualizarIndicadorSync(erroRede.message);
+        await new Promise(r => setTimeout(r, 3000));
+      }
+      continue;
+    }
+    const op = FILA_SYNC[0];
     try {
       const resp = await chamarAPIUmaVez(op.acao, op.params, 20000);
       const msgErro = (resp && resp.mensagem) || "Erro desconhecido.";
@@ -1983,25 +2050,17 @@ async function processarFila() {
       // e avisar a pessoa já na 1ª tentativa.
       if (resp && resp.status === "erro" && /lock|timeout/i.test(msgErro)) {
         atualizarIndicadorSync(msgErro);
-        await new Promise(r => setTimeout(r, 3000));
+        await new Promise(r => setTimeout(r, 1500));
         continue;
       }
-      FILA_SYNC.shift();
-      salvarFila();
-      const cbs = CALLBACKS_SYNC[op.opId];
-      delete CALLBACKS_SYNC[op.opId];
-      if (resp && resp.status === "ok") {
-        if (cbs && cbs.aoConcluir) { try { cbs.aoConcluir(resp); } catch (e) { /* não deixa um erro de UI travar a fila */ } }
-      } else {
-        // erro "de verdade" devolvido pelo servidor (ex: comanda não existe) —
-        // repetir não vai resolver, então tira da fila e avisa quem pediu.
-        if (cbs && cbs.aoFalhar) { try { cbs.aoFalhar(msgErro); } catch (e) {} }
-      }
+      // erro "de verdade" devolvido pelo servidor (ex: comanda não existe) —
+      // repetir não vai resolver, então tira da fila e avisa quem pediu.
+      concluirOperacaoDaFila(op, resp);
     } catch (erroRede) {
       // falha de rede/tempo esgotado — mantém na fila (não perde a operação)
       // e tenta de novo em alguns segundos, sem travar o resto do app.
       atualizarIndicadorSync(erroRede.message);
-      await new Promise(r => setTimeout(r, 4000));
+      await new Promise(r => setTimeout(r, 3000));
     }
   }
   PROCESSANDO_FILA = false;
@@ -2129,6 +2188,7 @@ document.querySelectorAll("nav.abas button").forEach(btn => {
     // fazemos isso pra Cardápio/Estoque de propósito: lá tem campo editável
     // (custo/preço/quantidade) e recarregar de repente apagaria uma edição
     // que a pessoa ainda não salvou.
+    if (btn.dataset.aba === "financeiro" && FINANCEIRO_DESATUALIZADO) atualizarFinanceiroQuandoVisivel();
     if (btn.dataset.aba === "comandas") {
       const subAtivaEl = document.querySelector("#secao-comandas .sub-secao.ativa");
       const idSub = subAtivaEl ? subAtivaEl.id : "";
@@ -2152,16 +2212,24 @@ document.querySelectorAll("nav.abas button").forEach(btn => {
 // que outro atendente incluiu nela.
 // =====================================================================
 let ATUALIZANDO_EM_SEGUNDO_PLANO = false;
+let CICLO_SEGUNDO_PLANO = 0;
+let ULTIMA_ATIVIDADE_LANCAMENTO = 0;
 async function atualizarEmSegundoPlano() {
   if (ATUALIZANDO_EM_SEGUNDO_PLANO) return; // evita empilhar chamadas se a rede estiver lenta
   if (!USUARIO_LOGADO || $("app").style.display === "none") return;
+  if (document.visibilityState === "hidden") return; // celular com a tela apagada/em outro app: não gasta rede
+  // v7.8: enquanto houver lançamento sendo gravado (ou alguém tocou há
+  // menos de 10s), pula essa rodada — a gravação tem prioridade.
+  if (FILA_SYNC.length > 0 || Object.keys(PENDENTES_ITEM).length > 0 || Date.now() - ULTIMA_ATIVIDADE_LANCAMENTO < 10000) return;
   ATUALIZANDO_EM_SEGUNDO_PLANO = true;
+  CICLO_SEGUNDO_PLANO++;
   try {
     const secaoAtivaEl = document.querySelector(".secao.ativa");
     const idSecao = secaoAtivaEl ? secaoAtivaEl.id : "";
     const tarefas = [];
-    if (idSecao !== "secao-cardapio") tarefas.push(carregarProdutos());
-    if (idSecao !== "secao-estoque") tarefas.push(carregarEstoque());
+    // cardápio quase não muda: a cada 2 min; estoque: a cada 1 min
+    if (idSecao !== "secao-cardapio" && CICLO_SEGUNDO_PLANO % 4 === 0) tarefas.push(carregarProdutos());
+    if (idSecao !== "secao-estoque" && CICLO_SEGUNDO_PLANO % 2 === 0) tarefas.push(carregarEstoque());
     if (idSecao === "secao-comandas") {
       const subAtivaEl = document.querySelector("#secao-comandas .sub-secao.ativa");
       const idSub = subAtivaEl ? subAtivaEl.id : "";
@@ -2390,7 +2458,7 @@ async function abrirDetalhesPacote(pacoteId) {
             status.textContent = "✓ Atualizado!"; status.className = "msg-status ok";
             carregarComandas();
             carregarContasAReceber();
-            gerarResumoEExibir($("rf-data-inicio").value, $("rf-data-fim").value, true);
+            atualizarFinanceiroQuandoVisivel();
             abrirDetalhesPacote(pacoteId);
           } else { status.textContent = "❌ " + r.mensagem; status.className = "msg-status erro"; }
         } catch (e) { status.textContent = "❌ " + e.message; status.className = "msg-status erro"; }
@@ -2503,7 +2571,7 @@ function excluirComandaComConfirmacao(comandaId, identificacao) {
   enviarLancamentosPendentes(comandaId);
   document.querySelectorAll(`.card-comanda[data-comanda-id="${comandaId}"]`).forEach(c => c.remove());
   enfileirar("excluirComanda", { comandaId },
-    () => { carregarComandas(); atualizarEstoqueSeSeguro(); carregarBannerEmAtendimento(); },
+    () => { carregarComandas(); atualizarEstoqueSeSeguro(); atualizarFinanceiroQuandoVisivel(); },
     (msg) => { alert("❌ Não foi possível excluir a comanda: " + msg); carregarComandas(); }
   );
 }
@@ -2609,7 +2677,7 @@ function renderInconsistencias(grupos) {
         card.remove();
         carregarInconsistencias(true);
         carregarComandas(); atualizarEstoqueSeSeguro();
-        gerarResumoEExibir($("rf-data-inicio").value, $("rf-data-fim").value, true);
+        atualizarFinanceiroQuandoVisivel();
       } catch (e) {
         status.textContent = "❌ " + e.message; status.className = "msg-status erro";
         card.querySelectorAll("button").forEach(b => b.disabled = false);
@@ -3278,6 +3346,7 @@ function temPendenciaDaComanda(comandaId) {
 }
 
 function agendarSyncItem(item, tipo) {
+  ULTIMA_ATIVIDADE_LANCAMENTO = Date.now();
   const atual = PENDENTES_ITEM[item.itemId];
   if (atual) {
     clearTimeout(atual.timer);
@@ -3305,7 +3374,7 @@ function dispararSyncItem(itemId) {
       // comanda com esse nome em vez de deixar o item "solto"
       identificacaoComanda: identificacaoDaComanda(comandaId)
     },
-      (resp) => { if (resp.item) it.linha = resp.item.linha; aoConcluirSyncComanda(comandaId); },
+      (resp) => { if (resp.item) it.linha = resp.item.linha; aoConcluirSyncComanda(comandaId, resp); },
       (msg) => {
         if (COMANDA_ATUAL && COMANDA_ATUAL.comanda.comandaId === comandaId) {
           COMANDA_ATUAL.itens = COMANDA_ATUAL.itens.filter(x => x.itemId !== it.itemId);
@@ -3316,7 +3385,7 @@ function dispararSyncItem(itemId) {
     );
   } else {
     enfileirar("editarItemComanda", { comandaId, itemId: it.itemId, linha: it.linha || "", quantidade: it.quantidade },
-      (resp) => { if (resp.item) it.linha = resp.item.linha; aoConcluirSyncComanda(comandaId); },
+      (resp) => { if (resp.item) it.linha = resp.item.linha; aoConcluirSyncComanda(comandaId, resp); },
       (msg) => { alert("❌ Não foi possível atualizar a quantidade de " + it.produto + ": " + msg); recarregarComanda(comandaId); }
     );
   }
@@ -3342,12 +3411,22 @@ function atualizarEstoqueSeSeguro() {
 
 // Quando TUDO daquela comanda terminou de gravar: atualiza a lista, o
 // estoque e relê a comanda (pega itens de outro atendente, se houver).
-function aoConcluirSyncComanda(comandaId) {
+// v7.8: antes, cada lançamento gravado disparava 3 recargas completas
+// (lista de comandas, estoque e a comanda inteira) que disputavam a conexão
+// com os próximos lançamentos. Agora o card é atualizado com o que o
+// próprio servidor devolveu; o resto (itens de outro atendente, estoque)
+// chega na atualização automática.
+function aoConcluirSyncComanda(comandaId, resp) {
   if (COMANDA_ATUAL && COMANDA_ATUAL.comanda.comandaId === comandaId) renderModalComanda();
-  if (temPendenciaDaComanda(comandaId)) return;
-  carregarComandas();
-  atualizarEstoqueSeSeguro();
-  if (COMANDA_ATUAL && COMANDA_ATUAL.comanda.comandaId === comandaId) recarregarComandaSilenciosa(comandaId);
+  if (resp && resp.comanda) atualizarCardComandaLocal(resp.comanda);
+}
+function atualizarCardComandaLocal(comanda) {
+  if (!comanda || !comanda.comandaId) return;
+  if (typeof COMANDAS_CONHECIDAS !== "undefined") COMANDAS_CONHECIDAS.set(comanda.comandaId, comanda);
+  document.querySelectorAll(`.card-comanda[data-comanda-id="${comanda.comandaId}"]`).forEach(card => {
+    const novo = montarCardComanda(Object.assign({ totalItens: comanda.totalQuantidade }, comanda), comanda.totalQuantidade || 0);
+    card.replaceWith(novo);
+  });
 }
 
 function tocarProdutoRapido(nome, btnEl) {
@@ -3498,7 +3577,7 @@ function removerItem(itemId) {
   }
 
   enfileirar("removerItemComanda", { comandaId: item.comandaId, itemId, linha: item.linha || "" },
-    () => aoConcluirSyncComanda(item.comandaId),
+    (resp) => aoConcluirSyncComanda(item.comandaId, resp),
     (msg) => { alert("❌ Não foi possível remover o item: " + msg); recarregarComanda(item.comandaId); }
   );
 }
@@ -3599,8 +3678,7 @@ $("btn-confirmar-fechamento").onclick = () => {
       carregarComandas();
       // fechar comanda muda o que conta como venda — força o resumo financeiro
       // a ignorar o cache de 45s e recalcular já com esse fechamento
-      gerarResumoEExibir($("rf-data-inicio").value, $("rf-data-fim").value, true);
-      carregarBannerEmAtendimento();
+      atualizarFinanceiroQuandoVisivel();
     },
     (msg) => { alert("❌ Não foi possível fechar a comanda: " + msg); recarregarComanda(comandaId); }
   );
@@ -3617,8 +3695,7 @@ $("btn-reabrir-comanda").onclick = () => {
     (resp) => {
       if (COMANDA_ATUAL && COMANDA_ATUAL.comanda.comandaId === comandaId && !temPendenciaDaComanda(comandaId)) { COMANDA_ATUAL = resp; renderModalComanda(); }
       carregarComandas();
-      gerarResumoEExibir($("rf-data-inicio").value, $("rf-data-fim").value, true);
-      carregarBannerEmAtendimento();
+      atualizarFinanceiroQuandoVisivel();
     },
     (msg) => { alert("❌ Não foi possível reabrir a comanda: " + msg); recarregarComanda(comandaId); }
   );
@@ -3634,7 +3711,7 @@ $("btn-cancelar-comanda").onclick = () => {
   $("overlay-comanda").classList.remove("aberto");
   document.querySelectorAll(`.card-comanda[data-comanda-id="${comandaId}"]`).forEach(c => c.remove());
   enfileirar("cancelarComanda", { comandaId },
-    () => { carregarComandas(); atualizarEstoqueSeSeguro(); carregarBannerEmAtendimento(); },
+    () => { carregarComandas(); atualizarEstoqueSeSeguro(); atualizarFinanceiroQuandoVisivel(); },
     (msg) => { alert("❌ Não foi possível cancelar a comanda: " + msg); carregarComandas(); }
   );
 };
@@ -4035,7 +4112,7 @@ $("btn-confirmar-pacote").onclick = async () => {
       status.className = "msg-status ok";
       carregarContasAReceber();
       carregarComandas();
-      gerarResumoEExibir($("rf-data-inicio").value, $("rf-data-fim").value, true);
+      atualizarFinanceiroQuandoVisivel();
       abrirComprovantePacote({
         cliente, tipoPacote, dataEvento, horarioEvento: $("pac-horario-evento").value, local: $("pac-local").value,
         qtdPessoas, sabores, acompanhamentos, valorCheio, descontoValor, descontoPercentual, valorFinal,
@@ -4842,7 +4919,7 @@ $("btn-registrar-saida").onclick = async () => {
       $("sd-ja-paga").checked = true; $("sd-bloco-vencimento").style.display = "none";
       $("sd-parcelar").checked = false; $("sd-bloco-parcelas").style.display = "none"; $("sd-bloco-ja-paga").style.display = "flex";
       carregarContasAPagar();
-      gerarResumoEExibir($("rf-data-inicio").value, $("rf-data-fim").value, true);
+      atualizarFinanceiroQuandoVisivel();
     } else { status.textContent = "❌ " + resp.mensagem; status.className = "msg-status erro"; }
   } catch (e) { status.textContent = "❌ " + e.message; status.className = "msg-status erro"; }
 };
@@ -4858,7 +4935,7 @@ $("btn-registrar-entrada").onclick = async () => {
     if (resp.status === "ok") {
       status.textContent = "✓ Entrada registrada."; status.className = "msg-status ok";
       $("en-descricao").value = ""; $("en-valor").value = ""; $("en-data").value = ""; $("en-observacao").value = "";
-      gerarResumoEExibir($("rf-data-inicio").value, $("rf-data-fim").value, true);
+      atualizarFinanceiroQuandoVisivel();
     } else { status.textContent = "❌ " + resp.mensagem; status.className = "msg-status erro"; }
   } catch (e) { status.textContent = "❌ " + e.message; status.className = "msg-status erro"; }
 };
@@ -4983,7 +5060,7 @@ $("btn-registrar-compra-estoque").onclick = async () => {
       carregarEstoque();
       carregarProdutos();
       carregarContasAPagar();
-      gerarResumoEExibir($("rf-data-inicio").value, $("rf-data-fim").value, true);
+      atualizarFinanceiroQuandoVisivel();
     } else { status.textContent = "❌ " + resp.mensagem; status.className = "msg-status erro"; }
   } catch (e) { status.textContent = "❌ " + e.message; status.className = "msg-status erro"; }
   finally { btn.disabled = false; }
@@ -5084,7 +5161,7 @@ function renderContasAPagar(pendentes) {
         if (!confirm(`Confirmar pagamento de ${fmt(r.valor)} (${r.categoria})?`)) return;
         await chamarAPI("marcarSaidaComoPaga", { linha: r.linha, usuario: USUARIO_LOGADO });
         carregarContasAPagar();
-        gerarResumoEExibir($("rf-data-inicio").value, $("rf-data-fim").value, true);
+        atualizarFinanceiroQuandoVisivel();
         carregarSaldoLivre();
       };
     }
@@ -5187,7 +5264,7 @@ $("btn-salvar-editar-saida").onclick = async () => {
       status.textContent = "✓ Despesa atualizada!"; status.className = "msg-status ok";
       carregarContasAPagar();
       carregarSaldoLivre();
-      gerarResumoEExibir($("rf-data-inicio").value, $("rf-data-fim").value, true);
+      atualizarFinanceiroQuandoVisivel();
       setTimeout(fecharModalEditarSaida, 500);
     } else { status.textContent = "❌ " + resp.mensagem; status.className = "msg-status erro"; }
   } catch (e) { status.textContent = "❌ " + e.message; status.className = "msg-status erro"; }
@@ -5231,7 +5308,7 @@ async function carregarContasAReceber() {
           await chamarAPI("marcarRestantePacoteComoRecebido", { linha: r.linha, novoStatus: "Recebido", usuario: USUARIO_LOGADO });
           carregarContasAReceber();
           carregarComandas();
-          gerarResumoEExibir($("rf-data-inicio").value, $("rf-data-fim").value, true);
+          atualizarFinanceiroQuandoVisivel();
         };
       }
       lista.appendChild(linha);
@@ -5279,6 +5356,25 @@ async function carregarBannerEmAtendimento() {
     `;
   } catch (e) {
     grid.innerHTML = `<div class="vazio-lista">❌ ${e.message}</div>`;
+  }
+}
+
+// v7.8: fechar/reabrir/cancelar comanda NÃO recalcula mais o Resumo
+// Financeiro na hora (ele lê todas as abas e competia com os lançamentos
+// durante o atendimento). Só marca como desatualizado; o recálculo acontece
+// quando alguém abrir a aba Financeiro.
+let FINANCEIRO_DESATUALIZADO = false;
+function financeiroVisivel() {
+  const sec = document.querySelector(".secao.ativa");
+  return !!sec && sec.id === "secao-financeiro";
+}
+function atualizarFinanceiroQuandoVisivel() {
+  if (financeiroVisivel()) {
+    FINANCEIRO_DESATUALIZADO = false;
+    gerarResumoEExibir($("rf-data-inicio").value, $("rf-data-fim").value, true);
+    carregarBannerEmAtendimento();
+  } else {
+    FINANCEIRO_DESATUALIZADO = true;
   }
 }
 
