@@ -788,6 +788,27 @@
     body.imprimindo-cupom-comanda #app{ display:none !important; }
   }
 
+  /* ---------- EDITAR DESPESA / INCONSISTÊNCIAS / DIAGNÓSTICO DE CAIXA ---------- */
+  .acoes-conta{ display:flex; gap:6px; flex-wrap:wrap; justify-content:flex-end; }
+  #overlay-editar-saida select:disabled, #overlay-editar-saida input:disabled{ opacity:.55; }
+  .card-inconsistencia{
+    background:rgba(224,35,26,.08); border:1px solid rgba(224,35,26,.35); border-left:4px solid var(--erro);
+    border-radius:12px; padding:12px 14px; margin-bottom:12px; font-size:12.5px; line-height:1.45;
+  }
+  .card-inconsistencia h4{ margin:0 0 4px; font-size:13.5px; color:var(--erro); }
+  .card-inconsistencia .itens-inc{ margin:6px 0; color:var(--muted); font-size:12px; }
+  .card-inconsistencia .como-resolver{ margin:6px 0 8px; font-size:12px; }
+  .card-inconsistencia .acoes-inc{ display:flex; gap:8px; flex-wrap:wrap; align-items:center; }
+  .card-inconsistencia .acoes-inc select{ width:auto; padding:7px 8px; font-size:12.5px; }
+  .diag-caixa{ margin-top:10px; font-size:12px; }
+  .diag-caixa details{ border:1px solid var(--borda); border-radius:8px; padding:6px 10px; margin-top:6px; background:var(--preto3); }
+  .diag-caixa summary{ cursor:pointer; font-weight:700; }
+  .diag-caixa summary .qtd{ color:var(--amarelo); }
+  .diag-caixa ul{ margin:6px 0 2px; padding-left:18px; }
+  .diag-caixa li{ margin:2px 0; }
+  .diag-caixa .dica{ color:var(--muted); margin:4px 0 0; }
+  .dica-categoria-entrada{ font-size:11.5px; color:var(--muted); margin:4px 0 0; }
+
   /* ---------- ORGANIZAR ORDEM DOS ITENS ---------- */
   .btn-organizar{ background:rgba(58,160,232,.12); color:var(--azul); border:1px solid rgba(58,160,232,.35); }
   .linha-topo .acoes-topo{ display:flex; gap:8px; flex-wrap:wrap; }
@@ -882,6 +903,8 @@
           <button class="btn-vender-pacote" id="btn-vender-pacote">📦 Vender pacote</button>
         </div>
       </div>
+
+      <div id="cards-inconsistencias"></div>
 
       <div class="sub-abas">
         <button data-subaba="comandas-lista" class="ativa">Minhas Comandas</button>
@@ -1138,6 +1161,8 @@
             <textarea id="caixa-justificativa-texto" placeholder="Ex: sobrou troco de evento anterior, diferença de R$5 no fechamento de sexta..."></textarea>
             <button class="btn-mini salvar somente-admin" style="margin-top:8px;" id="btn-salvar-justificativa-caixa">Salvar justificativa</button>
             <div class="caixa-justificativa-meta" id="caixa-justificativa-meta"></div>
+            <button class="btn-mini" style="margin-top:8px;" id="btn-diagnosticar-caixa" type="button">🔎 Procurar possíveis causas</button>
+            <div class="diag-caixa" id="diag-caixa"></div>
           </div>
         </div>
         </div>
@@ -1301,6 +1326,7 @@
             <h3>Lançar entrada eventual</h3>
             <label>Categoria</label>
             <select id="en-categoria"></select>
+            <p class="dica-categoria-entrada" id="en-dica-categoria"></p>
             <label>Descrição</label>
             <input type="text" id="en-descricao">
             <label>Valor (R$)</label>
@@ -1314,12 +1340,6 @@
           </div>
         </div>
 
-        <div class="card-form somente-admin">
-          <h3>Custos fixos do dia</h3>
-          <p style="font-size:12px; color:var(--muted);">Lança de uma vez todos os itens do cardápio marcados como categoria "Custo Fixo Diário".</p>
-          <button class="btn-mini salvar" style="width:100%;" id="btn-custos-fixos">Lançar custos fixos de hoje</button>
-          <div class="msg-status" id="status-custos-fixos"></div>
-        </div>
       </div>
     </section>
 
@@ -1436,6 +1456,44 @@
     </section>
 
   </main>
+</div>
+
+<!-- ================= EDITAR DESPESA ================= -->
+<div class="overlay" id="overlay-editar-saida">
+  <div class="modal" style="max-width:520px;">
+    <div class="modal-topo">
+      <div><span class="titulo-comanda"><span>✏️ Editar despesa</span></span></div>
+      <button class="btn-fechar-x" id="btn-fechar-editar-saida" type="button" aria-label="Fechar">✕</button>
+    </div>
+    <div class="grid2">
+      <div><label>Categoria</label><select id="es-categoria"></select></div>
+      <div><label>Valor (R$)</label><input type="number" id="es-valor" step="0.01" min="0"></div>
+    </div>
+    <label>Descrição</label><input type="text" id="es-descricao">
+    <div class="grid2">
+      <div><label>Forma de pagamento</label>
+        <select id="es-forma"><option>Dinheiro</option><option>Pix</option><option>Cartão de Crédito</option></select>
+      </div>
+      <div><label>Status</label>
+        <select id="es-status"><option value="Pago">Pago</option><option value="Pendente">Pendente</option></select>
+      </div>
+    </div>
+    <div class="grid2">
+      <div><label>Vencimento</label><input type="date" id="es-vencimento"></div>
+      <div><label>Data do lançamento</label><input type="date" id="es-data"></div>
+    </div>
+    <div class="grid2">
+      <div><label>Parcelar em</label><input type="number" id="es-parcelas" min="1" max="24" value="1"></div>
+      <div><label>Fornecedor (opcional)</label><input type="text" id="es-fornecedor"></div>
+    </div>
+    <p class="ordem-dica" id="es-dica-parcelas" style="margin-top:6px;"></p>
+    <p class="ordem-dica" id="es-resumo-parcelas" style="color:var(--amarelo); font-weight:700;"></p>
+    <div class="msg-status" id="status-editar-saida"></div>
+    <div class="ordem-rodape">
+      <button class="btn-mini" id="btn-cancelar-editar-saida" type="button">Cancelar</button>
+      <button class="btn-primario" id="btn-salvar-editar-saida" type="button">💾 Salvar alterações</button>
+    </div>
+  </div>
 </div>
 
 <!-- ================= ORGANIZAR ORDEM DOS ITENS ================= -->
@@ -1699,7 +1757,7 @@
 // ar é realmente a versão mais nova ou se o GitHub Pages ainda está
 // servindo uma versão antiga em cache.
 // =====================================================================
-const VERSAO_APP = "7.6";
+const VERSAO_APP = "7.7";
 document.querySelectorAll(".badge-versao").forEach(el => el.textContent = "v" + VERSAO_APP);
 
 // =====================================================================
@@ -1757,7 +1815,7 @@ aplicarTema(document.documentElement.getAttribute("data-tema"));
 // CONFIG
 // =====================================================================
 const CONFIG = {
-  API_URL: "https://script.google.com/macros/s/AKfycbxcnmRaaNEWLGPEe8WvYVkPC8Vbv2ymnjvexeLTV9qdnz5mvR4M_TjdGEm0DmJpprmGSg/exec"
+  API_URL: "https://script.google.com/macros/s/AKfycby1wPm4c95l90t_72hClC-mco9z5YhXF5v0stPZp7CrRz7HzQchYOLDpYLUb7UxKJG4kA/exec"
 };
 
 const $ = (id) => document.getElementById(id);
@@ -2486,6 +2544,7 @@ async function carregarComandas() {
     if (resp.status !== "ok") { if (!grid.querySelector(".card-comanda")) grid.innerHTML = `<div class="vazio-lista">❌ ${resp.mensagem}</div>`; return; }
     grid.dataset.filtro = chaveFiltro;
     registrarComandasConhecidas(resp.comandas);
+    carregarInconsistencias(false);
     const minhas = resp.comandas.filter(c => c.ehPacote || c.usuarioAbertura === USUARIO_LOGADO);
     if (!minhas.length) { grid.innerHTML = `<div class="vazio-lista">Nenhuma comanda sua por aqui ainda. Veja "Comandas do Dia" pra conferir as de todo mundo.</div>`; return; }
     grid.innerHTML = "";
@@ -2493,6 +2552,72 @@ async function carregarComandas() {
   } catch (e) {
     if (token === TOKEN_CARREGAR_COMANDAS && !grid.querySelector(".card-comanda")) grid.innerHTML = `<div class="vazio-lista">❌ ${e.message}</div>`;
   }
+}
+
+// ---------------------------------------------------------------------
+// INCONSISTÊNCIAS — itens lançados sem comanda (a abertura não chegou a
+// ser gravada). Aparece pra quem lançou (Admin vê todos) e some sozinho
+// depois de resolvido. Consulta no máximo 1x por minuto (ou na hora,
+// quando forçado).
+// ---------------------------------------------------------------------
+let ULTIMA_CONSULTA_INCONSISTENCIAS = 0;
+async function carregarInconsistencias(forcar) {
+  if (!USUARIO_LOGADO) return;
+  if (!forcar && Date.now() - ULTIMA_CONSULTA_INCONSISTENCIAS < 60000) return;
+  ULTIMA_CONSULTA_INCONSISTENCIAS = Date.now();
+  try {
+    const resp = await chamarAPI("listarInconsistencias", { usuario: USUARIO_LOGADO });
+    if (resp.status === "ok") renderInconsistencias(resp.itensSemComanda || []);
+  } catch (e) { /* silencioso: não atrapalha o atendimento */ }
+}
+
+function renderInconsistencias(grupos) {
+  const box = $("cards-inconsistencias");
+  if (!grupos.length) { box.innerHTML = ""; return; }
+  const admin = ehAdmin();
+  const opcoesForma = ["Pix", "Dinheiro", "Cartão de Débito", "Cartão de Crédito"].map(f => `<option>${f}</option>`).join("");
+  box.innerHTML = grupos.map(g => `
+    <div class="card-inconsistencia" data-comanda-id="${escapeAttr(g.comandaId)}">
+      <h4>⚠️ Itens lançados sem comanda — ${escapeHtml((g.primeiroEm || "").slice(0, 16))}</h4>
+      <div>${g.qtdTotal} item(ns) · <b>${fmt(g.valorTotal)}</b>${admin ? ` · lançados por <b>${escapeHtml(g.usuario)}</b>` : ""}</div>
+      <div class="itens-inc">${g.itens.map(it => `${escapeHtml(it.produto)} (${it.quantidade})`).join(", ")}</div>
+      <div class="como-resolver">A comanda não chegou a ser gravada na planilha (provável falha de conexão na hora de abrir), mas os itens sim: eles já saíram do estoque e <b>não estão contando como venda</b>.<br>
+      <b>Como resolver:</b> se o cliente consumiu e pagou, escolha a forma de pagamento e toque em <b>Registrar como venda</b> — ela entra no dia e horário em que foi lançada. Se foi lançado por engano, toque em <b>Descartar itens</b> e eles voltam pro estoque.</div>
+      <div class="acoes-inc">
+        <select class="forma-inc">${opcoesForma}</select>
+        <button class="btn-mini salvar btn-inc-venda" type="button">✅ Registrar como venda</button>
+        <button class="btn-mini btn-inc-descartar" type="button">🗑 Descartar itens</button>
+      </div>
+      <div class="msg-status"></div>
+    </div>
+  `).join("");
+  box.querySelectorAll(".card-inconsistencia").forEach(card => {
+    const comandaId = card.dataset.comandaId;
+    const status = card.querySelector(".msg-status");
+    const resolver = async (resolucao) => {
+      const forma = card.querySelector(".forma-inc").value;
+      const g = grupos.find(x => x.comandaId === comandaId);
+      const pergunta = resolucao === "descartar"
+        ? `Descartar ${g.qtdTotal} item(ns) (${fmt(g.valorTotal)})? Eles voltam pro estoque e não contam como venda.`
+        : `Registrar ${fmt(g.valorTotal)} como venda paga em ${forma}, no dia ${(g.ultimoEm || "").slice(0, 10)}?`;
+      if (!confirm(pergunta)) return;
+      card.querySelectorAll("button").forEach(b => b.disabled = true);
+      status.textContent = "Salvando..."; status.className = "msg-status";
+      try {
+        const resp = await chamarAPI("resolverItensSemComanda", { comandaId, resolucao, formaPagamento: forma, usuario: USUARIO_LOGADO });
+        if (resp.status !== "ok") throw new Error(resp.mensagem);
+        card.remove();
+        carregarInconsistencias(true);
+        carregarComandas(); atualizarEstoqueSeSeguro();
+        gerarResumoEExibir($("rf-data-inicio").value, $("rf-data-fim").value, true);
+      } catch (e) {
+        status.textContent = "❌ " + e.message; status.className = "msg-status erro";
+        card.querySelectorAll("button").forEach(b => b.disabled = false);
+      }
+    };
+    card.querySelector(".btn-inc-venda").onclick = () => resolver("venda");
+    card.querySelector(".btn-inc-descartar").onclick = () => resolver("descartar");
+  });
 }
 
 // "Comandas do Dia" — todas as comandas de todos os usuários no dia
@@ -2946,7 +3071,7 @@ let MAPA_ORDEM_PRODUTOS = {}; // nome minúsculo -> { ordem, tipo }
 function atualizarMapaOrdem() {
   MAPA_ORDEM_PRODUTOS = {};
   PRODUTOS_CACHE_TODOS.forEach(p => {
-    MAPA_ORDEM_PRODUTOS[p.nome.trim().toLowerCase()] = { ordem: Number(p.ordem) > 0 ? Number(p.ordem) : null, tipo: p.tipo };
+    MAPA_ORDEM_PRODUTOS[chaveNome(p.nome)] = { ordem: Number(p.ordem) > 0 ? Number(p.ordem) : null, tipo: p.tipo };
   });
 }
 function indiceTipoPadrao(tipo) {
@@ -2955,8 +3080,8 @@ function indiceTipoPadrao(tipo) {
 }
 // Compara 2 itens por nome (+ tipo, pra quem não está no cardápio).
 function compararPorOrdem(nomeA, tipoA, nomeB, tipoB) {
-  const ia = MAPA_ORDEM_PRODUTOS[(nomeA || "").trim().toLowerCase()] || {};
-  const ib = MAPA_ORDEM_PRODUTOS[(nomeB || "").trim().toLowerCase()] || {};
+  const ia = MAPA_ORDEM_PRODUTOS[chaveNome(nomeA)] || {};
+  const ib = MAPA_ORDEM_PRODUTOS[chaveNome(nomeB)] || {};
   const oa = ia.ordem || null, ob = ib.ordem || null;
   if (oa !== null && ob !== null && oa !== ob) return oa - ob;
   if (oa !== null && ob === null) return -1;
@@ -2975,8 +3100,26 @@ let VERSAO_LOCAL_COMANDA = 0; // muda a cada alteração local — protege contr
 let PRODUTO_COMBO_EM_MONTAGEM = null;
 
 function ehRefrigerantePequeno(p) {
-  return p && p.nome.trim().toLowerCase() === NOME_REFRIGERANTE_PEQUENO.toLowerCase();
+  return p && chaveNome(p.nome) === chaveNome(NOME_REFRIGERANTE_PEQUENO);
 }
+// Mesma regra do chaveNome() do Codigo.gs: ignora acento, ç, maiúsculas e
+// espaços duplicados — "Coração de Frango" e "Coracao de Frango" são o
+// mesmo produto (vendas antigas x nome atual, sem acento por causa da
+// impressora). ALIASES_PRODUTOS também igual ao servidor.
+const ALIASES_PRODUTOS = { "baiao de dois (porcao 6)": "baiao de dois (porcao)" };
+function chaveNome(v) {
+  const t = (v == null ? "" : String(v)).normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/\s+/g, " ").trim();
+  return ALIASES_PRODUTOS[t] || t;
+}
+// Baião, vinagrete e farofa: o custo conta só pela compra dos ingredientes
+// (Saídas → Insumo), não em cada venda — mesma regra do servidor.
+const NOMES_ACOMPANHAMENTOS = ["baiao de dois (porcao)", "vinagrete", "farofa"];
+function ehAcompanhamento(p) {
+  return !!p && (p.tipo === "Baião" || NOMES_ACOMPANHAMENTOS.includes(chaveNome(p.nome)));
+}
+// Estoque disponível por nome (com ou sem acento)
+function estoqueDe(nome) { return ESTOQUE_MAP[chaveNome(nome)]; }
+function mexerEstoqueLocal(nome, delta) { const k = chaveNome(nome); if (ESTOQUE_MAP[k] !== undefined) ESTOQUE_MAP[k] += delta; }
 function refrigerantePequenoAtivo() {
   return PRODUTOS_CACHE.find(ehRefrigerantePequeno) || null;
 }
@@ -3075,7 +3218,7 @@ function atualizarBadgesGrade() {
     btn.classList.toggle("tem-na-comanda", qtd > 0);
     btn.querySelector(".qtd-na-comanda").textContent = qtd;
     const badge = btn.querySelector(".badge-estoque");
-    const disp = ESTOQUE_MAP[nome];
+    const disp = estoqueDe(nome);
     if (disp === undefined) { badge.textContent = ""; badge.className = "badge-estoque"; return; }
     badge.textContent = disp <= 0 ? "sem estoque" : "est. " + disp;
     badge.className = "badge-estoque" + (disp <= 0 ? " zerado" : (disp <= 3 ? " baixo" : ""));
@@ -3123,6 +3266,12 @@ function novoItemLocal(comandaId, produto, quantidade, custoUnitario, combo) {
   return item;
 }
 
+function identificacaoDaComanda(comandaId) {
+  if (COMANDA_ATUAL && COMANDA_ATUAL.comanda.comandaId === comandaId) return COMANDA_ATUAL.comanda.identificacao;
+  const c = typeof COMANDAS_CONHECIDAS !== "undefined" ? COMANDAS_CONHECIDAS.get(comandaId) : null;
+  return c ? c.identificacao : "Comanda recuperada";
+}
+
 function temPendenciaDaComanda(comandaId) {
   return Object.values(PENDENTES_ITEM).some(p => p.comandaId === comandaId)
     || FILA_SYNC.some(op => op.params && op.params.comandaId === comandaId);
@@ -3151,7 +3300,10 @@ function dispararSyncItem(itemId) {
     enfileirar("adicionarItemComanda", {
       comandaId, itemId: it.itemId, produto: it.produto, quantidade: it.quantidade,
       comboEspeto1: it.comboEspeto1, comboEspeto2: it.comboEspeto2, comboRefri: it.comboRefri,
-      comboVinagrete: it.comboVinagrete || "NÃO", comboFarofa: it.comboFarofa || "NÃO"
+      comboVinagrete: it.comboVinagrete || "NÃO", comboFarofa: it.comboFarofa || "NÃO",
+      // se a abertura da comanda não tiver sido gravada, o servidor recria a
+      // comanda com esse nome em vez de deixar o item "solto"
+      identificacaoComanda: identificacaoDaComanda(comandaId)
     },
       (resp) => { if (resp.item) it.linha = resp.item.linha; aoConcluirSyncComanda(comandaId); },
       (msg) => {
@@ -3213,17 +3365,17 @@ function tocarProdutoRapido(nome, btnEl) {
 
   // aviso de estoque zerado sem travar a tela (antes era um alert que
   // obrigava a tocar em OK no meio do atendimento)
-  if (ESTOQUE_MAP[nome] !== undefined && ESTOQUE_MAP[nome] <= 0) avisoModal(`⚠️ "${nome}" está com estoque zerado — incluído mesmo assim.`, "aviso");
-  if (ESTOQUE_MAP[nome] !== undefined) ESTOQUE_MAP[nome] -= 1;
+  if (estoqueDe(nome) !== undefined && estoqueDe(nome) <= 0) avisoModal(`⚠️ "${nome}" está com estoque zerado — incluído mesmo assim.`, "aviso");
+  mexerEstoqueLocal(nome, -1);
 
   const comandaId = COMANDA_ATUAL.comanda.comandaId;
-  const existente = COMANDA_ATUAL.itens.find(it => it.produto === produto.nome && !it.comboEspeto1 && Number(it.valorUnitario) === Number(produto.preco));
+  const existente = COMANDA_ATUAL.itens.find(it => chaveNome(it.produto) === chaveNome(produto.nome) && !it.comboEspeto1 && Number(it.valorUnitario) === Number(produto.preco));
   if (existente) {
     existente.quantidade += 1;
     recalcItem(existente);
     agendarSyncItem(existente, "editar");
   } else {
-    const item = novoItemLocal(comandaId, produto, 1, produto.custo || 0, null);
+    const item = novoItemLocal(comandaId, produto, 1, ehAcompanhamento(produto) ? 0 : (produto.custo || 0), null);
     COMANDA_ATUAL.itens.push(item);
     agendarSyncItem(item, "adicionar");
   }
@@ -3286,18 +3438,13 @@ $("btn-add-item-comanda").onclick = () => {
   };
   if (!combo.comboEspeto1 || !combo.comboEspeto2 || !combo.comboRefri) { alert("Escolha os 2 sabores de espeto e o refrigerante do combo."); return; }
 
-  // custo local (otimista) — soma os custos dos componentes escolhidos; o
-  // servidor recalcula do mesmo jeito ao sincronizar (inclusive vinagrete/
-  // farofa como fração do lote do dia — mesma proporção 50ml/1L e 50g/1kg
-  // usada no Codigo.gs; se mudar lá, muda aqui também).
-  const FRACAO_PORCAO_COMBO = 50 / 1000;
-  const custoDe = (nome) => { const p = PRODUTOS_CACHE_TODOS.find(x => x.nome === nome); return p ? (p.custo || 0) : 0; };
-  const baiao = PRODUTOS_CACHE_TODOS.find(p => p.tipo === "Baião");
-  let custoUnitario = custoDe(combo.comboEspeto1) + custoDe(combo.comboEspeto2) + custoDe(combo.comboRefri) + (baiao ? baiao.custo : 0);
-  if (combo.comboVinagrete === "SIM") custoUnitario += custoDe("Vinagrete") * FRACAO_PORCAO_COMBO;
-  if (combo.comboFarofa === "SIM") custoUnitario += custoDe("Farofa") * FRACAO_PORCAO_COMBO;
+  // custo local (otimista) — mesma regra do servidor: 2 espetos + o
+  // refrigerante. Baião, vinagrete e farofa não entram (o custo deles conta
+  // pela compra dos ingredientes, lançada em Saídas → Insumo).
+  const custoDe = (nome) => { const p = PRODUTOS_CACHE_TODOS.find(x => chaveNome(x.nome) === chaveNome(nome)); return p ? (p.custo || 0) : 0; };
+  const custoUnitario = custoDe(combo.comboEspeto1) + custoDe(combo.comboEspeto2) + custoDe(combo.comboRefri);
 
-  [produto.nome, combo.comboEspeto1, combo.comboEspeto2, combo.comboRefri].forEach(n => { if (ESTOQUE_MAP[n] !== undefined) ESTOQUE_MAP[n] -= quantidade; });
+  [produto.nome, combo.comboEspeto1, combo.comboEspeto2, combo.comboRefri].forEach(n => mexerEstoqueLocal(n, -quantidade));
 
   const item = novoItemLocal(COMANDA_ATUAL.comanda.comandaId, produto, quantidade, custoUnitario, combo);
   COMANDA_ATUAL.itens.push(item);
@@ -3318,7 +3465,7 @@ function ajustarQtdItem(itemId, _linhaIgnorada, novaQuantidade) {
   novaQuantidade = Math.max(1, parseInt(novaQuantidade) || 1);
   const diferenca = novaQuantidade - item.quantidade;
   if (!diferenca) { renderModalComanda(); return; }
-  if (ESTOQUE_MAP[item.produto] !== undefined) ESTOQUE_MAP[item.produto] -= diferenca;
+  mexerEstoqueLocal(item.produto, -diferenca);
   item.quantidade = novaQuantidade;
   recalcItem(item);
   agendarSyncItem(item, "editar");
@@ -3336,7 +3483,7 @@ function removerItem(itemId) {
 
   // remove local na hora
   COMANDA_ATUAL.itens = COMANDA_ATUAL.itens.filter(it => it.itemId !== itemId);
-  if (ESTOQUE_MAP[item.produto] !== undefined) ESTOQUE_MAP[item.produto] += item.quantidade;
+  mexerEstoqueLocal(item.produto, item.quantidade);
   recalcularTotaisLocais();
   VERSAO_LOCAL_COMANDA++;
   renderModalComanda();
@@ -3597,7 +3744,9 @@ function montarTextoCupomComanda(payload) {
   // "confiança"), então usa "c" normal aqui, como combinado.
   t += "\n" + centralizarCupom("Obrigado pela confianca!") + "\n";
   t += "\n\n\n"; // margem em branco no final, pra facilitar rasgar o papel
-  return t;
+  // A impressora térmica não imprime acento nem ç: tira tudo aqui na hora
+  // de imprimir. Assim os nomes no sistema podem ter acento normalmente.
+  return t.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
 }
 
 $("btn-imprimir-comanda").onclick = () => {
@@ -4002,7 +4151,7 @@ async function carregarEstoque() {
     $("btn-salvar-estoque-tudo").style.display = admin ? "block" : "none";
     ESTOQUE_MAP = {};
     resp.itens.sort((a, b) => compararPorOrdem(a.produto, "", b.produto, "")).forEach(it => {
-      ESTOQUE_MAP[it.produto] = it.qtdDisponivel;
+      ESTOQUE_MAP[chaveNome(it.produto)] = it.qtdDisponivel;
       const classeCor = classeEstoque(it.qtdDisponivel);
       const linha = document.createElement("div");
       linha.className = "linha-tabela";
@@ -4281,7 +4430,7 @@ function renderCardapio(produtos) {
     linha.dataset.nome = p.nome;
     const ehGenerico = ehRefrigerantePequeno(p);
     linha.innerHTML = `
-      <div class="nome-item">${escapeHtml(p.nome)}${ehGenerico ? `<span class="tag-sistema" title="Agrupa os sabores de refrigerante na comanda">agrupa os sabores</span>` : ""}<div class="cat-item">${escapeHtml(p.categoria)}</div></div>
+      <div class="nome-item">${escapeHtml(p.nome)}${ehGenerico ? `<span class="tag-sistema" title="Agrupa os sabores de refrigerante na comanda">agrupa os sabores</span>` : ""}${ehAcompanhamento(p) ? `<span class="tag-sistema" title="O custo deste item conta pela compra dos ingredientes (Saídas → Insumo), não a cada venda">custo via insumos</span>` : ""}<div class="cat-item">${escapeHtml(p.categoria)}</div></div>
       <select class="select-tipo" title="Tipo (pro resumo do dia)">
         ${opcoesTipo.map(t => `<option value="${t}" ${p.tipo === t ? "selected" : ""}>${t}</option>`).join("")}
       </select>
@@ -4570,6 +4719,53 @@ function atualizarMetaJustificativaCaixa() {
   }
 }
 
+// ---------------------------------------------------------------------
+// AJUDA PRA ACHAR A DIFERENÇA DE CAIXA — só aparece dentro da caixa de
+// justificativa (quando existe diferença) e só busca quando você toca no
+// botão. Não altera nada: aponta onde costuma estar a diferença.
+// ---------------------------------------------------------------------
+$("btn-diagnosticar-caixa").onclick = async () => {
+  const box = $("diag-caixa");
+  const informado = (parseFloat($("cx-dinheiro").value) || 0) + (parseFloat($("cx-conta").value) || 0);
+  const diferenca = Math.round((informado - CAIXA_ESPERADO_ATUAL) * 100) / 100;
+  box.innerHTML = `<div class="dica">Procurando...</div>`;
+  try {
+    const r = await chamarAPI("diagnosticarCaixa", { diferenca });
+    if (r.status !== "ok") { box.innerHTML = `<div class="dica">❌ ${escapeHtml(r.mensagem)}</div>`; return; }
+    const a = r.achados;
+    const bloco = (titulo, lista, linha, dica) => !lista.length ? "" : `
+      <details><summary>${titulo} <span class="qtd">(${lista.length})</span></summary>
+        <ul>${lista.map(linha).join("")}</ul>
+        <p class="dica">${dica}</p>
+      </details>`;
+    const somaCobrado = a.cobradoDiferente.reduce((s, x) => s + x.diferenca, 0);
+    const html = [
+      bloco(`Lançamentos com o valor exato da diferença (${fmt(Math.abs(diferenca))})`, a.valorIgualDiferenca,
+        x => `<li>${escapeHtml(x.onde)}: ${escapeHtml(x.descricao)} — ${escapeHtml(x.quando)} · ${fmt(x.valor)}</li>`,
+        "Pode ser algo esquecido, lançado em dobro ou com a categoria errada."),
+      bloco("Itens lançados sem comanda", a.itensSemComanda,
+        x => `<li>${escapeHtml(x.quando)} · ${escapeHtml(x.usuario)} · ${x.qtd} item(ns) · ${fmt(x.valor)}</li>`,
+        "O dinheiro pode ter entrado sem virar venda. Resolva pelo card que aparece na aba Comandas."),
+      bloco(`Comandas com valor cobrado diferente dos itens (total ${fmt(somaCobrado)})`, a.cobradoDiferente,
+        x => `<li>${escapeHtml(x.comanda)} — ${escapeHtml(x.quando)} (${escapeHtml(x.forma)}): itens ${fmt(x.valorItens)}, cobrado ${fmt(x.valorCobrado)}</li>`,
+        "Itens alterados depois do fechamento: a venda conta o valor dos itens, mas foi cobrado outro valor."),
+      bloco("Contas pendentes vencidas ou sem vencimento", a.pendentesVencidas,
+        x => `<li>${escapeHtml(x.descricao)} — ${x.vencimento ? "venceu " + paraBRFlexivel(x.vencimento) : "sem vencimento"} · ${fmt(x.valor)}</li>`,
+        "Se já foram pagas, marque como paga (ou edite) em Contas a pagar: aí o caixa esperado passa a descontar esse valor."),
+      bloco("Entradas recentes que NÃO somam no caixa (últimos 45 dias)", a.entradasForaDoCaixa,
+        x => `<li>${escapeHtml(x.quando)} · ${escapeHtml(x.categoria)}: ${escapeHtml(x.descricao)}${x.observacao ? " (" + escapeHtml(x.observacao) + ")" : ""} · ${fmt(x.valor)}</li>`,
+        "Se algum desses valores ficou com vocês (não foi repassado), a categoria certa é Aporte/Empréstimo ou Entrada Manual — ajuste na aba Entradas Eventuais da planilha."),
+      bloco("Saídas iguais no mesmo dia (possível lançamento em dobro)", a.possiveisDuplicadas,
+        x => `<li>${escapeHtml(x.quando)} · ${escapeHtml(x.descricao)} · ${fmt(x.valor)}</li>`,
+        "Se foi lançada duas vezes por engano, apague a linha repetida na aba Saídas da planilha.")
+    ].join("");
+    const sentido = diferenca > 0
+      ? "Sobra dinheiro no informado: procure vendas ou entradas que não foram lançadas, ou saídas lançadas a mais."
+      : "Falta dinheiro no informado: procure despesas que não foram lançadas, ou vendas registradas que não foram recebidas.";
+    box.innerHTML = `<p class="dica">${sentido}</p>` + (html || `<p class="dica">Nada suspeito encontrado automaticamente. A diferença pode ser troco, arredondamento ou rendimento da conta.</p>`);
+  } catch (e) { box.innerHTML = `<div class="dica">❌ ${escapeHtml(e.message)}</div>`; }
+};
+
 $("btn-salvar-justificativa-caixa").onclick = async () => {
   const texto = $("caixa-justificativa-texto").value.trim();
   if (!texto) { alert("Escreva a justificativa antes de salvar."); return; }
@@ -4585,11 +4781,26 @@ $("btn-salvar-justificativa-caixa").onclick = async () => {
 // =====================================================================
 // FINANCEIRO (saídas / entradas / custos fixos / resumo)
 // =====================================================================
+let CATEGORIAS_SAIDA_CACHE = [];
+// Mostra embaixo da categoria o que ela faz nos números (mesma regra do
+// servidor: só "Entrada Manual" e "Aporte/Empréstimo" somam no caixa;
+// nenhuma entrada eventual conta como venda).
+const DICAS_CATEGORIA_ENTRADA = {
+  "Entrada Manual": "💰 Soma no Valor em Caixa. Não é venda nem lucro — use pra investimento que vocês mesmos fizeram ou ajuste de saldo.",
+  "Aporte/Empréstimo": "💰 Soma no Valor em Caixa. Não é venda nem lucro — aporte, empréstimo, devolução, rendimento da conta, pagamento avulso."
+};
+function atualizarDicaCategoriaEntrada() {
+  const cat = $("en-categoria").value;
+  $("en-dica-categoria").textContent = DICAS_CATEGORIA_ENTRADA[cat] || "↪️ Não soma no caixa nem nas vendas — use pra valor de passagem (repassado a terceiros).";
+}
+$("en-categoria").onchange = atualizarDicaCategoriaEntrada;
 async function carregarCategorias() {
   const resp = await chamarAPI("categorias", {});
   if (resp.status === "ok") {
+    CATEGORIAS_SAIDA_CACHE = resp.saida;
     $("sd-categoria").innerHTML = resp.saida.map(c => `<option>${c}</option>`).join("");
     $("en-categoria").innerHTML = resp.entrada.map(c => `<option>${c}</option>`).join("");
+    atualizarDicaCategoriaEntrada();
   }
 }
 
@@ -4647,18 +4858,6 @@ $("btn-registrar-entrada").onclick = async () => {
     if (resp.status === "ok") {
       status.textContent = "✓ Entrada registrada."; status.className = "msg-status ok";
       $("en-descricao").value = ""; $("en-valor").value = ""; $("en-data").value = ""; $("en-observacao").value = "";
-      gerarResumoEExibir($("rf-data-inicio").value, $("rf-data-fim").value, true);
-    } else { status.textContent = "❌ " + resp.mensagem; status.className = "msg-status erro"; }
-  } catch (e) { status.textContent = "❌ " + e.message; status.className = "msg-status erro"; }
-};
-
-$("btn-custos-fixos").onclick = async () => {
-  const status = $("status-custos-fixos");
-  status.textContent = "Lançando...";
-  try {
-    const resp = await chamarAPI("registrarCustosFixos", { usuario: USUARIO_LOGADO });
-    if (resp.status === "ok") {
-      status.textContent = "✓ Lançado: " + (resp.itens.join(", ") || "nenhum item de custo fixo cadastrado."); status.className = "msg-status ok";
       gerarResumoEExibir($("rf-data-inicio").value, $("rf-data-fim").value, true);
     } else { status.textContent = "❌ " + resp.mensagem; status.className = "msg-status erro"; }
   } catch (e) { status.textContent = "❌ " + e.message; status.className = "msg-status erro"; }
@@ -4856,7 +5055,8 @@ async function carregarContasAPagar() {
 
 function renderContasAPagar(pendentes) {
   const lista = $("lista-contas-pagar");
-  let registros = [...pendentes].sort((a, b) => (a.vencimento || "9999").localeCompare(b.vencimento || "9999"));
+  // sem vencimento vem primeiro — é o que mais precisa de atenção
+  let registros = [...pendentes].sort((a, b) => (a.vencimento || "0000").localeCompare(b.vencimento || "0000"));
   if (FILTRO_MES_CONTAS_PAGAR) registros = registros.filter(r => (r.vencimento || "").slice(0, 7) === FILTRO_MES_CONTAS_PAGAR);
   const total = registros.reduce((s, r) => s + r.valor, 0);
   $("total-contas-pagar").textContent = fmt(total);
@@ -4874,12 +5074,13 @@ function renderContasAPagar(pendentes) {
     linha.className = "linha-tabela";
     linha.innerHTML = `
       <div class="nome-item">${escapeHtml(r.categoria)} — ${escapeHtml(r.descricao || "sem descrição")}${r.fornecedor ? ` <span style="color:var(--muted); font-weight:400;">(${escapeHtml(r.fornecedor)})</span>` : ""}
-        <div class="cat-item">Vence ${r.vencimento ? paraBR(r.vencimento) : "?"}${vencida ? '<span class="tag-vencida">vencida</span>' : ""} · ${escapeHtml(r.formaPagamento)}</div></div>
+        <div class="cat-item">${r.vencimento ? "Vence " + paraBR(r.vencimento) : '<span class="tag-vencida">sem vencimento</span>'}${vencida ? '<span class="tag-vencida">vencida</span>' : ""} · ${escapeHtml(r.formaPagamento)}</div></div>
       <div style="font-weight:800; color:var(--amarelo);">${fmt(r.valor)}</div>
-      ${admin ? `<button class="btn-mini salvar" type="button">Marcar como pago</button>` : ""}
+      ${admin ? `<div class="acoes-conta"><button class="btn-mini btn-editar-conta" type="button" title="Editar despesa">✏️ Editar</button><button class="btn-mini salvar btn-pagar-conta" type="button">Marcar como pago</button></div>` : ""}
     `;
     if (admin) {
-      linha.querySelector("button").onclick = async () => {
+      linha.querySelector(".btn-editar-conta").onclick = () => abrirModalEditarSaida(r);
+      linha.querySelector(".btn-pagar-conta").onclick = async () => {
         if (!confirm(`Confirmar pagamento de ${fmt(r.valor)} (${r.categoria})?`)) return;
         await chamarAPI("marcarSaidaComoPaga", { linha: r.linha, usuario: USUARIO_LOGADO });
         carregarContasAPagar();
@@ -4911,10 +5112,87 @@ function renderContasPagas(pagas) {
       <div class="nome-item">${escapeHtml(r.categoria)} — ${escapeHtml(r.descricao || "sem descrição")}${r.fornecedor ? ` <span style="color:var(--muted); font-weight:400;">(${escapeHtml(r.fornecedor)})</span>` : ""}
         <div class="cat-item">Pago em ${r._pag.br || "?"} · ${escapeHtml(r.formaPagamento)}</div></div>
       <div style="font-weight:800; color:var(--verde);">${fmt(r.valor)} ✅</div>
+      ${ehAdmin() ? `<div class="acoes-conta"><button class="btn-mini btn-editar-conta" type="button" title="Editar despesa">✏️ Editar</button></div>` : ""}
     `;
+    const btnEditar = linha.querySelector(".btn-editar-conta");
+    if (btnEditar) btnEditar.onclick = () => abrirModalEditarSaida(r);
     lista.appendChild(linha);
   });
 }
+
+// ---------------------------------------------------------------------
+// EDITAR DESPESA — corrige qualquer campo de uma saída já lançada
+// (vencimento, valor, categoria, status...) e permite parcelar uma despesa
+// que foi lançada à vista. Parcela de um parcelamento é editada sozinha.
+// ---------------------------------------------------------------------
+let SAIDA_EM_EDICAO = null;
+function abrirModalEditarSaida(r) {
+  SAIDA_EM_EDICAO = r;
+  const ehParcela = /\(Parcela \d+\/\d+\)\s*$/.test(r.descricao || "");
+  $("es-categoria").innerHTML = (CATEGORIAS_SAIDA_CACHE.length ? CATEGORIAS_SAIDA_CACHE : [r.categoria])
+    .map(c => `<option${c === r.categoria ? " selected" : ""}>${escapeHtml(c)}</option>`).join("");
+  if (!CATEGORIAS_SAIDA_CACHE.includes(r.categoria)) $("es-categoria").insertAdjacentHTML("afterbegin", `<option selected>${escapeHtml(r.categoria)}</option>`);
+  $("es-descricao").value = r.descricao || "";
+  $("es-valor").value = r.valor;
+  $("es-forma").value = r.formaPagamento || "Dinheiro";
+  $("es-status").value = r.statusPagamento === "Pendente" ? "Pendente" : "Pago";
+  $("es-vencimento").value = r.vencimento || "";
+  $("es-fornecedor").value = r.fornecedor || "";
+  const [dia, mes, ano] = (r.dataHora || "").split(" ")[0].split("/");
+  $("es-data").value = ano ? `${ano}-${mes}-${dia}` : "";
+  $("es-parcelas").value = 1;
+  $("es-parcelas").disabled = ehParcela;
+  $("es-dica-parcelas").textContent = ehParcela
+    ? "Essa despesa já é uma parcela de um parcelamento — edite cada parcela separadamente."
+    : "Com 2 ou mais, o valor acima é dividido e as parcelas ficam pendentes, vencendo 1 por mês a partir do vencimento.";
+  $("status-editar-saida").textContent = ""; $("status-editar-saida").className = "msg-status";
+  atualizarCamposEditarSaida();
+  $("overlay-editar-saida").classList.add("aberto");
+}
+function atualizarCamposEditarSaida() {
+  const parcelas = parseInt($("es-parcelas").value, 10) || 1;
+  $("es-status").disabled = parcelas > 1;
+  if (parcelas > 1) $("es-status").value = "Pendente";
+  const valor = parseFloat($("es-valor").value) || 0;
+  $("es-resumo-parcelas").textContent = parcelas > 1 ? `${parcelas}x de ${fmt(Math.floor((valor / parcelas) * 100) / 100)} (a última ajusta os centavos)` : "";
+}
+$("es-parcelas").oninput = atualizarCamposEditarSaida;
+$("es-valor").oninput = atualizarCamposEditarSaida;
+function fecharModalEditarSaida() { $("overlay-editar-saida").classList.remove("aberto"); SAIDA_EM_EDICAO = null; }
+$("btn-fechar-editar-saida").onclick = fecharModalEditarSaida;
+$("btn-cancelar-editar-saida").onclick = fecharModalEditarSaida;
+$("overlay-editar-saida").addEventListener("click", (e) => { if (e.target.id === "overlay-editar-saida") fecharModalEditarSaida(); });
+$("btn-salvar-editar-saida").onclick = async () => {
+  const r = SAIDA_EM_EDICAO;
+  if (!r) return;
+  const status = $("status-editar-saida");
+  const btn = $("btn-salvar-editar-saida");
+  const parcelas = parseInt($("es-parcelas").value, 10) || 1;
+  const statusPagamento = $("es-status").value;
+  const vencimento = $("es-vencimento").value;
+  const valor = parseFloat($("es-valor").value);
+  if (isNaN(valor) || valor < 0) { status.textContent = "Informe um valor válido."; status.className = "msg-status erro"; return; }
+  if ((statusPagamento === "Pendente" || parcelas > 1) && !vencimento) { status.textContent = "Informe o vencimento."; status.className = "msg-status erro"; return; }
+  if (parcelas > 1 && !confirm(`Dividir ${fmt(valor)} em ${parcelas} parcelas pendentes, a primeira vencendo em ${paraBR(vencimento)}?`)) return;
+  if (btn.disabled) return;
+  btn.disabled = true;
+  status.textContent = "Salvando..."; status.className = "msg-status";
+  try {
+    const resp = await chamarAPI("editarSaida", {
+      linha: r.linha, categoria: $("es-categoria").value, descricao: $("es-descricao").value.trim(), valor,
+      formaPagamento: $("es-forma").value, statusPagamento, vencimento, fornecedor: $("es-fornecedor").value.trim(),
+      data: $("es-data").value, parcelas, usuario: USUARIO_LOGADO
+    });
+    if (resp.status === "ok") {
+      status.textContent = "✓ Despesa atualizada!"; status.className = "msg-status ok";
+      carregarContasAPagar();
+      carregarSaldoLivre();
+      gerarResumoEExibir($("rf-data-inicio").value, $("rf-data-fim").value, true);
+      setTimeout(fecharModalEditarSaida, 500);
+    } else { status.textContent = "❌ " + resp.mensagem; status.className = "msg-status erro"; }
+  } catch (e) { status.textContent = "❌ " + e.message; status.className = "msg-status erro"; }
+  finally { btn.disabled = false; }
+};
 
 // Os filtros ficam dentro do painel — clicar neles não deve recolher o painel
 ["cp-filtro-mes", "btn-limpar-filtro-mes", "cpg-filtro-mes", "btn-limpar-filtro-mes-pagas"].forEach(id => {
@@ -5132,6 +5410,7 @@ async function carregarSaldoLivre() {
       const [anoM, mesM] = r.mesVigentePendentes.split("-");
       rotuloPendentes = `(−) Contas Pendentes (${mesM}/${anoM})`;
     }
+    if (r.qtdSemVencimento) rotuloPendentes += ` + ${r.qtdSemVencimento} sem vencimento`;
     grid.innerHTML = `
       <div class="item"><div class="rotulo">Valor em Caixa (total)</div><div class="valor">${fmt(r.valorEmCaixa)}</div></div>
       <div class="item"><div class="rotulo">${rotuloPendentes}</div><div class="valor">${fmt(r.saidasPendentes)}</div></div>
@@ -5257,7 +5536,7 @@ function montarHtmlRelatorio(r, dataInicioIso, dataFimIso, observacoes, assinant
     <tr>
       <td>${escapeHtml(c.categoria)}</td>
       <td>${escapeHtml(c.descricao || "—")}</td>
-      <td>${c.vencimento || "—"}</td>
+      <td>${c.vencimento ? paraBRFlexivel(c.vencimento) : "⚠️ sem vencimento"}</td>
       <td class="valor">${fmt(c.valor)}</td>
     </tr>
   `);
