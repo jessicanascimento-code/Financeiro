@@ -787,6 +787,36 @@
     body.imprimindo-comprovante #app{ display:none !important; }
     body.imprimindo-cupom-comanda #app{ display:none !important; }
   }
+
+  /* ---------- ORGANIZAR ORDEM DOS ITENS ---------- */
+  .btn-organizar{ background:rgba(58,160,232,.12); color:var(--azul); border:1px solid rgba(58,160,232,.35); }
+  .linha-topo .acoes-topo{ display:flex; gap:8px; flex-wrap:wrap; }
+  .ordem-dica{ font-size:12px; color:var(--muted); margin:4px 0 10px; line-height:1.45; }
+  .ordem-atalhos{ display:flex; gap:8px; flex-wrap:wrap; margin-bottom:10px; }
+  .ordem-atalhos button{ flex:1 1 auto; font-size:12px; }
+  .lista-ordem{ display:flex; flex-direction:column; gap:6px; margin-bottom:12px; }
+  .linha-ordem{
+    display:grid; grid-template-columns:30px minmax(0,1fr) auto; align-items:center; gap:8px;
+    background:var(--preto3); border:1px solid var(--borda);
+    border-left:4px solid var(--cor-tipo, var(--muted)); border-radius:10px; padding:7px 8px;
+    transition:background .25s, box-shadow .25s;
+  }
+  .linha-ordem.movida{ background:rgba(255,140,0,.16); box-shadow:0 0 0 1px var(--laranja) inset; }
+  .linha-ordem .pos{ font-size:12px; font-weight:800; color:var(--muted); text-align:center; }
+  .linha-ordem .info{ min-width:0; }
+  .linha-ordem .nome{ font-size:13.5px; font-weight:700; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .linha-ordem .sub{ font-size:10.5px; color:var(--muted); margin-top:2px; }
+  .linha-ordem .tag-oculto{ font-size:9.5px; font-weight:800; text-transform:uppercase; padding:1px 6px; border-radius:6px; background:rgba(128,128,128,.2); color:var(--muted); margin-left:4px; }
+  .linha-ordem .botoes{ display:flex; gap:4px; }
+  .linha-ordem .botoes button{
+    width:34px; height:34px; border-radius:8px; border:1px solid rgba(128,128,128,.3);
+    background:transparent; color:var(--creme); font-size:14px; line-height:1; padding:0;
+  }
+  .linha-ordem .botoes button:disabled{ opacity:.3; }
+  .linha-ordem .botoes .extremo{ font-size:13px; }
+  @media(max-width:420px){ .linha-ordem .botoes .extremo{ display:none; } }
+  .ordem-rodape{ position:sticky; bottom:-24px; background:var(--preto2); padding:10px 0 4px; display:flex; gap:8px; }
+  .ordem-rodape button{ flex:1; }
 </style>
 </head>
 <body>
@@ -920,7 +950,7 @@
 
     <!-- ---------- ESTOQUE ---------- -->
     <section class="secao" id="secao-estoque">
-      <div class="linha-topo"><h2>Estoque</h2><button class="btn-mini" id="btn-atualizar-estoque">🔄 Atualizar</button></div>
+      <div class="linha-topo"><h2>Estoque</h2><div class="acoes-topo"><button class="btn-mini btn-organizar" id="btn-organizar-estoque" type="button">↕ Organizar ordem</button><button class="btn-mini" id="btn-atualizar-estoque">🔄 Atualizar</button></div></div>
 
       <div class="sub-abas">
         <button data-subaba="estoque-lista" class="ativa">Estoque</button>
@@ -990,7 +1020,7 @@
 
     <!-- ---------- CARDÁPIO ---------- -->
     <section class="secao" id="secao-cardapio">
-      <div class="linha-topo"><h2>Itens do cardápio</h2></div>
+      <div class="linha-topo"><h2>Itens do cardápio</h2><div class="acoes-topo"><button class="btn-mini btn-organizar" id="btn-organizar-cardapio" type="button">↕ Organizar ordem</button></div></div>
       <div class="card-form">
         <h3>+ Novo item</h3>
         <div class="grid2">
@@ -1406,6 +1436,26 @@
     </section>
 
   </main>
+</div>
+
+<!-- ================= ORGANIZAR ORDEM DOS ITENS ================= -->
+<div class="overlay" id="overlay-ordem">
+  <div class="modal" style="max-width:560px;">
+    <div class="modal-topo">
+      <div><span class="titulo-comanda"><span>↕ Organizar ordem dos itens</span></span></div>
+      <button class="btn-fechar-x" id="btn-fechar-ordem" type="button" aria-label="Fechar">✕</button>
+    </div>
+    <p class="ordem-dica">Use ▲ ▼ para subir ou descer a linha do item (⤒ ⤓ leva direto pro começo ou pro fim). A ordem salva vale para o <b>Cardápio</b>, o <b>Estoque</b> e os <b>botões de lançamento da comanda</b> — lá os grupos aparecem na mesma sequência (ex: espetos primeiro, depois bebidas).</p>
+    <div class="ordem-atalhos">
+      <button class="btn-mini" id="btn-ordem-por-tipo" type="button">🍢 Agrupar por tipo (Espetos → Bebidas → Baião → Combos)</button>
+    </div>
+    <div class="lista-ordem" id="lista-ordem"></div>
+    <div class="msg-status" id="status-ordem"></div>
+    <div class="ordem-rodape">
+      <button class="btn-mini" id="btn-cancelar-ordem" type="button">Cancelar</button>
+      <button class="btn-primario" id="btn-salvar-ordem" type="button">💾 Salvar ordem</button>
+    </div>
+  </div>
 </div>
 
 <!-- ================= DETALHES DO PACOTE (clicando no card) ================= -->
@@ -2799,7 +2849,7 @@ $("btn-editar-nome-comanda").onclick = () => {
 
 function renderModalComanda() {
   const c = COMANDA_ATUAL.comanda;
-  const itens = COMANDA_ATUAL.itens;
+  const itens = itensNaOrdem(COMANDA_ATUAL.itens);
   const aberta = c.status === "Aberta";
   const fechada = c.status === "Fechada";
   const cancelada = c.status === "Cancelada";
@@ -2885,6 +2935,40 @@ function renderModalComanda() {
 // atendentes lançando ao mesmo tempo. O mesmo item tocado de novo aumenta a
 // quantidade da linha que já existe, em vez de criar outra linha.
 const NOME_REFRIGERANTE_PEQUENO = "Refrigerante Pequeno"; // mesmo nome usado no Codigo.gs
+
+// ---------- ORDEM DOS ITENS (Cardápio, Estoque e comanda) ----------
+// A ordem fica na coluna H ("Ordem") da aba "Produtos e Custos" — salva no
+// servidor, então vale pra todos os aparelhos e atendentes. Item ainda sem
+// posição (ex: recém-criado antes de alguém organizar) vai pro fim, agrupado
+// por tipo e em ordem alfabética.
+const ORDEM_TIPOS_PADRAO = ["Espeto", "Bebida", "Baião", "Combo", "Taxa"];
+let MAPA_ORDEM_PRODUTOS = {}; // nome minúsculo -> { ordem, tipo }
+function atualizarMapaOrdem() {
+  MAPA_ORDEM_PRODUTOS = {};
+  PRODUTOS_CACHE_TODOS.forEach(p => {
+    MAPA_ORDEM_PRODUTOS[p.nome.trim().toLowerCase()] = { ordem: Number(p.ordem) > 0 ? Number(p.ordem) : null, tipo: p.tipo };
+  });
+}
+function indiceTipoPadrao(tipo) {
+  const i = ORDEM_TIPOS_PADRAO.indexOf(tipo);
+  return i === -1 ? ORDEM_TIPOS_PADRAO.length : i;
+}
+// Compara 2 itens por nome (+ tipo, pra quem não está no cardápio).
+function compararPorOrdem(nomeA, tipoA, nomeB, tipoB) {
+  const ia = MAPA_ORDEM_PRODUTOS[(nomeA || "").trim().toLowerCase()] || {};
+  const ib = MAPA_ORDEM_PRODUTOS[(nomeB || "").trim().toLowerCase()] || {};
+  const oa = ia.ordem || null, ob = ib.ordem || null;
+  if (oa !== null && ob !== null && oa !== ob) return oa - ob;
+  if (oa !== null && ob === null) return -1;
+  if (oa === null && ob !== null) return 1;
+  const ta = indiceTipoPadrao(ia.tipo || tipoA), tb = indiceTipoPadrao(ib.tipo || tipoB);
+  if (ta !== tb) return ta - tb;
+  return (nomeA || "").localeCompare(nomeB || "", "pt-BR");
+}
+function ordenarProdutos(lista) { return [...lista].sort((a, b) => compararPorOrdem(a.nome, a.tipo, b.nome, b.tipo)); }
+// Itens lançados na comanda aparecem na mesma ordem (o sort é estável:
+// dois lançamentos do mesmo produto ficam na ordem em que foram incluídos).
+function itensNaOrdem(itens) { return [...(itens || [])].sort((a, b) => compararPorOrdem(a.produto, a.tipo, b.produto, b.tipo)); }
 const DEBOUNCE_SYNC_ITEM_MS = 700;
 const PENDENTES_ITEM = {}; // itemId -> { tipo:"adicionar"|"editar", item, comandaId, timer }
 let VERSAO_LOCAL_COMANDA = 0; // muda a cada alteração local — protege contra releitura atrasada
@@ -2949,16 +3033,22 @@ function renderGradeProdutos() {
     grade.innerHTML = `<div class="vazio-lista" style="padding:14px 0;">${PRODUTOS_CACHE.length ? "Nenhum item encontrado." : "Carregando cardápio..."}</div>`;
     return;
   }
+  // Os grupos (Espetos, Bebidas...) aparecem na sequência definida em
+  // "Organizar ordem" — o grupo do primeiro item da lista vem primeiro — e,
+  // dentro de cada grupo, os itens seguem a mesma ordem.
   const grupos = {};
-  produtos.forEach(p => {
+  const sequenciaGrupos = [];
+  ordenarProdutos(produtos).forEach(p => {
     const g = GRUPOS_LANCAMENTO.some(([t]) => t === p.tipo) ? p.tipo : "Outros";
-    (grupos[g] = grupos[g] || []).push(p);
+    if (!grupos[g]) { grupos[g] = []; sequenciaGrupos.push(g); }
+    grupos[g].push(p);
   });
-  grade.innerHTML = GRUPOS_LANCAMENTO.filter(([t]) => grupos[t]).map(([t, titulo]) => `
+  const tituloGrupo = Object.fromEntries(GRUPOS_LANCAMENTO);
+  grade.innerHTML = sequenciaGrupos.map(t => [t, tituloGrupo[t]]).map(([t, titulo]) => `
     <div class="grupo-produtos">
       <div class="grupo-produtos-titulo">${titulo}</div>
       <div class="grade-produtos-botoes">
-        ${grupos[t].sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR")).map(p => `
+        ${grupos[t].map(p => `
           <button type="button" class="btn-produto-rapido${p.tipo === "Combo" ? " combo" : ""}" data-nome="${escapeAttr(p.nome)}">
             <span class="qtd-na-comanda"></span>
             <span class="nome">${escapeHtml(p.nome)}</span>
@@ -3144,7 +3234,7 @@ function tocarProdutoRapido(nome, btnEl) {
 
 // ---------- Combo ----------
 function popularSelectsCombo() {
-  const espetos = PRODUTOS_CACHE.filter(p => p.tipo === "Espeto").sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR"));
+  const espetos = ordenarProdutos(PRODUTOS_CACHE.filter(p => p.tipo === "Espeto"));
   const opcoesEspeto = espetos.map(p => `<option value="${escapeAttr(p.nome)}">${escapeHtml(p.nome)}</option>`).join("");
   preencherSelectPreservando($("combo-espeto1"), opcoesEspeto);
   preencherSelectPreservando($("combo-espeto2"), opcoesEspeto);
@@ -3158,7 +3248,7 @@ function popularSelectsCombo() {
     $("combo-info-inclusos").textContent = "🍚 Baião de Dois e 🥤 Refrigerante Pequeno entram automático no combo.";
   } else {
     // só refrigerante entra na escolha do combo — cerveja e água ficam de fora
-    const refrigerantes = PRODUTOS_CACHE.filter(p => p.tipo === "Bebida" && p.refrigerante).sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR"));
+    const refrigerantes = ordenarProdutos(PRODUTOS_CACHE.filter(p => p.tipo === "Bebida" && p.refrigerante));
     preencherSelectPreservando($("combo-refri"), refrigerantes.map(p => `<option value="${escapeAttr(p.nome)}">${escapeHtml(p.nome)}</option>`).join(""));
     $("bloco-combo-refri").style.display = "";
     $("combo-info-inclusos").textContent = "🍚 Baião de Dois entra automático no combo.";
@@ -3454,7 +3544,7 @@ function centralizarCupom(texto) {
 // tabela, do jeito que uma impressora térmica de verdade imprime.
 function montarTextoCupomComanda(payload) {
   const c = payload.comanda;
-  const itens = payload.itens || [];
+  const itens = itensNaOrdem(payload.itens);
   const fechada = c.status === "Fechada";
   const cancelada = c.status === "Cancelada";
   const separador = "-".repeat(LARGURA_CUPOM_COLUNAS);
@@ -3538,7 +3628,7 @@ function formatarDataHoraCupom(dataHoraBR) {
 
 function abrirCupomComanda(payload) {
   const c = payload.comanda;
-  const itens = payload.itens || [];
+  const itens = itensNaOrdem(payload.itens);
   const agora = agoraBR();
   const fechada = c.status === "Fechada";
   const cancelada = c.status === "Cancelada";
@@ -3911,7 +4001,7 @@ async function carregarEstoque() {
     if (!admin) $("cabecalho-estoque").querySelector(".col-input").textContent = "";
     $("btn-salvar-estoque-tudo").style.display = admin ? "block" : "none";
     ESTOQUE_MAP = {};
-    resp.itens.sort((a, b) => a.produto.localeCompare(b.produto)).forEach(it => {
+    resp.itens.sort((a, b) => compararPorOrdem(a.produto, "", b.produto, "")).forEach(it => {
       ESTOQUE_MAP[it.produto] = it.qtdDisponivel;
       const classeCor = classeEstoque(it.qtdDisponivel);
       const linha = document.createElement("div");
@@ -4029,7 +4119,7 @@ async function carregarConferenciaEstoque() {
     if (resp.status !== "ok") { lista.innerHTML = `<div class="vazio-lista">❌ ${resp.mensagem}</div>`; return; }
     if (!resp.itens.length) { lista.innerHTML = `<div class="vazio-lista">Nenhum item de estoque cadastrado ainda.</div>`; return; }
     lista.innerHTML = "";
-    resp.itens.sort((a, b) => a.produto.localeCompare(b.produto)).forEach(it => {
+    resp.itens.sort((a, b) => compararPorOrdem(a.produto, "", b.produto, "")).forEach(it => {
       const calculado = it.qtdTotal - it.qtdVendido; // referência é o bruto — reserva não é remoção física
       const linha = document.createElement("div");
       linha.className = "linha-tabela";
@@ -4136,12 +4226,41 @@ $("btn-filtrar-historico-estoque").onclick = carregarHistoricoEstoque;
 // =====================================================================
 // CARDÁPIO
 // =====================================================================
+// Quando a ordem muda (salva aqui ou em outro aparelho), reorganiza as
+// listas que já estão na tela sem recarregar nada nem apagar o que a pessoa
+// digitou: as linhas do Estoque/Conferência só trocam de lugar.
+let ASSINATURA_ORDEM = "";
+function reordenarLinhasPorOrdem(container) {
+  if (!container) return;
+  const linhas = Array.from(container.children).filter(el => el.classList && el.classList.contains("linha-tabela") && el.dataset.produto);
+  if (linhas.length < 2) return;
+  const ordenadas = [...linhas].sort((a, b) => compararPorOrdem(a.dataset.produto, "", b.dataset.produto, ""));
+  if (ordenadas.every((l, i) => l === linhas[i])) return;
+  const ativo = document.activeElement;
+  if (ativo && container.contains(ativo)) return; // não mexe enquanto a pessoa digita numa linha
+  ordenadas.forEach(l => container.appendChild(l));
+}
+function aplicarNovaOrdemNasTelas() {
+  reordenarLinhasPorOrdem($("lista-estoque"));
+  reordenarLinhasPorOrdem($("lista-conferencia-estoque"));
+  if ($("overlay-comanda").classList.contains("aberto") && COMANDA_ATUAL) {
+    const ativo = document.activeElement;
+    if (!(ativo && ativo.classList && ativo.classList.contains("qtd-valor"))) renderModalComanda();
+    renderGradeProdutos();
+    popularSelectsCombo();
+  }
+}
+
 async function carregarProdutos() {
   const resp = await chamarAPI("listarProdutos", { incluirInativos: "1" });
   if (resp.status === "ok") {
     PRODUTOS_CACHE_TODOS = resp.produtos;
     PRODUTOS_CACHE = resp.produtos.filter(p => p.ativo);
+    const assinaturaAntes = ASSINATURA_ORDEM;
+    atualizarMapaOrdem();
+    ASSINATURA_ORDEM = ordenarProdutos(PRODUTOS_CACHE_TODOS).map(p => p.nome).join("|");
     renderCardapio(resp.produtos);
+    if (assinaturaAntes !== ASSINATURA_ORDEM) aplicarNovaOrdemNasTelas();
     popularSelectProdutoCompraEstoque();
     popularSelectProdutoMovimentoEstoque();
   }
@@ -4156,7 +4275,7 @@ function renderCardapio(produtos) {
   // Cardápio é editável por Admin e Padrão — só Estoque e Financeiro têm a
   // edição travada pro perfil Padrão. Excluir (definitivo) é só Admin.
   const opcoesTipo = ["Espeto", "Bebida", "Baião", "Combo"];
-  [...produtos].sort((a, b) => a.categoria.localeCompare(b.categoria) || a.nome.localeCompare(b.nome)).forEach(p => {
+  ordenarProdutos(produtos).forEach(p => {
     const linha = document.createElement("div");
     linha.className = "linha-tabela";
     linha.dataset.nome = p.nome;
@@ -4199,6 +4318,111 @@ async function excluirProdutoDoCardapio(p) {
     } else { status.textContent = "❌ " + resp.mensagem; status.className = "msg-status erro"; }
   } catch (e) { status.textContent = "❌ " + e.message; status.className = "msg-status erro"; }
 }
+
+// =====================================================================
+// ORGANIZAR ORDEM DOS ITENS (Cardápio + Estoque + comanda)
+// =====================================================================
+// O modal trabalha numa cópia da lista (ORDEM_EM_EDICAO): a atualização
+// automática de 30s não interfere enquanto a pessoa organiza, e nada é
+// gravado até clicar em "Salvar ordem".
+const COR_TIPO_ORDEM = { "Espeto": "var(--laranja)", "Bebida": "var(--azul)", "Baião": "var(--amarelo)", "Combo": "var(--verde)" };
+let ORDEM_EM_EDICAO = [];
+let ORDEM_ALTERADA = false;
+
+async function abrirModalOrdem() {
+  $("status-ordem").textContent = ""; $("status-ordem").className = "msg-status";
+  $("overlay-ordem").classList.add("aberto");
+  if (!PRODUTOS_CACHE_TODOS.length) {
+    $("lista-ordem").innerHTML = `<div class="vazio-lista">Carregando...</div>`;
+    await carregarProdutos();
+  }
+  ORDEM_EM_EDICAO = ordenarProdutos(PRODUTOS_CACHE_TODOS.filter(p => p.tipo !== "Taxa"))
+    .map(p => ({ nome: p.nome, tipo: p.tipo, categoria: p.categoria, ativo: p.ativo }));
+  ORDEM_ALTERADA = false;
+  renderListaOrdem();
+}
+
+function renderListaOrdem(nomeDestacado) {
+  const lista = $("lista-ordem");
+  if (!ORDEM_EM_EDICAO.length) { lista.innerHTML = `<div class="vazio-lista">Nenhum item no cardápio.</div>`; return; }
+  const ultimo = ORDEM_EM_EDICAO.length - 1;
+  lista.innerHTML = ORDEM_EM_EDICAO.map((p, i) => `
+    <div class="linha-ordem${p.nome === nomeDestacado ? " movida" : ""}" data-indice="${i}" style="--cor-tipo:${COR_TIPO_ORDEM[p.tipo] || "var(--muted)"};">
+      <span class="pos">${i + 1}</span>
+      <div class="info">
+        <div class="nome">${escapeHtml(p.nome)}${p.ativo ? "" : '<span class="tag-oculto">oculto</span>'}</div>
+        <div class="sub">${escapeHtml(p.tipo)} · ${escapeHtml(p.categoria || "")}</div>
+      </div>
+      <div class="botoes">
+        <button type="button" class="extremo" data-acao="topo" title="Mover para o começo" ${i === 0 ? "disabled" : ""}>⤒</button>
+        <button type="button" data-acao="subir" title="Subir" aria-label="Subir ${escapeAttr(p.nome)}" ${i === 0 ? "disabled" : ""}>▲</button>
+        <button type="button" data-acao="descer" title="Descer" aria-label="Descer ${escapeAttr(p.nome)}" ${i === ultimo ? "disabled" : ""}>▼</button>
+        <button type="button" class="extremo" data-acao="fim" title="Mover para o fim" ${i === ultimo ? "disabled" : ""}>⤓</button>
+      </div>
+    </div>
+  `).join("");
+  if (nomeDestacado) {
+    const el = lista.querySelector(".linha-ordem.movida");
+    if (el) { try { el.scrollIntoView({ block: "nearest" }); } catch (e) {} }
+  }
+}
+
+function moverItemOrdem(indice, acao) {
+  const destinoPorAcao = { subir: indice - 1, descer: indice + 1, topo: 0, fim: ORDEM_EM_EDICAO.length - 1 };
+  const destino = destinoPorAcao[acao];
+  if (destino === undefined || destino < 0 || destino >= ORDEM_EM_EDICAO.length || destino === indice) return;
+  const [item] = ORDEM_EM_EDICAO.splice(indice, 1);
+  ORDEM_EM_EDICAO.splice(destino, 0, item);
+  ORDEM_ALTERADA = true;
+  renderListaOrdem(item.nome);
+}
+
+// Um único "ouvinte" na lista (em vez de um por botão): continua valendo
+// depois de cada redesenho.
+$("lista-ordem").addEventListener("click", (e) => {
+  const btn = e.target.closest("button[data-acao]");
+  if (!btn || btn.disabled) return;
+  const linha = btn.closest(".linha-ordem");
+  moverItemOrdem(parseInt(linha.dataset.indice, 10), btn.dataset.acao);
+});
+
+$("btn-ordem-por-tipo").onclick = () => {
+  // mantém a ordem relativa que já existia dentro de cada tipo
+  ORDEM_EM_EDICAO = ORDEM_EM_EDICAO
+    .map((p, i) => ({ p, i }))
+    .sort((a, b) => (indiceTipoPadrao(a.p.tipo) - indiceTipoPadrao(b.p.tipo)) || (a.i - b.i))
+    .map(x => x.p);
+  ORDEM_ALTERADA = true;
+  renderListaOrdem();
+};
+
+function fecharModalOrdem() {
+  if (ORDEM_ALTERADA && !confirm("Descartar as mudanças na ordem? Elas ainda não foram salvas.")) return;
+  $("overlay-ordem").classList.remove("aberto");
+}
+$("btn-fechar-ordem").onclick = fecharModalOrdem;
+$("btn-cancelar-ordem").onclick = fecharModalOrdem;
+$("overlay-ordem").addEventListener("click", (e) => { if (e.target.id === "overlay-ordem") fecharModalOrdem(); });
+$("btn-organizar-cardapio").onclick = abrirModalOrdem;
+$("btn-organizar-estoque").onclick = abrirModalOrdem;
+
+$("btn-salvar-ordem").onclick = async () => {
+  const btn = $("btn-salvar-ordem");
+  const status = $("status-ordem");
+  if (btn.disabled) return;
+  btn.disabled = true;
+  status.textContent = "Salvando..."; status.className = "msg-status";
+  try {
+    const resp = await chamarAPI("salvarOrdemProdutos", { nomes: JSON.stringify(ORDEM_EM_EDICAO.map(p => p.nome)), usuario: USUARIO_LOGADO });
+    if (resp.status === "ok") {
+      ORDEM_ALTERADA = false;
+      status.textContent = "✓ Ordem salva!"; status.className = "msg-status ok";
+      await carregarProdutos(); // reaplica a nova ordem no Cardápio, Estoque e comanda
+      setTimeout(() => { $("overlay-ordem").classList.remove("aberto"); }, 600);
+    } else { status.textContent = "❌ " + resp.mensagem; status.className = "msg-status erro"; }
+  } catch (e) { status.textContent = "❌ " + e.message; status.className = "msg-status erro"; }
+  finally { btn.disabled = false; }
+};
 
 // Salva custo/preço/tipo de todos os itens do cardápio de uma vez.
 $("btn-salvar-cardapio-tudo").onclick = async () => {
