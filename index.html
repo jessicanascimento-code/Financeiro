@@ -788,6 +788,31 @@
     body.imprimindo-cupom-comanda #app{ display:none !important; }
   }
 
+  /* ---------- RESULTADO DO DIA / FILTROS COMANDAS DO DIA ---------- */
+  .filtros-status-dia{ display:flex; gap:6px; }
+  .filtros-status-dia button{ background:transparent; border:1px solid var(--borda); color:var(--muted); border-radius:999px; padding:6px 12px; font-size:12px; font-weight:700; cursor:pointer; }
+  .filtros-status-dia button.ativa{ background:rgba(255,122,26,.15); color:var(--amarelo); border-color:var(--laranja); }
+  .filtros-comandas-dia{ display:flex; gap:10px; flex-wrap:wrap; align-items:center; margin:-6px 0 12px; }
+  .filtros-comandas-dia select{ width:auto; min-width:190px; padding:7px 10px; font-size:12.5px; }
+  .check-inline{ display:flex; align-items:center; gap:6px; font-size:12px; color:var(--muted); cursor:pointer; }
+  .check-inline input{ width:auto; margin:0; }
+  .rdia-periodo{ font-size:11.5px; color:var(--muted); margin:-8px 0 12px; }
+  .extrato-dia{ background:var(--preto2); border:1px solid var(--borda); border-radius:var(--radius); padding:14px 16px; margin:14px 0; }
+  .extrato-dia h4{ margin:0 0 8px; font-size:13px; color:var(--amarelo); }
+  .extrato-linha{ display:flex; justify-content:space-between; gap:10px; padding:7px 0; border-bottom:1px dashed var(--borda); font-size:13px; }
+  .extrato-linha:last-child{ border-bottom:none; }
+  .extrato-linha .v{ font-weight:800; white-space:nowrap; }
+  .extrato-linha.menos .v{ color:var(--erro); }
+  .extrato-linha.mais .v{ color:var(--verde); }
+  .extrato-linha.total{ border-top:2px solid var(--borda); border-bottom:none; margin-top:4px; padding-top:10px; font-size:15px; }
+  .extrato-linha .det{ display:block; font-size:11px; color:var(--muted); font-weight:400; margin-top:2px; }
+  .extrato-dia details{ margin:2px 0 4px 10px; font-size:12px; }
+  .extrato-dia summary{ cursor:pointer; color:var(--muted); }
+  .extrato-dia ul{ margin:4px 0; padding-left:18px; color:var(--muted); }
+  .nota-dia{ font-size:12px; color:var(--muted); line-height:1.5; background:var(--preto3); border:1px solid var(--borda); border-radius:10px; padding:10px 12px; margin:10px 0; }
+  .nota-dia b{ color:var(--creme); }
+  .tag-pendente{ font-size:9.5px; font-weight:800; text-transform:uppercase; padding:1px 6px; border-radius:6px; background:rgba(255,196,0,.15); color:var(--amarelo); margin-left:4px; }
+
   /* ---------- EDITAR DESPESA / INCONSISTÊNCIAS / DIAGNÓSTICO DE CAIXA ---------- */
   .acoes-conta{ display:flex; gap:6px; flex-wrap:wrap; justify-content:flex-end; }
   #overlay-editar-saida select:disabled, #overlay-editar-saida input:disabled{ opacity:.55; }
@@ -808,6 +833,16 @@
   .diag-caixa li{ margin:2px 0; }
   .diag-caixa .dica{ color:var(--muted); margin:4px 0 0; }
   .dica-categoria-entrada{ font-size:11.5px; color:var(--muted); margin:4px 0 0; }
+  .guia-categorias{ margin:6px 0 4px; font-size:12px; }
+  .guia-categorias summary{ cursor:pointer; color:var(--azul); font-weight:700; }
+  .guia-categorias table{ width:100%; border-collapse:collapse; margin-top:8px; font-size:11.5px; }
+  .guia-categorias th, .guia-categorias td{ text-align:left; padding:6px 6px; border-bottom:1px solid var(--borda); vertical-align:top; }
+  .guia-categorias th{ color:var(--muted); font-weight:700; }
+  .selo-cat{ display:inline-block; font-size:10px; font-weight:800; padding:2px 7px; border-radius:6px; white-space:nowrap; }
+  .selo-cat.custo{ background:rgba(58,160,232,.15); color:var(--azul); }
+  .selo-cat.despesa{ background:rgba(224,35,26,.12); color:var(--erro); }
+  .selo-cat.investimento{ background:rgba(47,191,113,.14); color:var(--verde); }
+  .selo-cat.retirada{ background:rgba(255,196,0,.15); color:var(--amarelo); }
 
   /* ---------- ORGANIZAR ORDEM DOS ITENS ---------- */
   .btn-organizar{ background:rgba(58,160,232,.12); color:var(--azul); border:1px solid rgba(58,160,232,.35); }
@@ -935,6 +970,14 @@
           <button class="btn-mini salvar" id="btn-filtrar-comandas-dia">Buscar</button>
           <button class="btn-mini" id="btn-comandas-dia-hoje">Hoje</button>
           <button class="btn-mini" id="btn-atualizar-comandas-hoje">🔄 Atualizar</button>
+        </div>
+        <div class="filtros-comandas-dia">
+          <select id="cd-filtro-atendente" title="Filtrar por atendente"><option value="">👥 Todos os atendentes</option></select>
+          <div class="filtros-status-dia" id="cd-filtro-status">
+            <button type="button" data-status="Todas" class="ativa">Todas</button>
+            <button type="button" data-status="Aberta">Abertas</button>
+            <button type="button" data-status="Fechada">Fechadas</button>
+          </div>
         </div>
         <p style="font-size:11px; color:var(--muted); margin:0 0 8px;" id="rotulo-comandas-dia">Todas as comandas de hoje, de todos os usuários — abertas ou fechadas no dia.</p>
         <div class="resumo-comandas-dia" id="resumo-comandas-dia"></div>
@@ -1103,11 +1146,23 @@
 
       <div class="sub-abas">
         <button data-subaba="fin-resumo" class="ativa">Resumo</button>
+        <button data-subaba="fin-dia">📅 Resultado do dia</button>
         <button data-subaba="fin-detalhes">Detalhes</button>
       </div>
 
       <div class="sub-secao ativa" id="subsecao-fin-resumo">
         <div class="resumo-grid" id="resumo-grid-secundario"></div>
+      </div>
+
+      <div class="sub-secao" id="subsecao-fin-dia">
+        <div class="filtro-resumo-dia">
+          <input type="date" id="rdia-data" title="Dia do evento">
+          <button class="btn-mini salvar" id="btn-rdia-buscar" type="button">Ver resultado</button>
+          <button class="btn-mini" id="btn-rdia-hoje" type="button">Hoje</button>
+          <label class="check-inline" title="Soma tudo das 06:00 até 05:59 do dia seguinte — pra evento que termina depois da meia-noite"><input type="checkbox" id="rdia-virada" checked> Evento passou da meia-noite (conta até 5h59)</label>
+        </div>
+        <p class="rdia-periodo" id="rdia-periodo"></p>
+        <div id="rdia-conteudo"><div class="vazio-lista">Escolha o dia e toque em "Ver resultado".</div></div>
       </div>
 
       <div class="sub-secao" id="subsecao-fin-detalhes">
@@ -1286,6 +1341,11 @@
             <h3>Lançar saída</h3>
             <label>Categoria</label>
             <select id="sd-categoria"></select>
+            <p class="dica-categoria-entrada" id="sd-dica-categoria"></p>
+            <details class="guia-categorias">
+              <summary>ℹ️ Como cada categoria entra nos números</summary>
+              <div id="guia-categorias-saida"></div>
+            </details>
             <label>Descrição</label>
             <input type="text" id="sd-descricao">
             <label>Valor (R$)</label>
@@ -1331,6 +1391,10 @@
             <input type="text" id="en-descricao">
             <label>Valor (R$)</label>
             <input type="number" id="en-valor" step="0.5">
+            <div id="en-bloco-custo" style="display:none;">
+              <label>Custo dos itens vendidos (opcional)</label>
+              <input type="number" id="en-custo" step="0.5" min="0" placeholder="Ex: custo dos espetos e bebidas que saíram">
+            </div>
             <label>Data do lançamento</label>
             <input type="date" id="en-data">
             <label>Observação (opcional)</label>
@@ -1469,6 +1533,7 @@
       <div><label>Categoria</label><select id="es-categoria"></select></div>
       <div><label>Valor (R$)</label><input type="number" id="es-valor" step="0.01" min="0"></div>
     </div>
+    <p class="dica-categoria-entrada" id="es-dica-categoria"></p>
     <label>Descrição</label><input type="text" id="es-descricao">
     <div class="grid2">
       <div><label>Forma de pagamento</label>
@@ -1757,7 +1822,7 @@
 // ar é realmente a versão mais nova ou se o GitHub Pages ainda está
 // servindo uma versão antiga em cache.
 // =====================================================================
-const VERSAO_APP = "7.8";
+const VERSAO_APP = "8.0";
 document.querySelectorAll(".badge-versao").forEach(el => el.textContent = "v" + VERSAO_APP);
 
 // =====================================================================
@@ -1815,7 +1880,7 @@ aplicarTema(document.documentElement.getAttribute("data-tema"));
 // CONFIG
 // =====================================================================
 const CONFIG = {
-  API_URL: "https://script.google.com/macros/s/AKfycby1wPm4c95l90t_72hClC-mco9z5YhXF5v0stPZp7CrRz7HzQchYOLDpYLUb7UxKJG4kA/exec"
+  API_URL: "https://script.google.com/macros/s/AKfycbyOj4wjVXbFRkVKeSWIQaLDuNvxB7Uk2C20UDgU4S4uasWGjLEr_pwFw_z6-nL-IbA4AA/exec"
 };
 
 const $ = (id) => document.getElementById(id);
@@ -2262,6 +2327,7 @@ document.querySelectorAll(".sub-abas").forEach(grupo => {
       if (btn.dataset.subaba === "comandas-lista") carregarComandas();
       if (btn.dataset.subaba === "comandas-indicadores") carregarIndicadores();
       if (btn.dataset.subaba === "fin-detalhes") { carregarContasAPagar(); carregarContasAReceber(); }
+      if (btn.dataset.subaba === "fin-dia") carregarResultadoDoDia();
       if (btn.dataset.subaba === "estoque-movimentar") popularSelectProdutoMovimentoEstoque();
       if (btn.dataset.subaba === "estoque-conferencia") carregarConferenciaEstoque();
       if (btn.dataset.subaba === "estoque-historico") carregarHistoricoEstoque();
@@ -2708,23 +2774,59 @@ async function carregarComandasHoje() {
     if (resp.status !== "ok") { grid.innerHTML = `<div class="vazio-lista">❌ ${resp.mensagem}</div>`; return; }
     grid.dataset.data = dataSel;
     if (ehHoje) registrarComandasConhecidas(resp.comandas);
-    const comandas = resp.comandas.filter(c => !c.ehPacote);
-    const abertas = comandas.filter(c => c.status === "Aberta").length;
-    const fechadas = comandas.filter(c => c.status === "Fechada");
-    const totalFechado = fechadas.reduce((s, c) => s + (Number(c.valorTotal) || 0), 0);
-    $("resumo-comandas-dia").innerHTML = comandas.length ? `
-      <span><b>${comandas.length}</b> comanda(s)</span>
-      <span><b>${abertas}</b> aberta(s)</span>
-      <span><b>${fechadas.length}</b> fechada(s)</span>
-      <span>Faturado (fechadas): <b>${fmt(totalFechado)}</b></span>
-    ` : "";
-    if (!resp.comandas.length) { grid.innerHTML = `<div class="vazio-lista">Nenhuma comanda ${ehHoje ? "hoje ainda" : "nesse dia"}.</div>`; return; }
-    grid.innerHTML = "";
-    resp.comandas.forEach(c => grid.appendChild(montarCardComanda(c)));
+    ULTIMAS_COMANDAS_DIA = { comandas: resp.comandas, ehHoje };
+    renderComandasDoDia();
   } catch (e) {
     if (token === TOKEN_COMANDAS_DIA && !grid.querySelector(".card-comanda")) grid.innerHTML = `<div class="vazio-lista">❌ ${e.message}</div>`;
   }
 }
+// Filtros (atendente + situação) aplicados na tela, sem nova busca — e
+// mantidos quando a lista se atualiza sozinha.
+let ULTIMAS_COMANDAS_DIA = { comandas: [], ehHoje: true };
+let FILTRO_STATUS_COMANDAS_DIA = "Todas";
+function renderComandasDoDia() {
+  const grid = $("grid-comandas-hoje");
+  const { comandas: todas, ehHoje } = ULTIMAS_COMANDAS_DIA;
+  // opções de atendente: quem abriu comanda nesse dia (+ o selecionado, pra não sumir)
+  const sel = $("cd-filtro-atendente");
+  const atual = sel.value;
+  const nomes = [...new Set(todas.filter(c => !c.ehPacote).map(c => c.usuarioAbertura).filter(Boolean))].sort((a, b) => a.localeCompare(b, "pt-BR"));
+  if (atual && !nomes.includes(atual)) nomes.push(atual);
+  const opcoes = `<option value="">👥 Todos os atendentes</option>` + nomes.map(n => `<option value="${escapeAttr(n)}">${escapeHtml(n)}</option>`).join("");
+  if (sel.innerHTML !== opcoes) { sel.innerHTML = opcoes; sel.value = atual; }
+
+  const atendente = sel.value;
+  const filtradas = todas.filter(c =>
+    (!atendente || (!c.ehPacote && c.usuarioAbertura === atendente)) &&
+    (FILTRO_STATUS_COMANDAS_DIA === "Todas" || c.status === FILTRO_STATUS_COMANDAS_DIA));
+  const comandas = filtradas.filter(c => !c.ehPacote);
+  const abertas = comandas.filter(c => c.status === "Aberta");
+  const fechadas = comandas.filter(c => c.status === "Fechada");
+  const totalFechado = fechadas.reduce((s, c) => s + (Number(c.valorTotal) || 0), 0);
+  const totalAberto = abertas.reduce((s, c) => s + (Number(c.valorTotal) || 0), 0);
+  $("resumo-comandas-dia").innerHTML = comandas.length ? `
+    <span><b>${comandas.length}</b> comanda(s)${atendente ? " de <b>" + escapeHtml(atendente) + "</b>" : ""}</span>
+    <span><b>${abertas.length}</b> aberta(s)${abertas.length ? " · " + fmt(totalAberto) + " em aberto" : ""}</span>
+    <span><b>${fechadas.length}</b> fechada(s)</span>
+    <span>Faturado (fechadas): <b>${fmt(totalFechado)}</b></span>
+  ` : "";
+  if (!filtradas.length) {
+    const filtrando = atendente || FILTRO_STATUS_COMANDAS_DIA !== "Todas";
+    grid.innerHTML = `<div class="vazio-lista">${filtrando ? "Nenhuma comanda com esse filtro." : `Nenhuma comanda ${ehHoje ? "hoje ainda" : "nesse dia"}.`}</div>`;
+    return;
+  }
+  grid.innerHTML = "";
+  filtradas.forEach(c => grid.appendChild(montarCardComanda(c)));
+}
+$("cd-filtro-atendente").onchange = renderComandasDoDia;
+document.querySelectorAll("#cd-filtro-status button").forEach(b => {
+  b.onclick = () => {
+    document.querySelectorAll("#cd-filtro-status button").forEach(x => x.classList.toggle("ativa", x === b));
+    FILTRO_STATUS_COMANDAS_DIA = b.dataset.status;
+    renderComandasDoDia();
+  };
+});
+
 $("btn-atualizar-comandas-hoje").onclick = carregarComandasHoje;
 $("btn-filtrar-comandas-dia").onclick = carregarComandasHoje;
 $("cd-data-dia").onchange = carregarComandasHoje;
@@ -2765,6 +2867,7 @@ function montarBlocoFaturamentoResumoDia(t) {
         <div class="valor-principal">${fmt(t.faturamento)}</div>
         ${t.juros > 0 ? `<div class="sub">+ ${fmt(t.juros)} de juros de cartão cobrados à parte</div>` : ""}
         ${t.historico > 0 ? `<div class="sub">Inclui ${fmt(t.historico)} do histórico antigo (Vendas Diárias)</div>` : ""}
+        ${t.semComanda > 0 ? `<div class="sub">Inclui ${fmt(t.semComanda)} de vendas lançadas sem comanda</div>` : ""}
       </div>
       <div class="metricas">
         <div class="metrica"><b>${t.qtdComandas}</b><span>Comandas fechadas</span></div>
@@ -4859,15 +4962,69 @@ $("btn-salvar-justificativa-caixa").onclick = async () => {
 // FINANCEIRO (saídas / entradas / custos fixos / resumo)
 // =====================================================================
 let CATEGORIAS_SAIDA_CACHE = [];
+// ---------------------------------------------------------------------
+// GUIA: como cada categoria de SAÍDA entra nos números (mesmas regras do
+// Codigo.gs — calcularResumoFinanceiro e gerarResultadoDoDia).
+// ---------------------------------------------------------------------
+const TIPO_CATEGORIA_SAIDA = {
+  "Reposição de Estoque Espetos": "custo", "Reposição de Estoque Bebidas": "custo",
+  "Insumo": "despesa", "Custo Fixo Diário": "despesa", "Pagamentos de Contas": "despesa", "Marketing": "despesa",
+  "Manutenção": "despesa", "Custo Administrativo": "despesa", "Outros": "despesa",
+  "Investimento": "investimento", "Compra de Materiais": "investimento",
+  "Retirada Financeira": "retirada"
+};
+const INFO_TIPO_SAIDA = {
+  custo: { selo: "Custo de venda", texto: "Vira estoque. Não reduz o lucro na hora da compra: entra no Custo das Vendas aos poucos, conforme cada item é vendido (o que sobra continua no estoque). Sai do caixa na hora." },
+  despesa: { selo: "Despesa operacional", texto: "Reduz o Lucro Líquido na data do lançamento e entra nas Despesas do Resultado do dia. Sai do caixa quando for paga." },
+  investimento: { selo: "Investimento", texto: "Patrimônio que dura (grelha, caixa térmica, equipamento). Não reduz o Lucro Líquido acumulado, mas entra como gasto no Resultado do dia em que foi lançado. Sai do caixa quando for paga." },
+  retirada: { selo: "Retirada dos sócios", texto: "Não é custo nem despesa: só sai do caixa (distribuição de lucro, empréstimo a sócio)." }
+};
+const EXEMPLOS_CATEGORIA_SAIDA = {
+  "Reposição de Estoque Espetos": "carnes, espetos prontos",
+  "Reposição de Estoque Bebidas": "refrigerantes, cervejas, água",
+  "Insumo": "ingredientes do baião/vinagrete/farofa, carvão, gelo, descartáveis, guardanapo",
+  "Custo Fixo Diário": "gastos que se repetem todo evento",
+  "Pagamentos de Contas": "aluguel de mesas, luz, internet, taxas",
+  "Marketing": "anúncios, panfletos, banner",
+  "Manutenção": "conserto de equipamento",
+  "Custo Administrativo": "contador, taxas bancárias",
+  "Outros": "o que não se encaixa acima",
+  "Investimento": "equipamentos, melhorias",
+  "Compra de Materiais": "utensílios duráveis (use Insumo pra descartáveis)",
+  "Retirada Financeira": "retirada de lucro, empréstimo a sócio"
+};
+function htmlSeloCategoria(cat) {
+  const tipo = TIPO_CATEGORIA_SAIDA[cat] || "despesa";
+  return `<span class="selo-cat ${tipo}">${INFO_TIPO_SAIDA[tipo].selo}</span>`;
+}
+function dicaCategoriaSaida(cat) {
+  const tipo = TIPO_CATEGORIA_SAIDA[cat] || "despesa";
+  return `${htmlSeloCategoria(cat)} ${INFO_TIPO_SAIDA[tipo].texto}${EXEMPLOS_CATEGORIA_SAIDA[cat] ? ` <i>Ex: ${EXEMPLOS_CATEGORIA_SAIDA[cat]}.</i>` : ""}`;
+}
+function montarGuiaCategoriasSaida(categorias) {
+  const ordemTipos = ["custo", "despesa", "investimento", "retirada"];
+  const lista = [...categorias].sort((a, b) => ordemTipos.indexOf(TIPO_CATEGORIA_SAIDA[a] || "despesa") - ordemTipos.indexOf(TIPO_CATEGORIA_SAIDA[b] || "despesa"));
+  $("guia-categorias-saida").innerHTML = `
+    <table>
+      <thead><tr><th>Categoria</th><th>Como entra</th><th>Exemplos</th></tr></thead>
+      <tbody>${lista.map(c => `<tr><td><b>${escapeHtml(c)}</b></td><td>${htmlSeloCategoria(c)}</td><td>${escapeHtml(EXEMPLOS_CATEGORIA_SAIDA[c] || "—")}</td></tr>`).join("")}</tbody>
+    </table>
+    ${ordemTipos.map(t => `<p class="dica-categoria-entrada"><span class="selo-cat ${t}">${INFO_TIPO_SAIDA[t].selo}</span> ${INFO_TIPO_SAIDA[t].texto}</p>`).join("")}`;
+}
+function atualizarDicaCategoriaSaida() { $("sd-dica-categoria").innerHTML = dicaCategoriaSaida($("sd-categoria").value); }
+$("sd-categoria").onchange = atualizarDicaCategoriaSaida;
+$("es-categoria").onchange = () => { $("es-dica-categoria").innerHTML = dicaCategoriaSaida($("es-categoria").value); };
 // Mostra embaixo da categoria o que ela faz nos números (mesma regra do
 // servidor: só "Entrada Manual" e "Aporte/Empréstimo" somam no caixa;
 // nenhuma entrada eventual conta como venda).
 const DICAS_CATEGORIA_ENTRADA = {
+  "Venda sem comanda": "🧾 Conta como VENDA e soma no Valor em Caixa (entra no lucro). Use quando o cliente pagou mas o atendimento não foi registrado. Se souber, informe o custo dos itens pra o lucro ficar certo.",
   "Entrada Manual": "💰 Soma no Valor em Caixa. Não é venda nem lucro — use pra investimento que vocês mesmos fizeram ou ajuste de saldo.",
   "Aporte/Empréstimo": "💰 Soma no Valor em Caixa. Não é venda nem lucro — aporte, empréstimo, devolução, rendimento da conta, pagamento avulso."
 };
 function atualizarDicaCategoriaEntrada() {
   const cat = $("en-categoria").value;
+  $("en-bloco-custo").style.display = cat === "Venda sem comanda" ? "block" : "none";
   $("en-dica-categoria").textContent = DICAS_CATEGORIA_ENTRADA[cat] || "↪️ Não soma no caixa nem nas vendas — use pra valor de passagem (repassado a terceiros).";
 }
 $("en-categoria").onchange = atualizarDicaCategoriaEntrada;
@@ -4876,6 +5033,8 @@ async function carregarCategorias() {
   if (resp.status === "ok") {
     CATEGORIAS_SAIDA_CACHE = resp.saida;
     $("sd-categoria").innerHTML = resp.saida.map(c => `<option>${c}</option>`).join("");
+    atualizarDicaCategoriaSaida();
+    montarGuiaCategoriasSaida(resp.saida);
     $("en-categoria").innerHTML = resp.entrada.map(c => `<option>${c}</option>`).join("");
     atualizarDicaCategoriaEntrada();
   }
@@ -4931,10 +5090,11 @@ $("btn-registrar-entrada").onclick = async () => {
   const status = $("status-entrada");
   status.textContent = "Salvando...";
   try {
-    const resp = await chamarAPI("registrarEntrada", { categoria, descricao, valor, data: dataLancamento, observacao, usuario: USUARIO_LOGADO });
+    const custo = categoria === "Venda sem comanda" ? ($("en-custo").value || 0) : "";
+    const resp = await chamarAPI("registrarEntrada", { categoria, descricao, valor, custo, data: dataLancamento, observacao, usuario: USUARIO_LOGADO });
     if (resp.status === "ok") {
-      status.textContent = "✓ Entrada registrada."; status.className = "msg-status ok";
-      $("en-descricao").value = ""; $("en-valor").value = ""; $("en-data").value = ""; $("en-observacao").value = "";
+      status.textContent = categoria === "Venda sem comanda" ? "✓ Venda registrada — já conta nas vendas, no lucro e no caixa." : "✓ Entrada registrada."; status.className = "msg-status ok";
+      $("en-descricao").value = ""; $("en-valor").value = ""; $("en-data").value = ""; $("en-observacao").value = ""; $("en-custo").value = "";
       atualizarFinanceiroQuandoVisivel();
     } else { status.textContent = "❌ " + resp.mensagem; status.className = "msg-status erro"; }
   } catch (e) { status.textContent = "❌ " + e.message; status.className = "msg-status erro"; }
@@ -5209,6 +5369,7 @@ function abrirModalEditarSaida(r) {
   $("es-categoria").innerHTML = (CATEGORIAS_SAIDA_CACHE.length ? CATEGORIAS_SAIDA_CACHE : [r.categoria])
     .map(c => `<option${c === r.categoria ? " selected" : ""}>${escapeHtml(c)}</option>`).join("");
   if (!CATEGORIAS_SAIDA_CACHE.includes(r.categoria)) $("es-categoria").insertAdjacentHTML("afterbegin", `<option selected>${escapeHtml(r.categoria)}</option>`);
+  $("es-dica-categoria").innerHTML = dicaCategoriaSaida($("es-categoria").value);
   $("es-descricao").value = r.descricao || "";
   $("es-valor").value = r.valor;
   $("es-forma").value = r.formaPagamento || "Dinheiro";
@@ -5322,6 +5483,77 @@ $("btn-historico-receber").onclick = () => {
   $("btn-historico-receber").textContent = VER_HISTORICO_RECEBER ? "Ver só pendentes" : "Ver histórico";
   carregarContasAReceber();
 };
+
+// ---------------------------------------------------------------------
+// RESULTADO DO DIA — lucro de um dia/evento:
+// vendas + juros − custo do que foi vendido − despesas lançadas no dia.
+// Compra de estoque não entra inteira: o que foi vendido já está no custo
+// do vendido e o que sobrou continua no estoque (mostrado à parte).
+// ---------------------------------------------------------------------
+function dataPadraoResultadoDia() {
+  // de madrugada (antes das 6h) o "dia do evento" ainda é o de ontem
+  const agora = new Date();
+  if ($("rdia-virada").checked && agora.getHours() < 6) agora.setDate(agora.getDate() - 1);
+  return paraISO(agora);
+}
+let TOKEN_RESULTADO_DIA = 0;
+async function carregarResultadoDoDia() {
+  if (!$("rdia-data").value) $("rdia-data").value = dataPadraoResultadoDia();
+  const data = $("rdia-data").value;
+  const box = $("rdia-conteudo");
+  box.innerHTML = `<div class="vazio-lista">Calculando...</div>`;
+  const token = ++TOKEN_RESULTADO_DIA;
+  try {
+    const r = await chamarAPI("resultadoDoDia", { data, virada: $("rdia-virada").checked ? "1" : "0" });
+    if (token !== TOKEN_RESULTADO_DIA) return;
+    if (r.status !== "ok") { box.innerHTML = `<div class="vazio-lista">❌ ${escapeHtml(r.mensagem)}</div>`; return; }
+    $("rdia-periodo").textContent = `Período considerado: ${r.periodo.inicio} até ${r.periodo.fim}`;
+    const vd = r.vendasDetalhe;
+    const rotuloTipo = { "Espeto": "🍢 Espetos", "Bebida": "🥤 Bebidas", "Combo": "🍱 Combos", "Baião": "🍚 Baião", "Taxa": "Taxas" };
+    const tipos = Object.keys(r.custoPorTipo).sort((a, b) => indiceTipoPadrao(a) - indiceTipoPadrao(b));
+    const lucroPositivo = r.lucro >= 0;
+    const detalheVendas = [
+      vd.comandas.qtd ? `${vd.comandas.qtd} comanda(s): ${fmt(vd.comandas.valor)}` : "",
+      vd.semComanda.qtd ? `${vd.semComanda.qtd} venda(s) sem comanda: ${fmt(vd.semComanda.valor)}` : "",
+      vd.pacotes ? `pacotes recebidos: ${fmt(vd.pacotes)}` : ""
+    ].filter(Boolean).join(" · ");
+    const lista = (itens) => `<ul>${itens.map(i => `<li>${escapeHtml(i.descricao || "sem descrição")} — ${fmt(i.valor)}${i.status !== "Pago" ? '<span class="tag-pendente">pendente</span>' : ""}</li>`).join("")}</ul>`;
+
+    box.innerHTML = `
+      <div class="resumo-grid">
+        <div class="resumo-caixa venda"><div class="rotulo">Vendas do dia</div><div class="valor">${fmt(r.vendas + r.juros)}</div></div>
+        <div class="resumo-caixa saida"><div class="rotulo">Custo do vendido</div><div class="valor">${fmt(r.custoVendido)}</div></div>
+        <div class="resumo-caixa saida"><div class="rotulo">Despesas do dia</div><div class="valor">${fmt(r.despesas)}</div></div>
+        <div class="resumo-caixa destaque"><div class="rotulo">Lucro do dia</div><div class="valor" style="color:${lucroPositivo ? "var(--verde)" : "var(--erro)"};">${fmt(r.lucro)}</div></div>
+      </div>
+
+      <div class="extrato-dia">
+        <h4>Como chegamos no lucro</h4>
+        <div class="extrato-linha mais"><span>(+) Vendas<span class="det">${detalheVendas || "nenhuma venda no período"}${vd.porForma.length ? "<br>" + vd.porForma.map(f => `${escapeHtml(f.forma)} ${fmt(f.valor)}`).join(" · ") : ""}</span></span><span class="v">${fmt(r.vendas)}</span></div>
+        ${r.juros ? `<div class="extrato-linha mais"><span>(+) Juros de cartão</span><span class="v">${fmt(r.juros)}</span></div>` : ""}
+        <div class="extrato-linha menos"><span>(−) Custo do que foi vendido<span class="det">${tipos.length ? tipos.map(t => `${rotuloTipo[t] || escapeHtml(t)}: ${r.custoPorTipo[t].quantidade} un. · custo ${fmt(r.custoPorTipo[t].custo)}`).join("<br>") : "—"}${vd.semComanda.custo ? `<br>Vendas sem comanda: custo ${fmt(vd.semComanda.custo)}` : ""}</span></span><span class="v">${fmt(r.custoVendido)}</span></div>
+        <div class="extrato-linha menos"><span>(−) Despesas do dia${r.despesasPendentes ? ` <span class="tag-pendente">${fmt(r.despesasPendentes)} ainda a pagar</span>` : ""}<span class="det">Tudo o que foi lançado nesse dia em Saídas (materiais, aluguel, insumos...), pago ou a pagar.</span></span><span class="v">${fmt(r.despesas)}</span></div>
+        ${r.despesasPorCategoria.map(d => `<details><summary>${escapeHtml(d.categoria)}: ${fmt(d.total)}</summary>${lista(d.itens)}</details>`).join("")}
+        <div class="extrato-linha total"><span>(=) Lucro do dia</span><span class="v" style="color:${lucroPositivo ? "var(--verde)" : "var(--erro)"};">${fmt(r.lucro)}</span></div>
+      </div>
+
+      <div class="nota-dia">📦 <b>Compra de estoque nesse dia: ${fmt(r.comprasEstoque.total)}</b> (carnes e bebidas). Ela não entra inteira como gasto do dia: o que foi vendido já está no <b>custo do que foi vendido</b>, e o que sobrou continua no estoque pros próximos eventos.
+        ${r.comprasEstoque.itens.length ? `<details><summary>Ver compras</summary>${lista(r.comprasEstoque.itens)}</details>` : ""}
+        <br>Valor que está no estoque <b>agora</b> (a preço de custo): <b>${fmt(r.estoqueAtual.valor)}</b>${Object.keys(r.estoqueAtual.porTipo).filter(t => r.estoqueAtual.porTipo[t] > 0).map(t => ` · ${rotuloTipo[t] || escapeHtml(t)} ${fmt(r.estoqueAtual.porTipo[t])}`).join("")}.
+      </div>
+
+      <div class="nota-dia">💵 <b>Caixa do dia</b> (dinheiro que entrou e saiu de verdade, incluindo compra de estoque e retiradas): entrou <b>${fmt(r.caixaDoDia.entrou)}</b> · saiu <b>${fmt(r.caixaDoDia.saiu)}</b> · saldo <b style="color:${r.caixaDoDia.saldo >= 0 ? "var(--verde)" : "var(--erro)"};">${fmt(r.caixaDoDia.saldo)}</b>.
+        ${r.retiradas.total ? `<br>Retiradas dos sócios nesse dia: <b>${fmt(r.retiradas.total)}</b> (não é custo, só saída de caixa).` : ""}
+      </div>
+    `;
+  } catch (e) {
+    if (token === TOKEN_RESULTADO_DIA) box.innerHTML = `<div class="vazio-lista">❌ ${escapeHtml(e.message)}</div>`;
+  }
+}
+$("btn-rdia-buscar").onclick = carregarResultadoDoDia;
+$("rdia-data").onchange = carregarResultadoDoDia;
+$("rdia-virada").onchange = carregarResultadoDoDia;
+$("btn-rdia-hoje").onclick = () => { $("rdia-data").value = dataPadraoResultadoDia(); carregarResultadoDoDia(); };
 
 // dataInicio pode vir vazia — significa "desde o primeiro registro".
 // dataFim, se vazia, é preenchida com hoje (fuso local, não UTC).
@@ -5604,12 +5836,42 @@ $("btn-gerar-relatorio").onclick = async () => {
 
 $("btn-imprimir-relatorio").onclick = () => window.print();
 
+// v8.0 — padrão de data dos relatórios: "DD/MM/AAAA - HH:MM:SS".
+// Aceita "dd/MM/yyyy HH:mm:ss" (texto do servidor), "yyyy-mm-dd" ou ISO.
+function fmtDataHoraRel(valor) {
+  if (!valor) return "—";
+  const t = valor.toString().trim();
+  let m = /^(\d{2})\/(\d{2})\/(\d{4})(?:[ T](\d{1,2}):(\d{2})(?::(\d{2}))?)?/.exec(t);
+  if (m) return `${m[1]}/${m[2]}/${m[3]} - ${(m[4] || "00").padStart(2, "0")}:${m[5] || "00"}:${m[6] || "00"}`;
+  m = /^(\d{4})-(\d{2})-(\d{2})(?:[ T](\d{2}):(\d{2})(?::(\d{2}))?)?/.exec(t);
+  if (m && !m[4]) return `${m[3]}/${m[2]}/${m[1]}`; // só data (ex: vencimento)
+  const d = new Date(t);
+  if (isNaN(d.getTime())) return t;
+  const p = n => String(n).padStart(2, "0");
+  return `${p(d.getDate())}/${p(d.getMonth() + 1)}/${d.getFullYear()} - ${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`;
+}
+// só data (vencimento, data do evento sem horário): "DD/MM/AAAA"
+function fmtDataRel(valor) {
+  if (!valor) return "—";
+  const f = fmtDataHoraRel(valor);
+  return f.split(" - ")[0];
+}
+function tempoDe(valor) {
+  const f = fmtDataHoraRel(valor);
+  const m = /^(\d{2})\/(\d{2})\/(\d{4})(?: - (\d{2}):(\d{2}):(\d{2}))?/.exec(f);
+  return m ? new Date(+m[3], +m[2] - 1, +m[1], +(m[4] || 0), +(m[5] || 0), +(m[6] || 0)).getTime() : 0;
+}
+function ordenarCronologico(lista, campo) { return [...lista].sort((a, b) => tempoDe(a[campo]) - tempoDe(b[campo])); }
+
 function linhaOuVazio(linhasHtml, colspan, textoVazio) {
   return linhasHtml.length ? linhasHtml.join("") : `<tr><td colspan="${colspan}" class="relatorio-vazio">${textoVazio}</td></tr>`;
 }
 
 function montarHtmlRelatorio(r, dataInicioIso, dataFimIso, observacoes, assinante, socios) {
-  const res = r.resumo;
+  // v8.0: cards sempre com o acumulado desde o início (servidor antigo: cai no do período)
+  const res = r.resumoTotal || r.resumo;
+  const caixaInformado = r.saldoCaixa.total;
+  const diferencaCaixa = Math.round((caixaInformado - res.valorEmCaixa) * 100) / 100;
   const icones = { "Espeto": "🍢", "Bebida": "🥤", "Baião": "🍚", "Combo": "🍱" };
   const ordemTipos = ["Espeto", "Bebida", "Baião", "Combo"];
 
@@ -5617,9 +5879,9 @@ function montarHtmlRelatorio(r, dataInicioIso, dataFimIso, observacoes, assinant
     .filter(t => (r.porTipo[t] && (r.porTipo[t].quantidade > 0 || r.porTipo[t].valor > 0)))
     .map(t => `<tr><td>${icones[t] || ""} ${t}</td><td class="valor">${r.porTipo[t].quantidade}</td><td class="valor">${fmt(r.porTipo[t].valor)}</td></tr>`);
 
-  const linhasContasPagas = r.saidasPagasPeriodo.map(s => `
+  const linhasContasPagas = ordenarCronologico(r.saidasPagasPeriodo, "data").map(s => `
     <tr>
-      <td>${(s.data || "").toString().split(" ")[0]}</td>
+      <td>${fmtDataHoraRel(s.data)}</td>
       <td>${escapeHtml(s.categoria)}</td>
       <td>${escapeHtml(s.descricao || "—")}</td>
       <td>${escapeHtml(s.formaPagamento || "—")}</td>
@@ -5628,11 +5890,12 @@ function montarHtmlRelatorio(r, dataInicioIso, dataFimIso, observacoes, assinant
   `);
   const totalContasPagas = r.saidasPagasPeriodo.reduce((soma, s) => soma + s.valor, 0);
 
-  const linhasContasPendentes = r.contasPendentes.map(c => `
+  const contasPendentesOrdenadas = [...r.contasPendentes].sort((a, b) => (a.vencimento || "0000").localeCompare(b.vencimento || "0000"));
+  const linhasContasPendentes = contasPendentesOrdenadas.map(c => `
     <tr>
+      <td>${c.vencimento ? fmtDataRel(c.vencimento) : "⚠️ sem vencimento"}</td>
       <td>${escapeHtml(c.categoria)}</td>
-      <td>${escapeHtml(c.descricao || "—")}</td>
-      <td>${c.vencimento ? paraBRFlexivel(c.vencimento) : "⚠️ sem vencimento"}</td>
+      <td>${escapeHtml(c.descricao || "—")}${c.parcelasRestantes > 1 ? `<div style="font-size:10.5px; color:#888;">próxima de ${c.parcelasRestantes} parcelas em aberto · ${fmt(c.valorRestante)} no total</div>` : ""}</td>
       <td class="valor">${fmt(c.valor)}</td>
     </tr>
   `);
@@ -5650,16 +5913,19 @@ function montarHtmlRelatorio(r, dataInicioIso, dataFimIso, observacoes, assinant
           <div class="subtitulo">Documento gerado automaticamente pelo Sistema Financeiro</div>
         </div>
       </div>
-      <div class="relatorio-periodo">Período: <b>${paraBR(dataInicioIso)} a ${paraBR(dataFimIso)}</b> · Gerado em ${geradoEm} por <b>${escapeHtml(USUARIO_LOGADO)}</b></div>
+      <div class="relatorio-periodo">Período: <b>${paraBR(dataInicioIso)} a ${paraBR(dataFimIso)}</b> · Gerado em ${fmtDataHoraRel(agoraBR())} por <b>${escapeHtml(USUARIO_LOGADO)}</b></div>
 
-      <div class="relatorio-secao-titulo">Resumo Financeiro do Período</div>
+      <div class="relatorio-secao-titulo">Resumo Financeiro (acumulado desde o início)</div>
       <div class="relatorio-cards">
         <div class="relatorio-card"><div class="rotulo">Total de Vendas</div><div class="valor">${fmt(res.totalVendas)}</div></div>
         <div class="relatorio-card"><div class="rotulo">Custo das Vendas</div><div class="valor">${fmt(res.totalCustoVendas)}</div></div>
         <div class="relatorio-card"><div class="rotulo">Lucro das Vendas</div><div class="valor">${fmt(res.totalLucroVendas)}</div></div>
         <div class="relatorio-card destaque"><div class="rotulo">Lucro Líquido</div><div class="valor">${fmt(res.lucroLiquido)}</div></div>
-        <div class="relatorio-card"><div class="rotulo">Valor em Caixa</div><div class="valor">${fmt(res.valorEmCaixa)}</div></div>
+        <div class="relatorio-card"><div class="rotulo">Valor em Caixa (sistema)</div><div class="valor">${fmt(res.valorEmCaixa)}</div></div>
+        <div class="relatorio-card"><div class="rotulo">Valor em Caixa Informado</div><div class="valor">${fmt(caixaInformado)}</div></div>
+        <div class="relatorio-card"><div class="rotulo">Diferença (Informado − Sistema)</div><div class="valor" style="color:${Math.abs(diferencaCaixa) < 0.01 ? "#2fbf71" : "#e0231a"};">${fmt(diferencaCaixa)}</div></div>
       </div>
+      <p style="font-size:11px; color:#888; margin:-6px 0 12px;">Os cards acima somam tudo desde o primeiro registro, independente do período escolhido. Vendas por Tipo e Contas Pagas usam o período do relatório.${Math.abs(diferencaCaixa) >= 0.01 && r.justificativaDiferencaCaixa ? ` Justificativa da diferença: ${escapeHtml(r.justificativaDiferencaCaixa)}.` : ""}</p>
 
       <div class="relatorio-secao-titulo">Vendas por Tipo (no período)</div>
       <p style="font-size:11px; color:#888; margin:0 0 8px;">Considera só comandas FECHADAS. As quantidades de Espeto, Bebida e Baião aqui são só das vendas avulsas (fora de combo) — o que foi vendido dentro de combos conta separado (veja "Sabores Usados em Combos" no Relatório de Vendas). O faturamento de tudo que vem no combo fica contabilizado só na linha "Combo", sem duplicar.</p>
@@ -5678,24 +5944,16 @@ function montarHtmlRelatorio(r, dataInicioIso, dataFimIso, observacoes, assinant
         </tbody>
       </table>
 
-      <div class="relatorio-secao-titulo">Contas a Pagar (Pendentes até hoje)</div>
+      <div class="relatorio-secao-titulo">Contas a Pagar (em aberto — próximo vencimento de cada conta)</div>
+      <p style="font-size:11px; color:#888; margin:0 0 8px;">Tudo que ainda está em aberto, desde o início. De cada parcelamento aparece só a próxima parcela a vencer.</p>
       <table>
-        <thead><tr><th>Categoria</th><th>Descrição</th><th>Vencimento</th><th style="text-align:right;">Valor</th></tr></thead>
+        <thead><tr><th>Vencimento</th><th>Categoria</th><th>Descrição</th><th style="text-align:right;">Valor</th></tr></thead>
         <tbody>
           ${linhaOuVazio(linhasContasPendentes, 4, "Nenhuma conta pendente 🎉")}
-          ${r.contasPendentes.length ? `<tr class="total-linha"><td colspan="3">Total pendente</td><td class="valor">${fmt(totalContasPendentes)}</td></tr>` : ""}
+          ${r.contasPendentes.length ? `<tr class="total-linha"><td colspan="3">Total dos próximos vencimentos</td><td class="valor">${fmt(totalContasPendentes)}</td></tr>` : ""}
+          ${r.totalEmAbertoGeral && Math.abs(r.totalEmAbertoGeral - totalContasPendentes) >= 0.01 ? `<tr><td colspan="3" style="color:#888;">Total em aberto, contando todas as parcelas futuras</td><td class="valor" style="color:#888;">${fmt(r.totalEmAbertoGeral)}</td></tr>` : ""}
         </tbody>
       </table>
-
-      <div class="relatorio-secao-titulo">Conciliação de Caixa</div>
-      <table>
-        <tbody>
-          <tr><td>Caixa Esperado (calculado pelas movimentações)</td><td class="valor">${fmt(res.valorEmCaixa)}</td></tr>
-          <tr><td>Caixa Informado (dinheiro + conta)</td><td class="valor">${fmt(r.saldoCaixa.total)}</td></tr>
-          <tr class="total-linha"><td>Diferença (Informado − Esperado)</td><td class="valor">${fmt(r.saldoCaixa.total - res.valorEmCaixa)}</td></tr>
-        </tbody>
-      </table>
-      ${r.justificativaDiferencaCaixa ? `<p style="font-size:11.5px; color:#7a4d00; background:#fff8ec; border:1px solid #f0d9a8; border-radius:8px; padding:8px 10px;">⚠️ Justificativa registrada: ${escapeHtml(r.justificativaDiferencaCaixa)}</p>` : ""}
 
       ${observacoes ? `
       <div class="relatorio-secao-titulo">Observações</div>
@@ -5729,8 +5987,7 @@ function blocoCabecalhoRelatorio(titulo, periodoTexto, observacoes) {
   `;
 }
 function dataHojeFormatadaHora() {
-  const d = new Date();
-  return `${String(d.getDate()).padStart(2, "0")}/${String(d.getMonth() + 1).padStart(2, "0")}/${d.getFullYear()} às ${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
+  return fmtDataHoraRel(agoraBR());
 }
 function textoPeriodo(dataInicioIso, dataFimIso, todoPeriodo) {
   return todoPeriodo ? "Todo o período" : `${paraBR(dataInicioIso)} a ${paraBR(dataFimIso)}`;
@@ -5755,9 +6012,9 @@ $("btn-gerar-rel-vendas").onclick = async () => {
   try {
     const r = await chamarAPI("relatorioVendas", { dataInicio, dataFim });
     if (r.status !== "ok") { container.innerHTML = `<div class="vazio-lista">❌ ${r.mensagem}</div>`; return; }
-    const linhasComandas = r.comandas.map(c => `
+    const linhasComandas = ordenarCronologico(r.comandas, "data").map(c => `
       <tr>
-        <td>${(c.data || "").toString().split(" ")[0]}</td>
+        <td>${fmtDataHoraRel(c.data)}</td>
         <td>${escapeHtml(c.identificacao)}</td>
         <td>${c.status}</td>
         <td style="text-align:right;">${c.totalItens}</td>
@@ -5797,6 +6054,10 @@ $("btn-gerar-rel-vendas").onclick = async () => {
     // contados separadamente (cada um no seu próprio card/seção).
     const linhasSaboresAvulso = (r.saboresEspetoAvulso || []).map(s => `<tr><td>${escapeHtml(s.produto)}</td><td style="text-align:right;">${s.quantidade}</td></tr>`);
     const linhasSaboresCombo = (r.saboresEspetoCombo || []).map(s => `<tr><td>${escapeHtml(s.produto)}</td><td style="text-align:right;">${s.quantidade}</td></tr>`);
+    const totalEspetosAvulsos = (r.saboresEspetoAvulso || []).reduce((soma, x) => soma + (Number(x.quantidade) || 0), 0);
+    const totalEspetosCombo = (r.saboresEspetoCombo || []).reduce((soma, x) => soma + (Number(x.quantidade) || 0), 0);
+    if (linhasSaboresAvulso.length) linhasSaboresAvulso.push(`<tr class="total-linha"><td>Total de espetos avulsos</td><td style="text-align:right;">${totalEspetosAvulsos}</td></tr>`);
+    if (linhasSaboresCombo.length) linhasSaboresCombo.push(`<tr class="total-linha"><td>Total de espetos em combos</td><td style="text-align:right;">${totalEspetosCombo}</td></tr>`);
 
     container.innerHTML = `
       <div class="relatorio-folha">
@@ -5830,6 +6091,9 @@ $("btn-gerar-rel-vendas").onclick = async () => {
           <thead><tr><th>Sabor</th><th style="text-align:right;">Quantidade</th></tr></thead>
           <tbody>${linhaOuVazio(linhasSaboresCombo, 2, "Nenhum combo vendido no período.")}</tbody>
         </table>
+        <table style="margin-top:8px;">
+          <tbody><tr class="total-linha"><td>🍢 Total de espetos vendidos no período (avulsos + combos)</td><td style="text-align:right;">${totalEspetosAvulsos + totalEspetosCombo}</td></tr></tbody>
+        </table>
 
         <div class="relatorio-secao-titulo">Vendas por Comanda/Cliente</div>
         <table>
@@ -5862,9 +6126,9 @@ $("btn-gerar-rel-entradas").onclick = async () => {
   try {
     const r = await chamarAPI("relatorioEntradas", { dataInicio, dataFim });
     if (r.status !== "ok") { container.innerHTML = `<div class="vazio-lista">❌ ${r.mensagem}</div>`; return; }
-    const linhas = r.registros.map(e => `
+    const linhas = ordenarCronologico(r.registros, "data").map(e => `
       <tr>
-        <td>${(e.data || "").toString().split(" ")[0]}</td>
+        <td>${fmtDataHoraRel(e.data)}</td>
         <td>${escapeHtml(e.categoria)}</td>
         <td>${escapeHtml(e.descricao || "—")}</td>
         <td>${escapeHtml(e.observacao || "—")}</td>
@@ -5909,9 +6173,9 @@ $("btn-gerar-rel-saidas").onclick = async () => {
   try {
     const r = await chamarAPI("relatorioSaidas", { dataInicio, dataFim });
     if (r.status !== "ok") { container.innerHTML = `<div class="vazio-lista">❌ ${r.mensagem}</div>`; return; }
-    const linhas = r.registros.map(s => `
+    const linhas = ordenarCronologico(r.registros, "data").map(s => `
       <tr>
-        <td>${(s.data || "").toString().split(" ")[0]}</td>
+        <td>${fmtDataHoraRel(s.data)}</td>
         <td>${escapeHtml(s.categoria)}</td>
         <td>${escapeHtml(s.descricao || "—")}</td>
         <td>${s.statusPagamento === "Pago" ? "✅ Pago" : "⏳ Pendente"}</td>
@@ -5971,12 +6235,13 @@ $("btn-gerar-rel-pacotes").onclick = async () => {
   try {
     const r = await chamarAPI("relatorioPacotes", { dataInicio, dataFim });
     if (r.status !== "ok") { container.innerHTML = `<div class="vazio-lista">❌ ${r.mensagem}</div>`; return; }
-    const linhas = r.pacotes.map(p => {
+    const pacotesOrdenados = [...r.pacotes].sort((a, b) => tempoDe(`${fmtDataRel(a.dataEvento)} ${a.horarioEvento || "00:00"}`) - tempoDe(`${fmtDataRel(b.dataEvento)} ${b.horarioEvento || "00:00"}`));
+    const linhas = pacotesOrdenados.map(p => {
       const temRealizado = p.custoRealizado !== null && p.custoRealizado !== undefined;
       const corDesvio = temRealizado && p.desvioCusto > 0 ? "color:#e0231a; font-weight:800;" : "";
       return `
       <tr>
-        <td>${paraBR(p.dataEvento) || p.dataEvento}</td>
+        <td>${p.dataEvento ? fmtDataHoraRel(`${fmtDataRel(p.dataEvento)} ${p.horarioEvento || "00:00"}`) : "—"}</td>
         <td>${escapeHtml(p.cliente)}</td>
         <td>${escapeHtml(p.tipoPacote)}</td>
         <td style="text-align:right;">${p.qtdPessoas}</td>
