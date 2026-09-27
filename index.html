@@ -514,22 +514,34 @@
   .cabecalho-tabela .col-input{ width:80px; text-align:center; }
   .cabecalho-tabela .col-botao{ width:70px; }
 
-  /* Estoque: as caixinhas (Vendido/Total/Reservado/Disponível) ficam
-     sempre juntas num grid próprio, do mesmo tamanho, para nunca desalinhar
-     no celular */
+  /* Estoque (v8.1): as 4 caixinhas usam SEMPRE a mesma grade, e o
+     cabeçalho de colunas usa essa mesma grade — assim os títulos ficam
+     centralizados exatamente em cima de cada caixa. No computador o título
+     fica só no cabeçalho; no celular (sem cabeçalho) fica dentro da caixa. */
+  :root{ --largura-caixa-estoque:82px; }
   .estoque-boxes{ display:grid; grid-template-columns:repeat(4, 1fr); gap:8px; width:100%; }
   .estoque-caixa{
-    display:flex; flex-direction:column; align-items:center; justify-content:center;
-    width:100%; padding:8px 4px; border-radius:9px; background:var(--preto); border:1px solid var(--borda);
+    display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px;
+    width:100%; min-height:48px; padding:6px 4px; border-radius:9px; background:var(--preto); border:1px solid var(--borda);
+    box-sizing:border-box; text-align:center;
   }
-  .estoque-caixa .rotulo-mini{ font-size:8.5px; text-transform:uppercase; color:var(--muted); letter-spacing:.3px; }
-  .estoque-caixa .valor-mini{ font-size:15px; font-weight:800; color:var(--creme); }
-  .estoque-caixa .input-estoque{
-    width:100%; text-align:center; background:transparent; border:none; color:var(--creme);
-    font-size:15px; font-weight:800; padding:2px 0 0; outline:none; -moz-appearance:textfield;
+  .estoque-caixa .rotulo-mini{ font-size:9px; font-weight:700; text-transform:uppercase; color:var(--muted); letter-spacing:.3px; line-height:1.1; }
+  .estoque-caixa .valor-mini{ font-size:16px; font-weight:800; color:var(--creme); line-height:1.2; }
+  /* o seletor precisa ser mais forte que ".linha-tabela input[type=number]"
+     (largura 80px + fundo + borda), que deformava a caixa "Total" */
+  .linha-tabela .estoque-caixa input.input-estoque{
+    width:100%; max-width:100%; box-sizing:border-box; text-align:center; background:transparent; border:none; border-radius:0;
+    color:var(--creme); font-family:inherit; font-size:16px; font-weight:800; line-height:1.2; padding:0; margin:0; outline:none; -moz-appearance:textfield;
   }
   .estoque-caixa .input-estoque::-webkit-outer-spin-button,
   .estoque-caixa .input-estoque::-webkit-inner-spin-button{ -webkit-appearance:none; margin:0; }
+  .estoque-caixa.editavel{ border:1.5px dashed rgba(255,122,26,.55); background:rgba(255,122,26,.06); cursor:text; }
+  .estoque-caixa.editavel:focus-within{ border-style:solid; border-color:var(--laranja); box-shadow:0 0 0 3px rgba(255,122,26,.18); }
+  #cabecalho-estoque .cabecalho-boxes{ display:grid; grid-template-columns:repeat(4, var(--largura-caixa-estoque)); gap:8px; flex:0 0 auto; }
+  #cabecalho-estoque{ align-items:flex-end; flex-wrap:nowrap; }
+  #cabecalho-estoque .cabecalho-boxes span{ text-align:center; white-space:nowrap; }
+  .barra-estoque{ display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin:12px 0; }
+  .barra-estoque .btn-salvar-tudo{ margin-bottom:0; }
   .estoque-caixa.baixo .valor-mini{ color:var(--erro); }
   .estoque-caixa.critico{ background:rgba(194,65,12,.15); border-color:rgba(194,65,12,.5); }
   .estoque-caixa.critico .valor-mini{ color:#f0793a; }
@@ -538,7 +550,8 @@
 
   @media(min-width:640px){
     .linha-tabela .nome-item{ flex:1 1 auto; }
-    .estoque-boxes{ width:auto; flex:0 0 auto; grid-auto-flow:column; grid-template-columns:repeat(4, 64px); }
+    .estoque-boxes{ width:auto; flex:0 0 auto; grid-auto-flow:column; grid-template-columns:repeat(4, var(--largura-caixa-estoque)); }
+    #lista-estoque .estoque-caixa .rotulo-mini{ display:none; } /* título já está no cabeçalho, alinhado */
   }
   @media(max-width:639px){
     #cabecalho-estoque{ display:none !important; } /* os rótulos já ficam dentro de cada caixinha no celular */
@@ -786,7 +799,30 @@
     .cupom-comanda{ box-shadow:none; margin:0; max-width:100%; }
     body.imprimindo-comprovante #app{ display:none !important; }
     body.imprimindo-cupom-comanda #app{ display:none !important; }
+    /* ao imprimir com um modal aberto, solta a trava de rolagem (senão a
+       folha sai cortada numa página só) e usa fundo branco */
+    :root, html{ color-scheme:light !important; }
+    html, body, body.modal-aberto{ background:#fff !important; }
+    body.modal-aberto{ position:static !important; overflow:visible !important; top:auto !important; height:auto !important; width:auto !important; }
+    body.imprimindo-estoque #app{ display:none !important; }
+    body.imprimindo-estoque .overlay:not(#overlay-estoque-pdf){ display:none !important; }
+    body.imprimindo-estoque #overlay-estoque-pdf{ position:static !important; inset:auto !important; background:#fff !important; padding:0 !important; display:block !important; overflow:visible !important; height:auto !important; }
+    body.imprimindo-estoque #overlay-estoque-pdf .relatorio-folha{ padding:0 !important; border-radius:0 !important; }
+    body.imprimindo-estoque #overlay-estoque-pdf .modal{ max-width:100% !important; max-height:none !important; overflow:visible !important; padding:0 !important; background:#fff !important; box-shadow:none !important; border:none !important; }
+    .relatorio-estoque tr{ page-break-inside:avoid; }
   }
+  .pdf-estoque-grupo{ border:1px solid var(--borda); border-radius:10px; padding:8px 10px; margin-bottom:8px; background:var(--preto3); }
+  .pdf-estoque-grupo .topo-grupo{ display:flex; justify-content:space-between; align-items:center; gap:8px; font-weight:800; font-size:12.5px; margin-bottom:4px; }
+  .pdf-estoque-grupo .topo-grupo button{ font-size:11px; padding:3px 8px; }
+  .pdf-estoque-item{ display:flex; align-items:center; gap:8px; padding:5px 2px; font-size:13px; cursor:pointer; border-top:1px dashed var(--borda); }
+  .pdf-estoque-item:first-of-type{ border-top:none; }
+  .pdf-estoque-item input{ width:18px; height:18px; margin:0; flex:0 0 auto; accent-color:var(--laranja); }
+  .pdf-estoque-item .nome{ flex:1; min-width:0; }
+  .pdf-estoque-item .nums{ font-size:11px; color:var(--muted); white-space:nowrap; }
+  .pdf-estoque-item.nao-contavel .nome::after{ content:"não contável"; font-size:9.5px; font-weight:800; text-transform:uppercase; margin-left:6px; padding:1px 6px; border-radius:6px; background:rgba(128,128,128,.2); color:var(--muted); }
+  .relatorio-estoque td.num, .relatorio-estoque th.num{ text-align:right; }
+  .relatorio-estoque tr.subtotal td{ font-weight:700; background:#f6f1ea; }
+  .relatorio-estoque td.negativo{ color:#e0231a; font-weight:800; }
 
   /* ---------- RESULTADO DO DIA / FILTROS COMANDAS DO DIA ---------- */
   .filtros-status-dia{ display:flex; gap:6px; }
@@ -1027,14 +1063,13 @@
 
       <div class="sub-secao ativa" id="subsecao-estoque-lista">
         <p style="font-size:12px; color:var(--muted); margin:10px 0 -2px;">"Vendido" e "Reservado" são calculados automaticamente. "Qtd Total" é o que você define manualmente. "Reservado" soma os ingredientes de pacotes com evento ainda não realizado — "Disponível" já é o que sobra pra venda avulsa (Total − Vendido − Reservado).</p>
-        <button class="btn-salvar-tudo somente-admin" id="btn-salvar-estoque-tudo" style="display:none;">💾 Salvar tudo</button>
+        <div class="barra-estoque">
+          <button class="btn-salvar-tudo somente-admin" id="btn-salvar-estoque-tudo" style="display:none;">💾 Salvar tudo</button>
+          <button class="btn-mini btn-organizar" id="btn-pdf-estoque" type="button">📄 Gerar PDF do estoque</button>
+        </div>
         <div class="cabecalho-tabela" id="cabecalho-estoque">
           <span class="col-nome">Produto</span>
-          <span class="col-caixa">Vendido</span>
-          <span class="col-input">Qtd Total</span>
-          <span class="col-botao"></span>
-          <span class="col-caixa">Reservado</span>
-          <span class="col-caixa">Disponível</span>
+          <div class="cabecalho-boxes"><span>Vendido</span><span id="cab-estoque-total">Qtd Total</span><span>Reservado</span><span>Disponível</span></div>
         </div>
         <div class="tabela-cards" id="lista-estoque"><div class="vazio-lista">Carregando...</div></div>
       </div>
@@ -1522,6 +1557,39 @@
   </main>
 </div>
 
+<!-- ================= RELATÓRIO DE ESTOQUE (PDF) ================= -->
+<div class="overlay" id="overlay-estoque-pdf">
+  <div class="modal" style="max-width:640px;">
+    <div class="modal-topo no-print">
+      <div><span class="titulo-comanda"><span>📄 Relatório de estoque</span></span></div>
+      <button class="btn-fechar-x" id="btn-fechar-estoque-pdf" type="button" aria-label="Fechar">✕</button>
+    </div>
+    <div id="estoque-pdf-selecao" class="no-print">
+      <p class="ordem-dica">Escolha o que entra no relatório. Itens que não são contados por unidade (vinagrete, farofa, combos...) já vêm desmarcados — sua escolha fica salva pra próxima vez.</p>
+      <div class="ordem-atalhos">
+        <button class="btn-mini" id="btn-pdf-marcar-todos" type="button">☑️ Marcar todos</button>
+        <button class="btn-mini" id="btn-pdf-desmarcar-todos" type="button">⬜ Desmarcar todos</button>
+        <button class="btn-mini" id="btn-pdf-so-contaveis" type="button">🔢 Só itens contáveis</button>
+      </div>
+      <div id="lista-estoque-pdf"></div>
+      <label style="margin-top:8px;">Observações (opcional)</label>
+      <input type="text" id="estoque-pdf-obs" placeholder="Ex: contagem após o evento de sábado">
+      <div class="msg-status" id="status-estoque-pdf"></div>
+      <div class="ordem-rodape">
+        <button class="btn-mini" id="btn-cancelar-estoque-pdf" type="button">Cancelar</button>
+        <button class="btn-primario" id="btn-gerar-estoque-pdf" type="button">📄 Gerar relatório</button>
+      </div>
+    </div>
+    <div id="estoque-pdf-previa" style="display:none;">
+      <div id="estoque-pdf-container"></div>
+      <div class="no-print" style="display:flex; gap:10px; margin-top:14px;">
+        <button class="btn-mini" id="btn-voltar-estoque-pdf" type="button">← Voltar à seleção</button>
+        <button class="btn-mini salvar" style="flex:1;" id="btn-imprimir-estoque-pdf" type="button">🖨️ Imprimir / Salvar PDF</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- ================= EDITAR DESPESA ================= -->
 <div class="overlay" id="overlay-editar-saida">
   <div class="modal" style="max-width:520px;">
@@ -1822,7 +1890,7 @@
 // ar é realmente a versão mais nova ou se o GitHub Pages ainda está
 // servindo uma versão antiga em cache.
 // =====================================================================
-const VERSAO_APP = "8.0";
+const VERSAO_APP = "8.1";
 document.querySelectorAll(".badge-versao").forEach(el => el.textContent = "v" + VERSAO_APP);
 
 // =====================================================================
@@ -4327,7 +4395,7 @@ async function carregarEstoque() {
     lista.innerHTML = "";
     const admin = ehAdmin();
     $("cabecalho-estoque").style.display = "flex";
-    if (!admin) $("cabecalho-estoque").querySelector(".col-input").textContent = "";
+    $("cab-estoque-total").textContent = "Qtd Total";
     $("btn-salvar-estoque-tudo").style.display = admin ? "block" : "none";
     ESTOQUE_MAP = {};
     resp.itens.sort((a, b) => compararPorOrdem(a.produto, "", b.produto, "")).forEach(it => {
@@ -4358,9 +4426,9 @@ async function carregarEstoque() {
         <div class="nome-item">${escapeHtml(it.produto)}<div class="cat-item">${escapeHtml(it.categoria)}</div></div>
         <div class="estoque-boxes">
           <div class="estoque-caixa"><div class="rotulo-mini">Vendido</div><div class="valor-mini">${it.qtdVendido}</div></div>
-          <div class="estoque-caixa editavel">
+          <div class="estoque-caixa editavel" title="Toque pra alterar a Qtd Total">
             <div class="rotulo-mini">Total</div>
-            <input type="number" class="input-estoque" value="${it.qtdTotal}" min="0">
+            <input type="number" class="input-estoque" value="${it.qtdTotal}" min="0" inputmode="numeric" aria-label="Qtd Total de ${escapeAttr(it.produto)}">
           </div>
           <div class="estoque-caixa"><div class="rotulo-mini">Reservado</div><div class="valor-mini">${it.qtdReservada}</div></div>
           <div class="estoque-caixa ${classeCor}"><div class="rotulo-mini">Disponível</div><div class="valor-mini">${it.qtdDisponivel}</div></div>
@@ -4373,6 +4441,131 @@ async function carregarEstoque() {
     if (!lista.querySelector(".linha-tabela")) lista.innerHTML = `<div class="vazio-lista">❌ ${e.message}</div>`;
   }
 }
+
+// ---------------------------------------------------------------------
+// RELATÓRIO DE ESTOQUE EM PDF — escolhe os itens, gera a folha e imprime
+// (no celular/computador, "Salvar como PDF" na tela de impressão).
+// ---------------------------------------------------------------------
+const CHAVE_PDF_ESTOQUE = "brasero96_pdf_estoque_desmarcados";
+const NAO_CONTAVEIS_PADRAO = ["vinagrete", "farofa", "carvao"];
+let ESTOQUE_PDF_ITENS = [];
+function tipoDoProdutoEstoque(nome) {
+  const info = MAPA_ORDEM_PRODUTOS[chaveNome(nome)];
+  return info ? info.tipo : "Outros";
+}
+function ehNaoContavel(it) {
+  const k = chaveNome(it.produto), tipo = tipoDoProdutoEstoque(it.produto);
+  return tipo === "Combo" || tipo === "Taxa" || NAO_CONTAVEIS_PADRAO.includes(k);
+}
+function lerDesmarcadosPdf() {
+  try { const v = localStorage.getItem(CHAVE_PDF_ESTOQUE); return v ? new Set(JSON.parse(v)) : null; } catch (e) { return null; }
+}
+function salvarDesmarcadosPdf() {
+  const desmarcados = [...document.querySelectorAll("#lista-estoque-pdf input[type=checkbox]")].filter(c => !c.checked).map(c => c.value);
+  try { localStorage.setItem(CHAVE_PDF_ESTOQUE, JSON.stringify(desmarcados)); } catch (e) {}
+}
+const GRUPOS_PDF_ESTOQUE = [["Espeto", "🍢 Espetos"], ["Bebida", "🥤 Bebidas"], ["Baião", "🍚 Baião e acompanhamentos"], ["Combo", "🍱 Combos"], ["Outros", "📦 Outros"]];
+function grupoPdf(it) {
+  const tipo = tipoDoProdutoEstoque(it.produto);
+  if (["vinagrete", "farofa"].includes(chaveNome(it.produto))) return "Baião";
+  return GRUPOS_PDF_ESTOQUE.some(([t]) => t === tipo) ? tipo : "Outros";
+}
+
+async function abrirModalPdfEstoque() {
+  $("estoque-pdf-selecao").style.display = ""; $("estoque-pdf-previa").style.display = "none";
+  $("status-estoque-pdf").textContent = "";
+  $("lista-estoque-pdf").innerHTML = `<div class="vazio-lista">Carregando...</div>`;
+  $("overlay-estoque-pdf").classList.add("aberto");
+  try {
+    if (!PRODUTOS_CACHE_TODOS.length) await carregarProdutos();
+    const resp = await chamarAPI("listarEstoque", {}); // sempre os números mais atuais
+    if (resp.status !== "ok") throw new Error(resp.mensagem);
+    ESTOQUE_PDF_ITENS = resp.itens.sort((a, b) => compararPorOrdem(a.produto, "", b.produto, ""));
+  } catch (e) { $("lista-estoque-pdf").innerHTML = `<div class="vazio-lista">❌ ${escapeHtml(e.message)}</div>`; return; }
+  const desmarcados = lerDesmarcadosPdf();
+  $("lista-estoque-pdf").innerHTML = GRUPOS_PDF_ESTOQUE.map(([g, titulo]) => {
+    const itens = ESTOQUE_PDF_ITENS.filter(it => grupoPdf(it) === g);
+    if (!itens.length) return "";
+    return `<div class="pdf-estoque-grupo">
+      <div class="topo-grupo"><span>${titulo}</span><button class="btn-mini" type="button" data-alternar-grupo="${g}">marcar/desmarcar</button></div>
+      ${itens.map(it => {
+        const marcado = desmarcados ? !desmarcados.has(it.produto) : !ehNaoContavel(it);
+        return `<label class="pdf-estoque-item${ehNaoContavel(it) ? " nao-contavel" : ""}">
+          <input type="checkbox" value="${escapeAttr(it.produto)}" data-grupo="${g}" ${marcado ? "checked" : ""}>
+          <span class="nome">${escapeHtml(it.produto)}</span>
+          <span class="nums">total ${it.qtdTotal} · vend. ${it.qtdVendido} · disp. ${it.qtdDisponivel}</span>
+        </label>`;
+      }).join("")}
+    </div>`;
+  }).join("");
+  $("lista-estoque-pdf").querySelectorAll("[data-alternar-grupo]").forEach(b => {
+    b.onclick = () => {
+      const caixas = [...$("lista-estoque-pdf").querySelectorAll(`input[data-grupo="${b.dataset.alternarGrupo}"]`)];
+      const marcar = caixas.some(c => !c.checked);
+      caixas.forEach(c => c.checked = marcar);
+    };
+  });
+}
+const caixasPdf = () => [...document.querySelectorAll("#lista-estoque-pdf input[type=checkbox]")];
+$("btn-pdf-marcar-todos").onclick = () => caixasPdf().forEach(c => c.checked = true);
+$("btn-pdf-desmarcar-todos").onclick = () => caixasPdf().forEach(c => c.checked = false);
+$("btn-pdf-so-contaveis").onclick = () => caixasPdf().forEach(c => {
+  const it = ESTOQUE_PDF_ITENS.find(x => x.produto === c.value);
+  c.checked = !!it && !ehNaoContavel(it);
+});
+function fecharModalPdfEstoque() { $("overlay-estoque-pdf").classList.remove("aberto"); }
+$("btn-pdf-estoque").onclick = abrirModalPdfEstoque;
+$("btn-fechar-estoque-pdf").onclick = fecharModalPdfEstoque;
+$("btn-cancelar-estoque-pdf").onclick = fecharModalPdfEstoque;
+$("overlay-estoque-pdf").addEventListener("click", (e) => { if (e.target.id === "overlay-estoque-pdf") fecharModalPdfEstoque(); });
+$("btn-voltar-estoque-pdf").onclick = () => { $("estoque-pdf-selecao").style.display = ""; $("estoque-pdf-previa").style.display = "none"; };
+
+$("btn-gerar-estoque-pdf").onclick = () => {
+  const selecionados = new Set(caixasPdf().filter(c => c.checked).map(c => c.value));
+  if (!selecionados.size) { $("status-estoque-pdf").textContent = "Marque pelo menos 1 item."; $("status-estoque-pdf").className = "msg-status erro"; return; }
+  salvarDesmarcadosPdf();
+  const itens = ESTOQUE_PDF_ITENS.filter(it => selecionados.has(it.produto));
+  const temReserva = itens.some(it => Number(it.qtdReservada) > 0);
+  const obs = $("estoque-pdf-obs").value.trim();
+  const colunas = temReserva ? 6 : 5;
+  const linhaNums = (t, v, r, d) => `<td class="num">${t}</td><td class="num">${v}</td>${temReserva ? `<td class="num">${r}</td>` : ""}<td class="num${d < 0 ? " negativo" : ""}">${d}</td>`;
+  const soma = (lista, campo) => lista.reduce((s, it) => s + (Number(it[campo]) || 0), 0);
+  let corpo = "";
+  GRUPOS_PDF_ESTOQUE.forEach(([g, titulo]) => {
+    const doGrupo = itens.filter(it => grupoPdf(it) === g);
+    if (!doGrupo.length) return;
+    corpo += `<tr><td colspan="${colunas}" style="font-weight:800; padding-top:12px;">${titulo}</td></tr>`;
+    corpo += doGrupo.map(it => `<tr><td>${escapeHtml(it.produto)}</td><td>${escapeHtml(it.categoria || "")}</td>${linhaNums(it.qtdTotal, it.qtdVendido, it.qtdReservada, it.qtdDisponivel)}</tr>`).join("");
+    corpo += `<tr class="subtotal"><td colspan="2">Subtotal ${titulo.replace(/^\S+\s/, "")}</td>${linhaNums(soma(doGrupo, "qtdTotal"), soma(doGrupo, "qtdVendido"), soma(doGrupo, "qtdReservada"), soma(doGrupo, "qtdDisponivel"))}</tr>`;
+  });
+  $("estoque-pdf-container").innerHTML = `
+    <div class="relatorio-folha relatorio-estoque">
+      <div class="relatorio-cabecalho">
+        <img src="logo.png" alt="Brasero 96">
+        <div class="titulos">
+          <h1>Brasero 96 — Relatório de Estoque</h1>
+          <div class="subtitulo">Quantidades cadastradas no sistema</div>
+        </div>
+      </div>
+      <div class="relatorio-periodo">Gerado em <b>${fmtDataHoraRel(agoraBR())}</b> por <b>${escapeHtml(USUARIO_LOGADO)}</b> · ${itens.length} item(ns)</div>
+      ${obs ? `<div style="background:#fff8ec; border:1px solid #f0d9a8; border-radius:8px; padding:8px 10px; font-size:12px; color:#7a4d00; margin-bottom:12px;">📝 ${escapeHtml(obs)}</div>` : ""}
+      <table>
+        <thead><tr><th>Produto</th><th>Categoria</th><th class="num">Total cadastrado</th><th class="num">Vendido</th>${temReserva ? `<th class="num">Reservado</th>` : ""}<th class="num">Disponível</th></tr></thead>
+        <tbody>
+          ${corpo}
+          <tr class="total-linha"><td colspan="2">TOTAL GERAL</td>${linhaNums(soma(itens, "qtdTotal"), soma(itens, "qtdVendido"), soma(itens, "qtdReservada"), soma(itens, "qtdDisponivel"))}</tr>
+        </tbody>
+      </table>
+      <p style="font-size:10.5px; color:#888; margin-top:10px;">Disponível = Total cadastrado − Vendido${temReserva ? " − Reservado (ingredientes separados pra pacotes com evento ainda não realizado)" : ""}. Valores em vermelho: disponível negativo — conferir o estoque.</p>
+      <div class="relatorio-rodape">Relatório gerado automaticamente pelo Sistema Financeiro Brasero 96.</div>
+    </div>`;
+  $("estoque-pdf-selecao").style.display = "none"; $("estoque-pdf-previa").style.display = "";
+};
+$("btn-imprimir-estoque-pdf").onclick = () => {
+  document.body.classList.add("imprimindo-estoque");
+  window.print();
+};
+window.addEventListener("afterprint", () => document.body.classList.remove("imprimindo-estoque"));
 
 // Salva todas as linhas do estoque de uma vez (1 botão só, em vez de um
 // "Salvar" por produto).
