@@ -827,6 +827,48 @@
   .relatorio-estoque tr.subtotal td{ font-weight:700; background:#f6f1ea; }
   .relatorio-estoque td.negativo{ color:#e0231a; font-weight:800; }
 
+  /* ---------- RELATÓRIO GERENCIAL ---------- */
+  .rg-kpis{ display:grid; grid-template-columns:repeat(4, minmax(0,1fr)); gap:10px; margin-bottom:18px; }
+  .rg-kpi{ border:1px solid #e2ddd6; border-radius:10px; padding:10px 12px; background:#fff; }
+  .rg-kpi.principal{ border-top:3px solid var(--laranja); }
+  .rg-kpi .rotulo{ font-size:9.5px; text-transform:uppercase; letter-spacing:.3px; color:#888; }
+  .rg-kpi .valor{ font-size:17px; font-weight:800; color:#1a1a1a; margin-top:3px; }
+  .rg-kpi .extra{ font-size:10.5px; color:#888; margin-top:2px; }
+  .rg-var{ font-size:10.5px; font-weight:800; margin-top:3px; }
+  .rg-var.bom{ color:#1f9d5c; } .rg-var.ruim{ color:#d4281f; } .rg-var.neutro{ color:#999; }
+  .rg-alertas{ border:1px solid #f0d9a8; background:#fffaf0; border-radius:10px; padding:10px 14px; margin-bottom:18px; }
+  .rg-alertas h3{ margin:0 0 6px; font-size:13px; color:#8a5a00; }
+  .rg-alertas li{ font-size:12px; color:#444; margin:4px 0; line-height:1.4; }
+  .rg-alertas li::marker{ content:""; }
+  .rg-alertas ul{ margin:0; padding:0; list-style:none; }
+  .rg-selo{ display:inline-block; min-width:52px; text-align:center; font-size:9px; font-weight:800; text-transform:uppercase; border-radius:5px; padding:2px 5px; margin-right:6px; }
+  .rg-selo.alto{ background:#fde2e0; color:#b3261e; } .rg-selo.medio{ background:#fff0cc; color:#8a5a00; } .rg-selo.info{ background:#e5f1fb; color:#1f6fa8; }
+  .rg-duas{ display:grid; grid-template-columns:1fr 1fr; gap:18px; }
+  .rg-barra-linha{ display:grid; grid-template-columns:128px 1fr 92px; align-items:center; gap:8px; font-size:12px; margin:5px 0; color:#333; }
+  .rg-barra-linha .trilho{ height:12px; background:#f1ece5; border-radius:6px; overflow:hidden; }
+  .rg-barra-linha .preench{ height:100%; border-radius:6px; }
+  .rg-barra-linha .v{ text-align:right; font-weight:700; white-space:nowrap; }
+  .rg-barra-linha .v small{ display:block; font-weight:400; color:#999; font-size:10px; }
+  .rg-composicao{ display:flex; height:22px; border-radius:6px; overflow:hidden; margin:8px 0 6px; }
+  .rg-composicao div{ height:100%; }
+  .rg-legenda{ display:flex; flex-wrap:wrap; gap:6px 14px; font-size:11px; color:#555; }
+  .rg-legenda span::before{ content:""; display:inline-block; width:9px; height:9px; border-radius:2px; margin-right:5px; background:var(--c); vertical-align:middle; }
+  .rg-grafico{ width:100%; height:auto; display:block; }
+  .rg-posicao{ display:grid; grid-template-columns:repeat(3, minmax(0,1fr)); gap:8px; }
+  .rg-posicao > div{ border:1px solid #eee; border-radius:8px; padding:8px 10px; }
+  .rg-posicao .rotulo{ font-size:9.5px; text-transform:uppercase; color:#888; }
+  .rg-posicao .valor{ font-size:14px; font-weight:800; color:#1a1a1a; }
+  .rg-nota{ font-size:10.5px; color:#999; margin:4px 0 0; line-height:1.45; }
+  @media(max-width:700px){ .rg-kpis{ grid-template-columns:repeat(2, minmax(0,1fr)); } .rg-duas{ grid-template-columns:1fr; } .rg-posicao{ grid-template-columns:repeat(2, minmax(0,1fr)); } .rg-barra-linha{ grid-template-columns:96px 1fr 84px; } }
+  @media print{ .rg-kpis{ grid-template-columns:repeat(4, minmax(0,1fr)); } .rg-duas{ grid-template-columns:1fr 1fr; } .rg-posicao{ grid-template-columns:repeat(3, minmax(0,1fr)); } .rg-kpi, .rg-posicao > div, .rg-alertas, .rg-grafico, .rg-barra-linha{ break-inside:avoid; page-break-inside:avoid; } }
+  /* celular: tabelas dos relatórios compactas; se ainda não couber, rola só a folha (não a página) */
+  @media screen and (max-width:640px){
+    .relatorio-folha{ overflow-x:auto; -webkit-overflow-scrolling:touch; }
+    .relatorio-folha th, .relatorio-folha td{ padding:5px 4px !important; font-size:11px !important; }
+    .relatorio-folha td.valor{ white-space:nowrap; }
+    .relatorio-cards{ grid-template-columns:repeat(2, minmax(0,1fr)) !important; }
+  }
+
   /* ---------- RESULTADO DO DIA / FILTROS COMANDAS DO DIA ---------- */
   .filtros-status-dia{ display:flex; gap:6px; }
   .filtros-status-dia button{ background:transparent; border:1px solid var(--borda); color:var(--muted); border-radius:999px; padding:6px 12px; font-size:12px; font-weight:700; cursor:pointer; }
@@ -1450,7 +1492,8 @@
       <div class="linha-topo no-print"><h2>Relatórios</h2></div>
 
       <div class="sub-abas no-print">
-        <button data-subaba="rel-semanal" class="ativa">Semanal</button>
+        <button data-subaba="rel-gerencial" class="ativa">📊 Gerencial</button>
+        <button data-subaba="rel-semanal">Semanal</button>
         <button data-subaba="rel-mensal">Mensal</button>
         <button data-subaba="rel-vendas">Vendas</button>
         <button data-subaba="rel-entradas">Entradas</button>
@@ -1459,7 +1502,32 @@
       </div>
 
       <!-- ---- Relatório Semanal (já existia) ---- -->
-      <div class="sub-secao ativa" id="subsecao-rel-semanal">
+      <div class="sub-secao ativa" id="subsecao-rel-gerencial">
+        <div class="card-form no-print">
+          <p style="font-size:12px; color:var(--muted); margin-top:-4px;">Visão geral do negócio: resultado do período comparado com o anterior, evolução dos últimos meses, de onde vem e para onde vai o dinheiro, e o que precisa de atenção.</p>
+          <label>Período</label>
+          <select id="rg-periodo">
+            <option value="mes">Este mês</option>
+            <option value="mes-passado">Mês passado</option>
+            <option value="3-meses">Últimos 3 meses</option>
+            <option value="ano">Este ano</option>
+            <option value="personalizado">Escolher datas</option>
+          </select>
+          <div class="grid2" id="rg-datas">
+            <div><label>De</label><input type="date" id="rg-data-inicio"></div>
+            <div><label>Até</label><input type="date" id="rg-data-fim"></div>
+          </div>
+          <label>Observações (opcional)</label>
+          <textarea id="rg-observacoes" rows="2" placeholder="Ex: mês com 3 eventos e compra de equipamentos..."></textarea>
+          <div style="display:flex; gap:10px; margin-top:12px; flex-wrap:wrap;">
+            <button class="btn-primario" style="flex:1; min-width:160px;" id="btn-gerar-rel-gerencial">Gerar relatório gerencial</button>
+            <button class="btn-mini salvar" id="btn-imprimir-rel-gerencial" style="display:none;">🖨️ Imprimir / Salvar PDF</button>
+          </div>
+        </div>
+        <div id="rel-gerencial-container"></div>
+      </div>
+
+      <div class="sub-secao" id="subsecao-rel-semanal">
         <div class="card-form no-print">
           <p style="font-size:12px; color:var(--muted); margin-top:-4px;">Já vem preenchido com a semana anterior completa (segunda a domingo) — ajuste as datas se quiser outro período.</p>
           <div class="grid2">
@@ -1489,6 +1557,7 @@
             <div><label>Até</label><input type="date" id="rv-data-fim"></div>
           </div>
           <label class="checkbox-linha"><input type="checkbox" id="rv-todo-periodo"><span>Considerar todo o período (ignora as datas acima)</span></label>
+          <label class="checkbox-linha"><input type="checkbox" id="rv-lista-completa"><span>Incluir no final a lista de todas as comandas</span></label>
           <label>Simular ticket médio (opcional)</label>
           <input type="number" id="rv-ticket-alvo" step="0.5" placeholder="Ex: 27,00">
           <p style="font-size:11px; color:var(--muted); margin:4px 0 0;">Mostra quanto o faturamento mudaria se o ticket médio por cliente fosse esse valor, mantendo a mesma quantidade de clientes.</p>
@@ -1528,6 +1597,7 @@
             <div><label>Até</label><input type="date" id="rsa-data-fim"></div>
           </div>
           <label class="checkbox-linha"><input type="checkbox" id="rsa-todo-periodo"><span>Considerar todo o período (ignora as datas acima)</span></label>
+          <label class="checkbox-linha"><input type="checkbox" id="rsa-detalhado"><span>Incluir no final a lista de cada lançamento</span></label>
           <label>Observações (opcional)</label>
           <textarea id="rsa-observacoes" rows="3" placeholder="Alguma observação sobre as saídas desse período..."></textarea>
           <div style="display:flex; gap:10px; margin-top:12px; flex-wrap:wrap;">
@@ -1909,7 +1979,7 @@
 // ar é realmente a versão mais nova ou se o GitHub Pages ainda está
 // servindo uma versão antiga em cache.
 // =====================================================================
-const VERSAO_APP = "8.3";
+const VERSAO_APP = "8.5";
 document.querySelectorAll(".badge-versao").forEach(el => el.textContent = "v" + VERSAO_APP);
 
 // =====================================================================
@@ -1967,7 +2037,7 @@ aplicarTema(document.documentElement.getAttribute("data-tema"));
 // CONFIG
 // =====================================================================
 const CONFIG = {
-  API_URL: "https://script.google.com/macros/s/AKfycbyvCy1AOG9_hDe9m-wfRSqDMWfL3s-eFo-hETAge6IM419fyq6AziTEvxpbaUKX57RtKA/exec"
+  API_URL: "https://script.google.com/macros/s/AKfycbzsvrD8eU4wox5DDON0Pvpm2VxvHBb6yd9QCUeBP-BzwZ9WDdHa_6masVPtEuvJtWZU1A/exec"
 };
 
 const $ = (id) => document.getElementById(id);
@@ -6206,6 +6276,27 @@ function montarHtmlRelatorio(r, dataInicioIso, dataFimIso, observacoes, assinant
       </div>
       <div class="relatorio-periodo">Período: <b>${paraBR(dataInicioIso)} a ${paraBR(dataFimIso)}</b> · Gerado em ${fmtDataHoraRel(agoraBR())} por <b>${escapeHtml(USUARIO_LOGADO)}</b></div>
 
+      ${r.resultadoPeriodo ? (() => {
+        const a = r.resultadoPeriodo, b = r.resultadoAnterior || {};
+        const tgA = a.totaisGastos, tgB = b.totaisGastos || {};
+        const corV = (v) => (v >= 0 ? "#1f9d5c" : "#d4281f");
+        const ticketA = a.qtdComandas ? (a.faturamento - (a.pacotes.recebidoNoMes || 0)) / a.qtdComandas : 0;
+        const ticketB = b.qtdComandas ? (b.faturamento - ((b.pacotes || {}).recebidoNoMes || 0)) / b.qtdComandas : 0;
+        return `
+      <div class="relatorio-secao-titulo">Resultado da Semana</div>
+      <div class="rg-kpis">
+        <div class="rg-kpi principal"><div class="rotulo">Faturamento</div><div class="valor">${fmt(a.faturamento + a.juros)}</div>${htmlVariacao(a.faturamento + a.juros, (b.faturamento || 0) + (b.juros || 0))}</div>
+        <div class="rg-kpi principal"><div class="rotulo">Lucro bruto</div><div class="valor" style="color:${corV(a.lucroBruto)};">${fmt(a.lucroBruto)}</div><div class="extra">margem ${pct(a.margemBruta)}</div>${htmlVariacao(a.lucroBruto, b.lucroBruto)}</div>
+        <div class="rg-kpi principal"><div class="rotulo">Gastos</div><div class="valor">${fmt(tgA.queReduzemOLucro)}</div><div class="extra">despesas + investimentos</div>${htmlVariacao(tgA.queReduzemOLucro, tgB.queReduzemOLucro, true)}</div>
+        <div class="rg-kpi principal"><div class="rotulo">Lucro líquido</div><div class="valor" style="color:${corV(a.lucroLiquido)};">${fmt(a.lucroLiquido)}</div><div class="extra">margem ${pct(a.margemLiquida)}</div>${htmlVariacao(a.lucroLiquido, b.lucroLiquido)}</div>
+        <div class="rg-kpi"><div class="rotulo">Comandas</div><div class="valor">${a.qtdComandas}</div>${htmlVariacao(a.qtdComandas, b.qtdComandas)}</div>
+        <div class="rg-kpi"><div class="rotulo">Ticket médio</div><div class="valor">${fmt(ticketA)}</div>${htmlVariacao(ticketA, ticketB)}</div>
+        <div class="rg-kpi"><div class="rotulo">Custo das vendas</div><div class="valor">${fmt(a.custoVendas)}</div></div>
+        <div class="rg-kpi"><div class="rotulo">Compra de estoque</div><div class="valor">${fmt(tgA.compraEstoque)}</div><div class="extra">vira custo quando vende</div></div>
+      </div>
+      <p style="font-size:10.5px; color:#999; margin:-10px 0 16px;">Setas comparam com a semana anterior (mesmo número de dias). Mesmo cálculo do Relatório Mensal e do Gerencial.</p>`;
+      })() : ""}
+
       <div class="relatorio-secao-titulo">Resumo Financeiro (acumulado desde o início)</div>
       <div class="relatorio-cards">
         <div class="relatorio-card"><div class="rotulo">Total de Vendas</div><div class="valor">${fmt(res.totalVendas)}</div></div>
@@ -6297,73 +6388,61 @@ $("btn-gerar-rel-vendas").onclick = async () => {
   if (!todoPeriodo && (!dataInicio || !dataFim)) { alert("Escolha o período ou marque \"Todo o período\"."); return; }
   const observacoes = $("rv-observacoes").value.trim();
   const ticketAlvo = parseFloat($("rv-ticket-alvo").value) || 0;
+  const listaCompleta = $("rv-lista-completa").checked;
   const container = $("rel-vendas-container");
   container.innerHTML = `<div class="vazio-lista">Carregando...</div>`;
   $("btn-imprimir-rel-vendas").style.display = "none";
   try {
     const r = await chamarAPI("relatorioVendas", { dataInicio, dataFim });
     if (r.status !== "ok") { container.innerHTML = `<div class="vazio-lista">❌ ${r.mensagem}</div>`; return; }
-    const linhasComandas = ordenarCronologico(r.comandas, "data").map(c => `
-      <tr>
-        <td>${fmtDataHoraRel(c.data)}</td>
-        <td>${escapeHtml(c.identificacao)}</td>
-        <td>${c.status}</td>
-        <td style="text-align:right;">${c.totalItens}</td>
-        <td class="valor">${fmt(c.valorTotal)}</td>
-      </tr>
-    `);
 
-    // Simulador de ticket médio: "se o ticket médio fosse X, mantendo os
-    // mesmos clientes, o faturamento seria Y" — não muda dado nenhum, é só
-    // uma projeção de bolso pra ver o impacto de subir o ticket médio.
+    // formas de pagamento
+    const formas = {};
+    r.comandas.forEach(c => { const f = c.formaPagamento || "Não informado"; if (!formas[f]) formas[f] = { qtd: 0, valor: 0 }; formas[f].qtd++; formas[f].valor += c.valorTotal; });
+    const linhasFormas = Object.keys(formas).sort((a, b) => formas[b].valor - formas[a].valor).map(f => `
+      <tr><td>${escapeHtml(f)}</td><td style="text-align:right;">${formas[f].qtd}</td><td class="valor">${fmt(formas[f].valor)}</td><td style="text-align:right;">${r.totalVendido ? pct(formas[f].valor / r.totalVendido * 100) : "—"}</td></tr>`);
+
+    const linhasDiaSemana = (r.porDiaSemana || []).map(d => `
+      <tr><td>${d.diaSemana}</td><td style="text-align:right;">${d.qtdClientes}</td><td class="valor">${fmt(d.totalVendido)}</td><td class="valor">${fmt(d.ticketMedio)}</td></tr>`);
+
+    // espetos: avulso + em combos numa tabela só
+    const sabores = {};
+    (r.saboresEspetoAvulso || []).forEach(x => { sabores[x.produto] = sabores[x.produto] || { avulso: 0, combo: 0 }; sabores[x.produto].avulso += Number(x.quantidade) || 0; });
+    (r.saboresEspetoCombo || []).forEach(x => { sabores[x.produto] = sabores[x.produto] || { avulso: 0, combo: 0 }; sabores[x.produto].combo += Number(x.quantidade) || 0; });
+    const listaSabores = Object.keys(sabores).map(n => ({ n, a: sabores[n].avulso, c: sabores[n].combo, t: sabores[n].avulso + sabores[n].combo })).sort((x, y) => y.t - x.t);
+    const totA = listaSabores.reduce((s2, x) => s2 + x.a, 0), totC = listaSabores.reduce((s2, x) => s2 + x.c, 0);
+    const linhasSabores = listaSabores.map(x => `<tr><td>${escapeHtml(x.n)}</td><td style="text-align:right;">${x.a}</td><td style="text-align:right;">${x.c}</td><td style="text-align:right; font-weight:700;">${x.t}</td></tr>`);
+    if (linhasSabores.length) linhasSabores.push(`<tr class="total-linha"><td>🍢 Total de espetos vendidos</td><td style="text-align:right;">${totA}</td><td style="text-align:right;">${totC}</td><td style="text-align:right;">${totA + totC}</td></tr>`);
+
+    const maiores = [...r.comandas].sort((a, b) => b.valorTotal - a.valorTotal).slice(0, 10);
+    const linhaComanda = (c) => `<tr><td>${fmtDataHoraRel(c.data)}</td><td>${escapeHtml(c.identificacao)}</td><td>${escapeHtml(c.formaPagamento || "—")}</td><td style="text-align:right;">${c.totalItens}</td><td class="valor">${fmt(c.valorTotal)}</td></tr>`;
+
     let blocoSimulador = "";
     if (ticketAlvo > 0 && r.qtdClientes > 0) {
       const faturamentoProjetado = ticketAlvo * r.qtdClientes;
       const diferenca = faturamentoProjetado - r.totalVendido;
       blocoSimulador = `
-        <div class="relatorio-secao-titulo">Simulação: Ticket Médio de ${fmt(ticketAlvo)}</div>
-        <p style="font-size:12px; color:#444; margin:0 0 14px;">
-          Mantendo os mesmos <b>${r.qtdClientes}</b> clientes, se o ticket médio fosse <b>${fmt(ticketAlvo)}</b> (hoje é ${fmt(r.ticketMedioPorCliente)}),
-          o faturamento do período passaria de <b>${fmt(r.totalVendido)}</b> pra <b>${fmt(faturamentoProjetado)}</b>
-          — ${diferenca >= 0 ? "um acréscimo de" : "uma redução de"} <b style="color:${diferenca >= 0 ? '#2fbf71' : '#e0231a'};">${fmt(Math.abs(diferenca))}</b>.
-        </p>
-      `;
+        <div class="relatorio-secao-titulo">Simulação: ticket médio de ${fmt(ticketAlvo)}</div>
+        <p style="font-size:12px; color:#444; margin:0 0 14px;">Com os mesmos <b>${r.qtdClientes}</b> clientes e ticket médio de <b>${fmt(ticketAlvo)}</b> (hoje ${fmt(r.ticketMedioPorCliente)}), o faturamento iria de <b>${fmt(r.totalVendido)}</b> para <b>${fmt(faturamentoProjetado)}</b> — <b style="color:${diferenca >= 0 ? "#2fbf71" : "#e0231a"};">${diferenca >= 0 ? "+" : "−"}${fmt(Math.abs(diferenca))}</b>.</p>`;
     }
-
-    // Sexta x Sábado (ou qualquer outro dia trabalhado) — pra comparar
-    // desempenho comercial entre os dias da semana.
-    const linhasDiaSemana = (r.porDiaSemana || []).map(d => `
-      <tr>
-        <td>${d.diaSemana}</td>
-        <td style="text-align:right;">${d.qtdClientes}</td>
-        <td class="valor">${fmt(d.totalVendido)}</td>
-        <td class="valor">${fmt(d.ticketMedio)}</td>
-      </tr>
-    `);
-
-    // Quebra por sabor de espeto — avulso e o que saiu dentro de combos,
-    // contados separadamente (cada um no seu próprio card/seção).
-    const linhasSaboresAvulso = (r.saboresEspetoAvulso || []).map(s => `<tr><td>${escapeHtml(s.produto)}</td><td style="text-align:right;">${s.quantidade}</td></tr>`);
-    const linhasSaboresCombo = (r.saboresEspetoCombo || []).map(s => `<tr><td>${escapeHtml(s.produto)}</td><td style="text-align:right;">${s.quantidade}</td></tr>`);
-    const totalEspetosAvulsos = (r.saboresEspetoAvulso || []).reduce((soma, x) => soma + (Number(x.quantidade) || 0), 0);
-    const totalEspetosCombo = (r.saboresEspetoCombo || []).reduce((soma, x) => soma + (Number(x.quantidade) || 0), 0);
-    if (linhasSaboresAvulso.length) linhasSaboresAvulso.push(`<tr class="total-linha"><td>Total de espetos avulsos</td><td style="text-align:right;">${totalEspetosAvulsos}</td></tr>`);
-    if (linhasSaboresCombo.length) linhasSaboresCombo.push(`<tr class="total-linha"><td>Total de espetos em combos</td><td style="text-align:right;">${totalEspetosCombo}</td></tr>`);
 
     container.innerHTML = `
       <div class="relatorio-folha">
         ${blocoCabecalhoRelatorio("Relatório de Vendas", textoPeriodo(dataInicio, dataFim, todoPeriodo), observacoes)}
-
         <div class="relatorio-cards">
-          <div class="relatorio-card"><div class="rotulo">Clientes Atendidos</div><div class="valor">${r.qtdClientes}</div></div>
           <div class="relatorio-card destaque"><div class="rotulo">Total Vendido</div><div class="valor">${fmt(r.totalVendido)}</div></div>
+          <div class="relatorio-card"><div class="rotulo">Clientes Atendidos</div><div class="valor">${r.qtdClientes}</div></div>
           <div class="relatorio-card"><div class="rotulo">Ticket Médio p/ Cliente</div><div class="valor">${fmt(r.ticketMedioPorCliente)}</div></div>
-          <div class="relatorio-card"><div class="rotulo">Ticket Médio p/ Dia</div><div class="valor">${fmt(r.ticketMedioPorDia)}</div></div>
-          <div class="relatorio-card"><div class="rotulo">Itens Vendidos</div><div class="valor">${r.totalItensVendidos}</div></div>
+          <div class="relatorio-card"><div class="rotulo">Média por Dia de Venda</div><div class="valor">${fmt(r.ticketMedioPorDia)}</div></div>
+          <div class="relatorio-card"><div class="rotulo">Espetos Vendidos</div><div class="valor">${totA + totC}</div></div>
         </div>
-        <p style="font-size:11.5px; color:#666; margin:-8px 0 18px;">Considera só comandas fechadas. Dias com venda no período: <b>${r.qtdDiasComVenda}</b>${r.maiorComanda ? ` · Maior comanda: <b>${escapeHtml(r.maiorComanda.identificacao)}</b> (${fmt(r.maiorComanda.valorTotal)})` : ""}${r.menorComanda ? ` · Menor: <b>${escapeHtml(r.menorComanda.identificacao)}</b> (${fmt(r.menorComanda.valorTotal)})` : ""}</p>
+        <p style="font-size:11.5px; color:#666; margin:-8px 0 18px;">Só comandas fechadas. ${r.qtdDiasComVenda} dia(s) com venda · ${r.totalItensVendidos} itens vendidos.</p>
 
-        ${blocoSimulador}
+        <div class="relatorio-secao-titulo">Formas de Pagamento</div>
+        <table>
+          <thead><tr><th>Forma</th><th style="text-align:right;">Comandas</th><th style="text-align:right;">Valor</th><th style="text-align:right;">% do total</th></tr></thead>
+          <tbody>${linhaOuVazio(linhasFormas, 4, "Sem vendas no período.")}</tbody>
+        </table>
 
         <div class="relatorio-secao-titulo">Desempenho por Dia da Semana</div>
         <table>
@@ -6371,29 +6450,29 @@ $("btn-gerar-rel-vendas").onclick = async () => {
           <tbody>${linhaOuVazio(linhasDiaSemana, 4, "Sem dados suficientes.")}</tbody>
         </table>
 
-        <div class="relatorio-secao-titulo">Espetos Avulsos por Sabor</div>
+        <div class="relatorio-secao-titulo">Espetos por Sabor</div>
         <table>
-          <thead><tr><th>Sabor</th><th style="text-align:right;">Quantidade</th></tr></thead>
-          <tbody>${linhaOuVazio(linhasSaboresAvulso, 2, "Nenhum espeto avulso vendido no período.")}</tbody>
+          <thead><tr><th>Sabor</th><th style="text-align:right;">Avulso</th><th style="text-align:right;">Em combos</th><th style="text-align:right;">Total</th></tr></thead>
+          <tbody>${linhaOuVazio(linhasSabores, 4, "Nenhum espeto vendido no período.")}</tbody>
         </table>
 
-        <div class="relatorio-secao-titulo">Sabores Usados em Combos</div>
+        <div class="relatorio-secao-titulo">10 Maiores Comandas</div>
         <table>
-          <thead><tr><th>Sabor</th><th style="text-align:right;">Quantidade</th></tr></thead>
-          <tbody>${linhaOuVazio(linhasSaboresCombo, 2, "Nenhum combo vendido no período.")}</tbody>
-        </table>
-        <table style="margin-top:8px;">
-          <tbody><tr class="total-linha"><td>🍢 Total de espetos vendidos no período (avulsos + combos)</td><td style="text-align:right;">${totalEspetosAvulsos + totalEspetosCombo}</td></tr></tbody>
+          <thead><tr><th>Data</th><th>Comanda</th><th>Pagamento</th><th style="text-align:right;">Itens</th><th style="text-align:right;">Valor</th></tr></thead>
+          <tbody>${linhaOuVazio(maiores.map(linhaComanda), 5, "Nenhuma comanda no período.")}</tbody>
         </table>
 
-        <div class="relatorio-secao-titulo">Vendas por Comanda/Cliente</div>
+        ${blocoSimulador}
+
+        ${listaCompleta ? `
+        <div class="relatorio-secao-titulo">Todas as Comandas (${r.comandas.length})</div>
         <table>
-          <thead><tr><th>Data</th><th>Comanda</th><th>Status</th><th style="text-align:right;">Itens</th><th style="text-align:right;">Valor</th></tr></thead>
+          <thead><tr><th>Data</th><th>Comanda</th><th>Pagamento</th><th style="text-align:right;">Itens</th><th style="text-align:right;">Valor</th></tr></thead>
           <tbody>
-            ${linhaOuVazio(linhasComandas, 5, "Nenhuma comanda no período.")}
+            ${linhaOuVazio(ordenarCronologico(r.comandas, "data").map(linhaComanda), 5, "Nenhuma comanda no período.")}
             ${r.comandas.length ? `<tr class="total-linha"><td colspan="4">Total vendido</td><td class="valor">${fmt(r.totalVendido)}</td></tr>` : ""}
           </tbody>
-        </table>
+        </table>` : ""}
         <div class="relatorio-rodape">Relatório gerado automaticamente pelo Sistema Financeiro Brasero 96.</div>
       </div>
     `;
@@ -6417,30 +6496,36 @@ $("btn-gerar-rel-entradas").onclick = async () => {
   try {
     const r = await chamarAPI("relatorioEntradas", { dataInicio, dataFim });
     if (r.status !== "ok") { container.innerHTML = `<div class="vazio-lista">❌ ${r.mensagem}</div>`; return; }
-    const linhas = ordenarCronologico(r.registros, "data").map(e => `
-      <tr>
-        <td>${fmtDataHoraRel(e.data)}</td>
-        <td>${escapeHtml(e.categoria)}</td>
-        <td>${escapeHtml(e.descricao || "—")}</td>
-        <td>${escapeHtml(e.observacao || "—")}</td>
-        <td class="valor">${fmt(e.valor)}</td>
-      </tr>
-    `);
+    // agrupa pelo EFEITO no sistema (mesma regra do servidor)
+    const grupos = [
+      { id: "venda", titulo: "🧾 Vendas sem comanda", explica: "Contam como venda (faturamento e lucro) e somam no caixa.", cats: ["Venda sem comanda"] },
+      { id: "caixa", titulo: "💰 Somam no caixa", explica: "Aportes, investimentos dos sócios, devoluções, rendimentos. Entram no caixa, mas não são venda nem lucro.", cats: ["Entrada Manual", "Aporte/Empréstimo"] },
+      { id: "repasse", titulo: "↪️ Repasse", explica: "Valores de passagem (repassados a terceiros): não somam no caixa nem nas vendas.", cats: null }
+    ];
+    const grupoDe = (cat) => grupos.find(g => g.cats && g.cats.includes(cat)) || grupos[2];
+    const porGrupo = {}; grupos.forEach(g => porGrupo[g.id] = []);
+    r.registros.forEach(e => porGrupo[grupoDe(e.categoria).id].push(e));
+    const soma = (l) => l.reduce((s2, e) => s2 + (Number(e.valor) || 0), 0);
+    const secoes = grupos.filter(g => porGrupo[g.id].length).map(g => `
+      <div class="relatorio-secao-titulo">${g.titulo} — ${fmt(soma(porGrupo[g.id]))}</div>
+      <p style="font-size:11px; color:#888; margin:0 0 6px;">${g.explica}</p>
+      <table>
+        <thead><tr><th>Data</th><th>Categoria</th><th>Descrição</th><th style="text-align:right;">Valor</th></tr></thead>
+        <tbody>
+          ${ordenarCronologico(porGrupo[g.id], "data").map(e => `<tr><td>${fmtDataHoraRel(e.data)}</td><td>${escapeHtml(e.categoria)}</td><td>${escapeHtml(e.descricao || "—")}${e.observacao ? `<div style="font-size:10.5px; color:#888;">${escapeHtml(e.observacao)}</div>` : ""}</td><td class="valor">${fmt(e.valor)}</td></tr>`).join("")}
+          <tr class="total-linha"><td colspan="3">Subtotal</td><td class="valor">${fmt(soma(porGrupo[g.id]))}</td></tr>
+        </tbody>
+      </table>`).join("");
     container.innerHTML = `
       <div class="relatorio-folha">
         ${blocoCabecalhoRelatorio("Relatório de Entradas Eventuais", textoPeriodo(dataInicio, dataFim, todoPeriodo), observacoes)}
         <div class="relatorio-cards">
           <div class="relatorio-card destaque"><div class="rotulo">Total de Entradas</div><div class="valor">${fmt(r.total)}</div></div>
-          <div class="relatorio-card"><div class="rotulo">Qtd. de Lançamentos</div><div class="valor">${r.registros.length}</div></div>
+          <div class="relatorio-card"><div class="rotulo">É venda</div><div class="valor">${fmt(soma(porGrupo.venda))}</div></div>
+          <div class="relatorio-card"><div class="rotulo">Soma no caixa</div><div class="valor">${fmt(soma(porGrupo.caixa))}</div></div>
+          <div class="relatorio-card"><div class="rotulo">Repasse</div><div class="valor">${fmt(soma(porGrupo.repasse))}</div></div>
         </div>
-        <div class="relatorio-secao-titulo">Detalhamento</div>
-        <table>
-          <thead><tr><th>Data</th><th>Categoria</th><th>Descrição</th><th>Observação</th><th style="text-align:right;">Valor</th></tr></thead>
-          <tbody>
-            ${linhaOuVazio(linhas, 5, "Nenhuma entrada registrada no período.")}
-            ${r.registros.length ? `<tr class="total-linha"><td colspan="4">Total</td><td class="valor">${fmt(r.total)}</td></tr>` : ""}
-          </tbody>
-        </table>
+        ${secoes || `<p class="relatorio-vazio">Nenhuma entrada registrada no período.</p>`}
         <div class="relatorio-rodape">Relatório gerado automaticamente pelo Sistema Financeiro Brasero 96.</div>
       </div>
     `;
@@ -6458,51 +6543,58 @@ $("btn-gerar-rel-saidas").onclick = async () => {
   const dataFim = todoPeriodo ? "" : $("rsa-data-fim").value;
   if (!todoPeriodo && (!dataInicio || !dataFim)) { alert("Escolha o período ou marque \"Todo o período\"."); return; }
   const observacoes = $("rsa-observacoes").value.trim();
+  const detalhado = $("rsa-detalhado").checked;
   const container = $("rel-saidas-container");
   container.innerHTML = `<div class="vazio-lista">Carregando...</div>`;
   $("btn-imprimir-rel-saidas").style.display = "none";
   try {
     const r = await chamarAPI("relatorioSaidas", { dataInicio, dataFim });
     if (r.status !== "ok") { container.innerHTML = `<div class="vazio-lista">❌ ${r.mensagem}</div>`; return; }
-    const linhas = ordenarCronologico(r.registros, "data").map(s => `
-      <tr>
-        <td>${fmtDataHoraRel(s.data)}</td>
-        <td>${escapeHtml(s.categoria)}</td>
-        <td>${escapeHtml(s.descricao || "—")}</td>
-        <td>${s.statusPagamento === "Pago" ? "✅ Pago" : "⏳ Pendente"}</td>
-        <td class="valor">${fmt(s.valor)}</td>
-      </tr>
-    `);
-    const linhasCategoria = Object.keys(r.porCategoria).sort().map(cat => `
-      <tr>
-        <td>${escapeHtml(cat)}</td>
-        <td class="valor">${fmt(r.porCategoria[cat].pago)}</td>
-        <td class="valor">${fmt(r.porCategoria[cat].pendente)}</td>
-      </tr>
-    `);
+    // agrupa pelos 4 tipos do guia do "Lançar saída"
+    const ordemTipos = ["custo", "despesa", "investimento", "retirada"];
+    const tipoDe = (cat) => TIPO_CATEGORIA_SAIDA[cat] || "despesa";
+    const porTipo = {}; ordemTipos.forEach(t => porTipo[t] = { pago: 0, pendente: 0, cats: [] });
+    Object.keys(r.porCategoria).forEach(cat => {
+      const t = tipoDe(cat), v = r.porCategoria[cat];
+      porTipo[t].pago += v.pago; porTipo[t].pendente += v.pendente;
+      porTipo[t].cats.push({ cat, pago: v.pago, pendente: v.pendente, total: v.pago + v.pendente });
+    });
+    const total = (t) => porTipo[t].pago + porTipo[t].pendente;
+    const corTipo = { custo: "#3aa0e8", despesa: "#e0231a", investimento: "#2fbf71", retirada: "#b8860b" };
+    const linhasTipos = ordemTipos.filter(t => porTipo[t].cats.length).map(t => `
+      <tr><td colspan="4" style="font-weight:800; padding-top:12px; color:${corTipo[t]};">${INFO_TIPO_SAIDA[t].selo}</td></tr>
+      ${porTipo[t].cats.sort((a, b) => b.total - a.total).map(c => `<tr><td style="padding-left:16px;">${escapeHtml(c.cat)}</td><td class="valor">${fmt(c.pago)}</td><td class="valor">${c.pendente ? fmt(c.pendente) : "—"}</td><td class="valor">${fmt(c.total)}</td></tr>`).join("")}
+      <tr class="subtotal"><td>Subtotal ${INFO_TIPO_SAIDA[t].selo.toLowerCase()}</td><td class="valor">${fmt(porTipo[t].pago)}</td><td class="valor">${porTipo[t].pendente ? fmt(porTipo[t].pendente) : "—"}</td><td class="valor">${fmt(total(t))}</td></tr>`).join("");
+    const linhasDetalhe = ordenarCronologico(r.registros, "data").map(x => `
+      <tr><td>${fmtDataHoraRel(x.data)}</td><td>${escapeHtml(x.categoria)}<div style="font-size:10px; color:${corTipo[tipoDe(x.categoria)]}; font-weight:700;">${INFO_TIPO_SAIDA[tipoDe(x.categoria)].selo}</div></td><td>${escapeHtml(x.descricao || "—")}</td><td>${x.statusPagamento === "Pago" ? "✅ Pago" : "⏳ A pagar"}</td><td class="valor">${fmt(x.valor)}</td></tr>`);
     container.innerHTML = `
       <div class="relatorio-folha">
         ${blocoCabecalhoRelatorio("Relatório de Saídas", textoPeriodo(dataInicio, dataFim, todoPeriodo), observacoes)}
         <div class="relatorio-cards">
-          <div class="relatorio-card"><div class="rotulo">Total Geral</div><div class="valor">${fmt(r.totalGeral)}</div></div>
-          <div class="relatorio-card"><div class="rotulo">Total Pago</div><div class="valor">${fmt(r.totalPago)}</div></div>
-          <div class="relatorio-card destaque"><div class="rotulo">Total Pendente</div><div class="valor">${fmt(r.totalPendente)}</div></div>
+          <div class="relatorio-card destaque"><div class="rotulo">Total de Saídas</div><div class="valor">${fmt(r.totalGeral)}</div></div>
+          <div class="relatorio-card"><div class="rotulo">Pago</div><div class="valor">${fmt(r.totalPago)}</div></div>
+          <div class="relatorio-card"><div class="rotulo">A pagar</div><div class="valor">${fmt(r.totalPendente)}</div></div>
         </div>
+        <div class="relatorio-cards">
+          ${ordemTipos.map(t => `<div class="relatorio-card" style="border-top-color:${corTipo[t]};"><div class="rotulo">${INFO_TIPO_SAIDA[t].selo}</div><div class="valor">${fmt(total(t))}</div></div>`).join("")}
+        </div>
+        <p style="font-size:11px; color:#888; margin:-8px 0 16px;"><b>Custo de venda</b> (compra de estoque) vira custo quando o produto é vendido · <b>Despesa operacional</b> reduz o lucro na hora · <b>Investimento</b> é patrimônio · <b>Retirada</b> não é gasto, só saída de caixa.</p>
 
-        <div class="relatorio-secao-titulo">Saídas por Categoria</div>
-        <table>
-          <thead><tr><th>Categoria</th><th style="text-align:right;">Pago</th><th style="text-align:right;">Pendente</th></tr></thead>
-          <tbody>${linhaOuVazio(linhasCategoria, 3, "Sem dados.")}</tbody>
-        </table>
-
-        <div class="relatorio-secao-titulo">Detalhamento</div>
-        <table>
-          <thead><tr><th>Data</th><th>Categoria</th><th>Descrição</th><th>Status</th><th style="text-align:right;">Valor</th></tr></thead>
+        <div class="relatorio-secao-titulo">Saídas por Tipo e Categoria</div>
+        <table class="relatorio-estoque">
+          <thead><tr><th>Categoria</th><th style="text-align:right;">Pago</th><th style="text-align:right;">A pagar</th><th style="text-align:right;">Total</th></tr></thead>
           <tbody>
-            ${linhaOuVazio(linhas, 5, "Nenhuma saída registrada no período.")}
-            ${r.registros.length ? `<tr class="total-linha"><td colspan="4">Total geral</td><td class="valor">${fmt(r.totalGeral)}</td></tr>` : ""}
+            ${linhasTipos || `<tr><td colspan="4" class="relatorio-vazio">Nenhuma saída registrada no período.</td></tr>`}
+            ${r.registros.length ? `<tr class="total-linha"><td>Total geral</td><td class="valor">${fmt(r.totalPago)}</td><td class="valor">${fmt(r.totalPendente)}</td><td class="valor">${fmt(r.totalGeral)}</td></tr>` : ""}
           </tbody>
         </table>
+
+        ${detalhado ? `
+        <div class="relatorio-secao-titulo">Cada Lançamento (${r.registros.length})</div>
+        <table>
+          <thead><tr><th>Data</th><th>Categoria</th><th>Descrição</th><th>Status</th><th style="text-align:right;">Valor</th></tr></thead>
+          <tbody>${linhaOuVazio(linhasDetalhe, 5, "Nenhuma saída registrada no período.")}</tbody>
+        </table>` : ""}
         <div class="relatorio-rodape">Relatório gerado automaticamente pelo Sistema Financeiro Brasero 96.</div>
       </div>
     `;
@@ -6512,6 +6604,212 @@ $("btn-gerar-rel-saidas").onclick = async () => {
   }
 };
 $("btn-imprimir-rel-saidas").onclick = () => window.print();
+
+// ---------- Relatório Gerencial ----------
+function periodoGerencial(tipo) {
+  const hoje = new Date();
+  const iso = (d) => paraISO(d);
+  const y = hoje.getFullYear(), m = hoje.getMonth();
+  if (tipo === "mes") return [iso(new Date(y, m, 1)), iso(new Date(y, m + 1, 0))];
+  if (tipo === "mes-passado") return [iso(new Date(y, m - 1, 1)), iso(new Date(y, m, 0))];
+  if (tipo === "3-meses") return [iso(new Date(y, m - 2, 1)), iso(new Date(y, m + 1, 0))];
+  if (tipo === "ano") return [iso(new Date(y, 0, 1)), iso(new Date(y, 11, 31))];
+  return null;
+}
+function aplicarPeriodoGerencial() {
+  const tipo = $("rg-periodo").value;
+  const p = periodoGerencial(tipo);
+  if (p) { $("rg-data-inicio").value = p[0]; $("rg-data-fim").value = p[1]; }
+  $("rg-datas").style.display = tipo === "personalizado" ? "" : "none";
+}
+$("rg-periodo").onchange = aplicarPeriodoGerencial;
+aplicarPeriodoGerencial();
+
+// variação em relação ao período anterior ("inverter": gasto subir é ruim)
+function htmlVariacao(atual, anterior, inverter) {
+  if (!anterior) return `<div class="rg-var neutro">sem base de comparação</div>`;
+  if (anterior < 0 && atual >= 0) return `<div class="rg-var bom">▲ saiu do prejuízo (antes ${fmt(anterior)})</div>`;
+  if (anterior > 0 && atual < 0) return `<div class="rg-var ruim">▼ virou prejuízo (antes ${fmt(anterior)})</div>`;
+  const pctVar = (atual - anterior) / Math.abs(anterior) * 100;
+  if (Math.abs(pctVar) < 0.5) return `<div class="rg-var neutro">= igual ao anterior</div>`;
+  const subiu = pctVar > 0, bom = inverter ? !subiu : subiu;
+  return `<div class="rg-var ${bom ? "bom" : "ruim"}">${subiu ? "▲" : "▼"} ${Math.abs(pctVar).toFixed(0)}% vs anterior</div>`;
+}
+const resumirTexto = (t, max) => { t = (t || "").toString(); return t.length > max ? t.slice(0, max - 1).trim() + "…" : t; };
+const fmtCurto = (v) => "R$ " + Math.round(v).toLocaleString("pt-BR");
+function nomeMesCurto(ym) { const [a, m] = ym.split("-"); return NOMES_MESES[Number(m) - 1].slice(0, 3) + "/" + a.slice(2); }
+
+// gráfico de barras (faturamento × lucro líquido) em SVG — imprime nítido
+function graficoEvolucao(meses) {
+  // sem linhas de grade: cada barra mostra o próprio valor em cima
+  const W = 640, H = 220, esq = 16, dir = 16, topo = 22, base = 30;
+  const maxV = Math.max(1, ...meses.map(x => Math.max(x.faturamento, x.lucroLiquido)));
+  const minV = Math.min(0, ...meses.map(x => x.lucroLiquido));
+  const alturaUtil = H - topo - base - (minV < 0 ? 14 : 0);
+  const escala = (v) => topo + (maxV - v) / (maxV - minV) * alturaUtil;
+  const y0 = escala(0);
+  const larguraGrupo = (W - esq - dir) / meses.length;
+  const lb = Math.min(34, larguraGrupo / 3);
+  const rotuloValor = (v) => { const a = Math.abs(v); const t = a >= 1000 ? (a / 1000).toFixed(1).replace(".", ",") + " mil" : String(Math.round(a)); return (v < 0 ? "−" : "") + t; };
+  let svg = `<svg class="rg-grafico" viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" font-family="sans-serif">`;
+  svg += `<line x1="${esq}" x2="${W - dir}" y1="${y0}" y2="${y0}" stroke="#ccc"/>`; // só a linha do zero
+  meses.forEach((x, i) => {
+    const cx = esq + larguraGrupo * i + larguraGrupo / 2;
+    const yf = escala(x.faturamento), yl = escala(x.lucroLiquido);
+    const xf = cx - lb - 2, xl = cx + 2;
+    svg += `<rect x="${xf}" y="${yf}" width="${lb}" height="${Math.max(0, y0 - yf)}" fill="#ff7a1a" rx="2"/>`;
+    if (x.faturamento) svg += `<text x="${xf + lb / 2}" y="${yf - 5}" font-size="9.5" font-weight="700" fill="#b85400" text-anchor="middle">${rotuloValor(x.faturamento)}</text>`;
+    svg += `<rect x="${xl}" y="${Math.min(yl, y0)}" width="${lb}" height="${Math.abs(y0 - yl)}" fill="${x.lucroLiquido >= 0 ? "#2fbf71" : "#e0231a"}" rx="2"/>`;
+    if (x.lucroLiquido || x.faturamento) svg += `<text x="${xl + lb / 2}" y="${x.lucroLiquido >= 0 ? yl - 5 : yl + 11}" font-size="9.5" font-weight="700" fill="${x.lucroLiquido >= 0 ? "#1f7a47" : "#b3261e"}" text-anchor="middle">${rotuloValor(x.lucroLiquido)}</text>`;
+    svg += `<text x="${cx}" y="${H - 10}" font-size="10.5" fill="#555" text-anchor="middle">${nomeMesCurto(x.mes)}</text>`;
+  });
+  return svg + `</svg><div class="rg-legenda"><span style="--c:#ff7a1a">Faturamento</span><span style="--c:#2fbf71">Lucro líquido</span><span style="--c:#e0231a">Prejuízo</span></div>`;
+}
+function barraLinha(rotulo, valor, total, cor, extra) {
+  const perc = total > 0 ? Math.max(0, valor) / total * 100 : 0;
+  return `<div class="rg-barra-linha"><span>${rotulo}</span><div class="trilho"><div class="preench" style="width:${Math.min(100, perc).toFixed(1)}%; background:${cor};"></div></div><span class="v">${fmt(valor)}<small>${extra != null ? extra : pct(perc)}</small></span></div>`;
+}
+
+$("btn-gerar-rel-gerencial").onclick = async () => {
+  const dataInicio = $("rg-data-inicio").value, dataFim = $("rg-data-fim").value;
+  if (!dataInicio || !dataFim) { alert("Escolha o período."); return; }
+  const observacoes = $("rg-observacoes").value.trim();
+  const container = $("rel-gerencial-container");
+  container.innerHTML = `<div class="vazio-lista">Montando o relatório...</div>`;
+  $("btn-imprimir-rel-gerencial").style.display = "none";
+  try {
+    const r = await chamarAPI("relatorioGerencial", { dataInicio, dataFim });
+    if (r.status !== "ok") { container.innerHTML = `<div class="vazio-lista">❌ ${escapeHtml(r.mensagem)}</div>`; return; }
+    const a = r.atual, b = r.anterior, pos = r.posicao;
+    const rotuloAnterior = r.periodo.mesFechado ? "período anterior" : "mesmo nº de dias antes";
+    const ticket = r.clientes ? (a.faturamento - (a.pacotes.recebidoNoMes || 0)) / r.clientes : 0;
+    const ticketAnt = b.qtdComandas ? (b.faturamento - (b.pacotes.recebidoNoMes || 0)) / b.qtdComandas : 0;
+    const corValor = (v) => (v >= 0 ? "#1f9d5c" : "#d4281f");
+    // evolução: começa no 1º mês com movimento
+    const iniMov = r.evolucao.findIndex(x => x.faturamento || x.gastos);
+    const meses = iniMov === -1 ? [] : r.evolucao.slice(iniMov);
+    // composição do faturamento: custo, despesas, investimentos, lucro
+    const fatTot = a.faturamento + a.juros;
+    const partes = [
+      ["Custo dos produtos", a.custoVendas, "#3aa0e8"],
+      ["Despesas operacionais", a.totaisGastos.despesasOperacionais, "#e0231a"],
+      ["Investimentos / materiais", a.totaisGastos.investimentos, "#8e6bd6"],
+      [a.lucroLiquido >= 0 ? "Lucro líquido" : "Prejuízo", Math.abs(a.lucroLiquido), a.lucroLiquido >= 0 ? "#2fbf71" : "#999"]
+    ];
+    const somaPartes = partes.reduce((s2, x) => s2 + x[1], 0) || 1;
+    const segmentosBase = a.segmentos.filter(sg => sg.faturamento > 0);
+    const coresSeg = { "Espeto": "#ff7a1a", "Bebida": "#3aa0e8", "Baião": "#e0a100", "Combo": "#2fbf71", "Pacotes": "#8e6bd6", "Vendas sem comanda": "#999", "Taxas": "#bbb" };
+    const gastosTop = a.gastos.filter(g => g.tipo === "despesa" || g.tipo === "investimento").slice().sort((x, y) => y.total - x.total).slice(0, 6);
+    const maiorGasto = gastosTop.length ? gastosTop[0].total : 0;
+
+    container.innerHTML = `
+      <div class="relatorio-folha">
+        ${blocoCabecalhoRelatorio("Relatório Gerencial", `${fmtDataRel(dataInicio)} a ${fmtDataRel(dataFim)} · comparado com ${fmtDataRel(r.periodo.anteriorInicio)} a ${fmtDataRel(r.periodo.anteriorFim)}`, observacoes)}
+
+        <div class="rg-bloco">
+          <div class="relatorio-secao-titulo">Resumo do período</div>
+          <div class="rg-kpis">
+            <div class="rg-kpi principal"><div class="rotulo">Faturamento</div><div class="valor">${fmt(fatTot)}</div>${htmlVariacao(fatTot, b.faturamento + b.juros)}</div>
+            <div class="rg-kpi principal"><div class="rotulo">Lucro bruto</div><div class="valor" style="color:${corValor(a.lucroBruto)};">${fmt(a.lucroBruto)}</div><div class="extra">margem ${pct(a.margemBruta)}</div>${htmlVariacao(a.lucroBruto, b.lucroBruto)}</div>
+            <div class="rg-kpi principal"><div class="rotulo">Gastos</div><div class="valor">${fmt(a.totaisGastos.queReduzemOLucro)}</div><div class="extra">despesas + investimentos</div>${htmlVariacao(a.totaisGastos.queReduzemOLucro, b.totaisGastos.queReduzemOLucro, true)}</div>
+            <div class="rg-kpi principal"><div class="rotulo">Lucro líquido</div><div class="valor" style="color:${corValor(a.lucroLiquido)};">${fmt(a.lucroLiquido)}</div><div class="extra">margem ${pct(a.margemLiquida)}</div>${htmlVariacao(a.lucroLiquido, b.lucroLiquido)}</div>
+            <div class="rg-kpi"><div class="rotulo">Clientes atendidos</div><div class="valor">${r.clientes}</div>${htmlVariacao(r.clientes, b.qtdComandas)}</div>
+            <div class="rg-kpi"><div class="rotulo">Ticket médio</div><div class="valor">${fmt(ticket)}</div><div class="extra">por comanda</div>${htmlVariacao(ticket, ticketAnt)}</div>
+            <div class="rg-kpi"><div class="rotulo">Espetos vendidos</div><div class="valor">${r.totalEspetos}</div><div class="extra">avulsos + dentro de combos</div></div>
+            <div class="rg-kpi"><div class="rotulo">Lucro antes dos investimentos</div><div class="valor" style="color:${corValor(a.lucroBruto + a.juros - a.totaisGastos.despesasOperacionais)};">${fmt(a.lucroBruto + a.juros - a.totaisGastos.despesasOperacionais)}</div><div class="extra">resultado da operação</div></div>
+          </div>
+          <p class="rg-nota" style="margin-top:-10px; margin-bottom:14px;">Setas comparam com o ${rotuloAnterior}. Verde = melhorou, vermelho = piorou (em Gastos, subir é piorar).</p>
+        </div>
+
+        ${r.alertas.length ? `
+        <div class="rg-alertas rg-bloco">
+          <h3>⚠️ Pontos de atenção</h3>
+          <ul>${r.alertas.map(x => `<li><span class="rg-selo ${x.nivel}">${x.nivel === "alto" ? "urgente" : x.nivel === "medio" ? "atenção" : "info"}</span>${escapeHtml(x.texto)}</li>`).join("")}</ul>
+        </div>` : `<div class="rg-alertas rg-bloco" style="background:#f1fbf5; border-color:#bfe8cf;"><h3 style="color:#1f7a47;">✅ Nenhum ponto de atenção</h3></div>`}
+
+        ${meses.length > 1 ? `
+        <div class="rg-bloco">
+          <div class="relatorio-secao-titulo">Evolução mensal</div>
+          ${graficoEvolucao(meses)}
+          <table style="margin-top:8px;">
+            <thead><tr><th>Mês</th><th style="text-align:right;">Faturamento</th><th style="text-align:right;">Lucro bruto</th><th style="text-align:right;">Gastos</th><th style="text-align:right;">Lucro líquido</th><th style="text-align:right;">Comandas</th></tr></thead>
+            <tbody>${meses.map(x => `<tr><td>${NOMES_MESES[Number(x.mes.split("-")[1]) - 1]} ${x.mes.split("-")[0]}</td><td class="valor">${fmt(x.faturamento)}</td><td class="valor">${fmt(x.lucroBruto)}</td><td class="valor">${fmt(x.gastos)}</td><td class="valor" style="color:${corValor(x.lucroLiquido)};">${fmt(x.lucroLiquido)}</td><td style="text-align:right;">${x.comandas}</td></tr>`).join("")}</tbody>
+          </table>
+        </div>` : ""}
+
+        <div class="rg-duas rg-bloco">
+          <div>
+            <div class="relatorio-secao-titulo">De onde vem o faturamento</div>
+            ${segmentosBase.length ? segmentosBase.map(sg => barraLinha(ROTULO_SEGMENTO[sg.segmento] || escapeHtml(sg.segmento), sg.faturamento, a.faturamento, coresSeg[sg.segmento] || "#999")).join("") : `<p class="rg-nota">Sem vendas no período.</p>`}
+          </div>
+          <div>
+            <div class="relatorio-secao-titulo">Para onde vai cada R$ 100 vendido</div>
+            <div class="rg-composicao">${partes.map(x => `<div style="width:${(x[1] / somaPartes * 100).toFixed(2)}%; background:${x[2]};" title="${x[0]}"></div>`).join("")}</div>
+            <div class="rg-legenda">${partes.map(x => `<span style="--c:${x[2]}">${x[0]}: ${fatTot ? "R$ " + (x[1] / fatTot * 100).toFixed(0) : "—"}</span>`).join("")}</div>
+            <p class="rg-nota">${a.lucroLiquido >= 0 ? `De cada R$ 100 vendidos, sobraram R$ ${fatTot ? (a.lucroLiquido / fatTot * 100).toFixed(0) : 0} de lucro.` : "Os gastos do período passaram do que sobrou das vendas."}</p>
+            <div style="margin-top:10px; font-size:11.5px; font-weight:700; color:#555;">Maiores gastos</div>
+            ${gastosTop.length ? gastosTop.map(g => barraLinha(escapeHtml(g.categoria), g.total, maiorGasto, g.tipo === "investimento" ? "#8e6bd6" : "#e0231a", g.aPagar ? `${fmt(g.aPagar)} a pagar` : "")).join("") : `<p class="rg-nota">Sem gastos no período.</p>`}
+          </div>
+        </div>
+
+        <div class="rg-duas rg-bloco">
+          <div>
+            <div class="relatorio-secao-titulo">Mais vendidos (faturamento)</div>
+            <table>
+              <thead><tr><th>Produto</th><th style="text-align:right;">Qtd.</th><th style="text-align:right;">Faturou</th><th style="text-align:right;">Lucro</th></tr></thead>
+              <tbody>${r.topProdutos.length ? r.topProdutos.map(p => `<tr><td>${escapeHtml(p.produto)}</td><td style="text-align:right;">${p.quantidade}</td><td class="valor">${fmt(p.faturamento)}</td><td class="valor">${fmt(p.lucro)}</td></tr>`).join("") : `<tr><td colspan="4" class="relatorio-vazio">Sem vendas no período.</td></tr>`}</tbody>
+            </table>
+          </div>
+          <div>
+            <div class="relatorio-secao-titulo">Espetos preferidos (unidades)</div>
+            <table>
+              <thead><tr><th>Sabor</th><th style="text-align:right;">Qtd.</th><th style="text-align:right;">% dos espetos</th></tr></thead>
+              <tbody>${r.topSabores.length ? r.topSabores.map(x => `<tr><td>${escapeHtml(x.produto)}</td><td style="text-align:right;">${x.quantidade}</td><td style="text-align:right;">${pct(r.totalEspetos ? x.quantidade / r.totalEspetos * 100 : 0)}</td></tr>`).join("") : `<tr><td colspan="3" class="relatorio-vazio">Sem espetos no período.</td></tr>`}</tbody>
+            </table>
+          </div>
+        </div>
+
+        ${r.diasSemana.length ? `
+        <div class="rg-bloco">
+          <div class="relatorio-secao-titulo">Desempenho por dia da semana</div>
+          <table>
+            <thead><tr><th>Dia</th><th style="text-align:right;">Dias trabalhados</th><th style="text-align:right;">Comandas</th><th style="text-align:right;">Faturamento</th><th style="text-align:right;">Média por dia</th><th style="text-align:right;">Ticket médio</th></tr></thead>
+            <tbody>${r.diasSemana.map(x => `<tr><td>${x.dia}</td><td style="text-align:right;">${x.diasTrabalhados}</td><td style="text-align:right;">${x.comandas}</td><td class="valor">${fmt(x.faturamento)}</td><td class="valor">${fmt(x.mediaPorDia)}</td><td class="valor">${fmt(x.ticketMedio)}</td></tr>`).join("")}</tbody>
+          </table>
+        </div>` : ""}
+
+        <div class="rg-bloco">
+          <div class="relatorio-secao-titulo">Posição financeira hoje</div>
+          <div class="rg-posicao">
+            <div><div class="rotulo">Caixa no sistema</div><div class="valor">${fmt(pos.caixaSistema)}</div></div>
+            <div><div class="rotulo">Caixa informado</div><div class="valor">${fmt(pos.caixaInformado)}</div></div>
+            <div><div class="rotulo">Diferença</div><div class="valor" style="color:${Math.abs(pos.diferenca) < 1 ? "#1f9d5c" : "#d4281f"};">${fmt(pos.diferenca)}</div></div>
+            <div><div class="rotulo">A pagar no próximo mês de vencimento</div><div class="valor">${fmt(pos.contasMesVigente)}</div></div>
+            <div><div class="rotulo">Total em aberto (todas as parcelas)</div><div class="valor">${fmt(pos.totalEmAberto)}</div></div>
+            <div><div class="rotulo">A receber (pacotes)</div><div class="valor">${fmt(pos.aReceber)}</div></div>
+            <div><div class="rotulo">Reserva mínima</div><div class="valor">${fmt(pos.reserva)}</div></div>
+            <div><div class="rotulo">Livre pra distribuir</div><div class="valor" style="color:${corValor(pos.livre)};">${fmt(pos.livre)}</div></div>
+            <div><div class="rotulo">Estoque (a preço de custo)</div><div class="valor">${fmt(pos.valorEstoque)}</div></div>
+          </div>
+          ${pos.proximosVencimentos.length ? `
+          <table style="margin-top:10px;">
+            <thead><tr><th>Próximos vencimentos</th><th>Descrição</th><th style="text-align:right;">Valor</th></tr></thead>
+            <tbody>${pos.proximosVencimentos.map(c => `<tr><td>${c.vencimento ? fmtDataRel(c.vencimento) : "⚠️ sem vencimento"}</td><td>${escapeHtml(c.categoria)} — ${escapeHtml(resumirTexto(c.descricao, 70))}${c.parcelasRestantes > 1 ? ` <span style="color:#999;">(${c.parcelasRestantes} parcelas em aberto)</span>` : ""}</td><td class="valor">${fmt(c.valor)}</td></tr>`).join("")}</tbody>
+          </table>` : ""}
+          <p class="rg-nota">Posição de hoje, desde o início: faturamento acumulado ${fmt(pos.faturamentoAcumulado)} · lucro líquido acumulado ${fmt(pos.lucroAcumulado)}.</p>
+        </div>
+
+        <div class="rg-bloco">
+          <p class="rg-nota"><b>Como ler:</b> <b>Lucro bruto</b> = faturamento − custo dos produtos vendidos. <b>Lucro líquido</b> = lucro bruto + juros de cartão − despesas operacionais − investimentos/materiais do período. Compra de estoque não é gasto do período (vira custo quando o produto é vendido) e retirada dos sócios não entra no resultado. Os números são os mesmos do Relatório Mensal.</p>
+        </div>
+        <div class="relatorio-rodape">Relatório gerado automaticamente pelo Sistema Financeiro Brasero 96.</div>
+      </div>`;
+    $("btn-imprimir-rel-gerencial").style.display = "inline-block";
+  } catch (e) {
+    container.innerHTML = `<div class="vazio-lista">❌ ${escapeHtml(e.message)}</div>`;
+  }
+};
+$("btn-imprimir-rel-gerencial").onclick = () => window.print();
 
 // ---------- Relatório Mensal de Faturamento ----------
 const NOMES_MESES = ["janeiro", "fevereiro", "março", "abril", "maio", "junho", "julho", "agosto", "setembro", "outubro", "novembro", "dezembro"];
