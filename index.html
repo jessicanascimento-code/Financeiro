@@ -1909,7 +1909,7 @@
 // ar é realmente a versão mais nova ou se o GitHub Pages ainda está
 // servindo uma versão antiga em cache.
 // =====================================================================
-const VERSAO_APP = "8.2";
+const VERSAO_APP = "8.3";
 document.querySelectorAll(".badge-versao").forEach(el => el.textContent = "v" + VERSAO_APP);
 
 // =====================================================================
@@ -1967,7 +1967,7 @@ aplicarTema(document.documentElement.getAttribute("data-tema"));
 // CONFIG
 // =====================================================================
 const CONFIG = {
-  API_URL: "https://script.google.com/macros/s/AKfycby3PEitV3ZfAVOg9E9U4p7KEWPLnGQd9lllbCMEClhYkdP-BHc-3XE5lbb2tDQfquCbmw/exec"
+  API_URL: "https://script.google.com/macros/s/AKfycbyvCy1AOG9_hDe9m-wfRSqDMWfL3s-eFo-hETAge6IM419fyq6AziTEvxpbaUKX57RtKA/exec"
 };
 
 const $ = (id) => document.getElementById(id);
@@ -2027,7 +2027,65 @@ function chamarAPIUmaVez(acao, params, timeoutMs) {
   });
 }
 
-async function chamarAPI(acao, params) {
+// ---------------------------------------------------------------------
+// v8.3 — CONSULTAS SEM "BOLA DE NEVE"
+// ---------------------------------------------------------------------
+// Antes, toda chamada esperava 15s e, sem resposta, era REENVIADA (até 3x)
+// — mas o Google continuava processando a primeira. Consulta pesada virava
+// 3, somava com as outras que a tela dispara ao abrir o Financeiro, e tudo
+// passava a dar "Tempo esgotado". Agora:
+//  - consultas (listar/obter/resumo/relatório...) esperam até 45s e NÃO
+//    são reenviadas por demora (só se a conexão falhar de verdade);
+//  - no máximo 3 consultas ao mesmo tempo; as demais aguardam a vez (o
+//    tempo só começa a contar quando ela é enviada de fato);
+//  - se a mesma consulta já está em andamento, quem pedir de novo recebe
+//    a mesma resposta (não manda outra igual);
+//  - gravações (lançar item, fechar comanda...) não entram nessa fila de
+//    consultas: têm passagem livre, então nunca esperam um relatório.
+const PREFIXOS_CONSULTA = /^(listar|obter|resumo|relatorio|detalhe|indicadores|categorias|diagnosticar|resultado)/;
+const MAX_CONSULTAS_SIMULTANEAS = 3;
+const TEMPO_LIMITE_CONSULTA = 45000;
+let CONSULTAS_ATIVAS = 0;
+const FILA_CONSULTAS = [];
+const CONSULTAS_EM_ANDAMENTO = new Map();
+
+function liberarProximaConsulta() {
+  while (CONSULTAS_ATIVAS < MAX_CONSULTAS_SIMULTANEAS && FILA_CONSULTAS.length) {
+    const tarefa = FILA_CONSULTAS.shift();
+    CONSULTAS_ATIVAS++;
+    tarefa().finally(() => { CONSULTAS_ATIVAS--; liberarProximaConsulta(); });
+  }
+}
+function agendarConsulta(executar) {
+  return new Promise((resolve, reject) => {
+    FILA_CONSULTAS.push(() => executar().then(resolve, reject));
+    liberarProximaConsulta();
+  });
+}
+async function executarConsulta(acao, params) {
+  try {
+    return await chamarAPIUmaVez(acao, params, TEMPO_LIMITE_CONSULTA);
+  } catch (erro) {
+    // só repete se foi falha de conexão (a requisição nem chegou) — por
+    // demora, não: a primeira ainda está sendo processada no Google
+    if (/conexão/i.test(erro.message)) {
+      await new Promise(r => setTimeout(r, 2000));
+      return chamarAPIUmaVez(acao, params, TEMPO_LIMITE_CONSULTA);
+    }
+    throw erro;
+  }
+}
+function chamarAPI(acao, params) {
+  if (!PREFIXOS_CONSULTA.test(acao)) return chamarAPIEscrita(acao, params);
+  const chave = acao + "|" + JSON.stringify(params || {});
+  if (CONSULTAS_EM_ANDAMENTO.has(chave)) return CONSULTAS_EM_ANDAMENTO.get(chave);
+  const promessa = agendarConsulta(() => executarConsulta(acao, params))
+    .finally(() => CONSULTAS_EM_ANDAMENTO.delete(chave));
+  CONSULTAS_EM_ANDAMENTO.set(chave, promessa);
+  return promessa;
+}
+
+async function chamarAPIEscrita(acao, params) {
   // "opId": número de protocolo único desta ação. É reaproveitado em TODAS as
   // tentativas abaixo — se a 1ª tentativa já tiver sido salva no servidor e só
   // a resposta se perdeu (tempo esgotado), a 2ª/3ª tentativa com o MESMO opId
@@ -2037,7 +2095,7 @@ async function chamarAPI(acao, params) {
   const opId = "op_" + Date.now() + "_" + Math.random().toString(36).slice(2, 10);
   const paramsComOpId = Object.assign({ opId }, params || {});
 
-  const tentativas = [15000, 15000, 15000]; // até 3 tentativas
+  const tentativas = [30000, 30000, 30000]; // até 3 tentativas (o opId impede gravar em dobro)
   let ultimoErro, ultimaRespostaComErro;
   for (let i = 0; i < tentativas.length; i++) {
     try {
@@ -5730,14 +5788,14 @@ function dataPadraoResultadoDia() {
   return paraISO(agora);
 }
 let TOKEN_RESULTADO_DIA = 0;
-async function carregarResultadoDoDia() {
+async function carregarResultadoDoDia(forcar) {
   if (!$("rdia-data").value) $("rdia-data").value = dataPadraoResultadoDia();
   const data = $("rdia-data").value;
   const box = $("rdia-conteudo");
   box.innerHTML = `<div class="vazio-lista">Calculando...</div>`;
   const token = ++TOKEN_RESULTADO_DIA;
   try {
-    const r = await chamarAPI("resultadoDoDia", { data, virada: $("rdia-virada").checked ? "1" : "0" });
+    const r = await chamarAPI("resultadoDoDia", Object.assign({ data, virada: $("rdia-virada").checked ? "1" : "0" }, forcar === true ? { forcar: "1" } : {}));
     if (token !== TOKEN_RESULTADO_DIA) return;
     if (r.status !== "ok") { box.innerHTML = `<div class="vazio-lista">❌ ${escapeHtml(r.mensagem)}</div>`; return; }
     $("rdia-periodo").textContent = `Período considerado: ${r.periodo.inicio} até ${r.periodo.fim}`;
@@ -5783,10 +5841,10 @@ async function carregarResultadoDoDia() {
     if (token === TOKEN_RESULTADO_DIA) box.innerHTML = `<div class="vazio-lista">❌ ${escapeHtml(e.message)}</div>`;
   }
 }
-$("btn-rdia-buscar").onclick = carregarResultadoDoDia;
+$("btn-rdia-buscar").onclick = () => carregarResultadoDoDia(true);
 $("rdia-data").onchange = carregarResultadoDoDia;
 $("rdia-virada").onchange = carregarResultadoDoDia;
-$("btn-rdia-hoje").onclick = () => { $("rdia-data").value = dataPadraoResultadoDia(); carregarResultadoDoDia(); };
+$("btn-rdia-hoje").onclick = () => { $("rdia-data").value = dataPadraoResultadoDia(); carregarResultadoDoDia(true); };
 
 // dataInicio pode vir vazia — significa "desde o primeiro registro".
 // dataFim, se vazia, é preenchida com hoje (fuso local, não UTC).
