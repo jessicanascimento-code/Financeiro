@@ -894,6 +894,20 @@
   .nota-dia b{ color:var(--creme); }
   .tag-pendente{ font-size:9.5px; font-weight:800; text-transform:uppercase; padding:1px 6px; border-radius:6px; background:rgba(255,196,0,.15); color:var(--amarelo); margin-left:4px; }
 
+  /* ---------- CONTAS: linhas padronizadas + compartilhar ---------- */
+  .painel-contas .linha-tabela{ display:grid !important; grid-template-columns:minmax(0,1fr) auto; gap:6px 12px; align-items:start; }
+  .painel-contas .linha-tabela .valor-conta{ font-weight:800; white-space:nowrap; text-align:right; font-size:15px; }
+  .painel-contas .linha-tabela .acoes-conta{ grid-column:1 / -1; justify-content:flex-start; }
+  .btn-compartilhar-contas{ background:var(--preto); border:1px solid var(--borda); border-radius:8px; width:32px; height:30px; font-size:15px; line-height:1; cursor:pointer; padding:0; }
+  .btn-compartilhar-contas:hover{ border-color:var(--laranja); }
+  .comp-abas{ display:grid; grid-template-columns:1fr 1fr; gap:6px; margin:12px 0; background:var(--preto); border:1px solid var(--borda); border-radius:10px; padding:4px; }
+  .comp-abas button{ border:none; background:transparent; border-radius:7px; padding:8px; font-size:12.5px; font-weight:700; color:var(--muted); cursor:pointer; }
+  .comp-abas button.ativa{ background:var(--preto2); color:var(--creme); box-shadow:0 1px 3px rgba(0,0,0,.12); }
+  .comp-previa-texto{ white-space:pre-wrap; font-family:ui-monospace, "SF Mono", Menlo, Consolas, monospace; font-size:12px; line-height:1.5; background:var(--preto); border:1px solid var(--borda); border-radius:10px; padding:12px 14px; max-height:46vh; overflow:auto; color:var(--creme); margin-bottom:12px; }
+  .comp-previa-imagem{ background:var(--preto); border:1px solid var(--borda); border-radius:10px; padding:10px; max-height:52vh; overflow:auto; text-align:center; margin-bottom:12px; }
+  .comp-previa-imagem img{ max-width:100%; height:auto; border-radius:6px; box-shadow:0 2px 10px rgba(0,0,0,.15); }
+  .comp-rodape{ grid-template-columns:1fr 1fr !important; }
+
   /* ---------- MODAL DE FORMULÁRIO (Editar despesa) ---------- */
   .modal-form{ padding:0 !important; display:flex; flex-direction:column; overflow:hidden; }
   .modal-form-topo{ display:flex; justify-content:space-between; align-items:flex-start; gap:10px; padding:16px 20px 12px; border-bottom:1px solid var(--borda); }
@@ -1355,6 +1369,7 @@
             <div class="painel-contas-topo" data-painel="painel-contas-pagas">
               <h3>✅ Contas pagas <span class="qtd" id="qtd-contas-pagas"></span></h3>
               <span class="painel-contas-total" id="total-contas-pagas">—</span>
+              <button class="btn-compartilhar-contas" type="button" data-tipo="pagas" title="Copiar texto ou gerar imagem das contas pagas" aria-label="Compartilhar contas pagas">📄</button>
               <button class="btn-toggle-secao" type="button" title="Mostrar/ocultar">−</button>
             </div>
             <div class="painel-contas-corpo">
@@ -1371,6 +1386,7 @@
             <div class="painel-contas-topo" data-painel="painel-contas-a-pagar">
               <h3>📋 Contas a pagar <span class="qtd" id="qtd-contas-pagar"></span></h3>
               <span class="painel-contas-total" id="total-contas-pagar">—</span>
+              <button class="btn-compartilhar-contas" type="button" data-tipo="pagar" title="Copiar texto ou gerar imagem das contas a pagar" aria-label="Compartilhar contas a pagar">📄</button>
               <button class="btn-toggle-secao" type="button" title="Mostrar/ocultar">−</button>
             </div>
             <div class="painel-contas-corpo">
@@ -1723,6 +1739,40 @@
   </div>
 </div>
 
+<!-- ================= COMPARTILHAR CONTAS (texto / imagem) ================= -->
+<div class="overlay" id="overlay-compartilhar">
+  <div class="modal modal-form" style="max-width:560px;">
+    <div class="modal-form-topo">
+      <div>
+        <div class="modal-form-titulo" id="comp-titulo">📄 Compartilhar</div>
+        <div class="modal-form-sub" id="comp-sub"></div>
+      </div>
+      <button class="btn-fechar-x" id="btn-fechar-compartilhar" type="button" aria-label="Fechar">✕</button>
+    </div>
+    <div class="form-modal">
+      <div class="comp-abas">
+        <button type="button" class="ativa" data-modo="texto">💬 Texto para WhatsApp</button>
+        <button type="button" data-modo="imagem">🖼️ Imagem</button>
+      </div>
+      <div id="comp-modo-texto">
+        <div class="comp-previa-texto" id="comp-texto"></div>
+      </div>
+      <div id="comp-modo-imagem" style="display:none;">
+        <div class="comp-previa-imagem"><img id="comp-imagem" alt="Prévia da imagem"></div>
+      </div>
+    </div>
+    <div class="msg-status" id="comp-status"></div>
+    <div class="modal-form-rodape comp-rodape" id="comp-rodape-texto">
+      <button class="btn-mini btn-cancelar-form" id="btn-comp-whatsapp" type="button">💬 Abrir no WhatsApp</button>
+      <button class="btn-primario" id="btn-comp-copiar" type="button">📋 Copiar texto</button>
+    </div>
+    <div class="modal-form-rodape comp-rodape" id="comp-rodape-imagem" style="display:none;">
+      <button class="btn-mini btn-cancelar-form" id="btn-comp-baixar" type="button">⬇️ Baixar imagem</button>
+      <button class="btn-primario" id="btn-comp-enviar" type="button">📤 Enviar imagem</button>
+    </div>
+  </div>
+</div>
+
 <!-- ================= EDITAR DESPESA ================= -->
 <div class="overlay" id="overlay-editar-saida">
   <div class="modal modal-form" style="max-width:560px;">
@@ -2066,7 +2116,7 @@
 // ar é realmente a versão mais nova ou se o GitHub Pages ainda está
 // servindo uma versão antiga em cache.
 // =====================================================================
-const VERSAO_APP = "8.6";
+const VERSAO_APP = "8.7";
 document.querySelectorAll(".badge-versao").forEach(el => el.textContent = "v" + VERSAO_APP);
 
 // =====================================================================
@@ -5738,12 +5788,188 @@ async function carregarContasAPagar() {
   }
 }
 
+// ---------------------------------------------------------------------
+// COMPARTILHAR CONTAS — texto pronto pro WhatsApp ou imagem simples, com
+// exatamente o que está na tela (respeita o filtro de mês) e o total.
+// ---------------------------------------------------------------------
+const CONTAS_NA_TELA = { pagar: null, pagas: null };
+let COMPARTILHAR_ATUAL = null; // { tipo, texto, blob, dataUrl }
+const NOMES_MESES_COMP = ["janeiro", "fevereiro", "março", "abril", "maio", "junho", "julho", "agosto", "setembro", "outubro", "novembro", "dezembro"];
+function rotuloMesComp(ym) {
+  if (!ym) return "";
+  const [a, m] = ym.split("-");
+  return `${NOMES_MESES_COMP[Number(m) - 1]} de ${a}`;
+}
+function dadosCompartilhar(tipo) {
+  const d = CONTAS_NA_TELA[tipo] || { registros: [], total: 0, filtroMes: "" };
+  const pagas = tipo === "pagas";
+  return {
+    pagas,
+    titulo: pagas ? "Contas pagas" : "Contas a pagar",
+    filtro: d.filtroMes ? `${pagas ? "Pagas em" : "Vencem em"} ${rotuloMesComp(d.filtroMes)}` : (pagas ? "Todas as contas pagas" : "Todas as contas em aberto"),
+    total: d.total,
+    itens: d.registros.map(r => ({
+      data: pagas ? (r._pag && r._pag.br) || "" : (r.vencimento ? paraBR(r.vencimento) : ""),
+      rotuloData: pagas ? "pago em" : "vence",
+      descricao: `${r.categoria} — ${r.descricao || "sem descrição"}${r.fornecedor ? ` (${r.fornecedor})` : ""}`,
+      forma: r.formaPagamento || "",
+      valor: r.valor,
+      vencida: !pagas && r.vencimento && r.vencimento < dataHojeISO()
+    }))
+  };
+}
+function montarTextoContas(tipo) {
+  const d = dadosCompartilhar(tipo);
+  const linhas = [`*Brasero 96 — ${d.titulo}*`, d.filtro, ""];
+  if (!d.itens.length) linhas.push(d.pagas ? "Nenhuma conta paga nesse período." : "Nenhuma conta em aberto. 🎉");
+  d.itens.forEach((it, i) => {
+    const quando = it.data ? `${it.rotuloData} ${it.data}` : "⚠️ sem vencimento";
+    linhas.push(`${i + 1}) *${fmt(it.valor)}* · ${quando}${it.vencida ? " ⚠️ vencida" : ""}`);
+    linhas.push(it.descricao);
+    if (it.forma) linhas.push(`_${it.forma}_`);
+    linhas.push("");
+  });
+  linhas.push(`*Total: ${fmt(d.total)}* (${d.itens.length} ${d.itens.length === 1 ? "conta" : "contas"})`);
+  linhas.push(`_Gerado em ${fmtDataHoraRel(agoraBR())}_`);
+  return linhas.join("\n");
+}
+
+// Imagem simples desenhada no próprio navegador (sem internet extra):
+// cabeçalho, uma linha por conta e o total no rodapé.
+function quebrarTexto(ctx, texto, largura) {
+  const palavras = texto.split(" "), linhas = [];
+  let atual = "";
+  palavras.forEach(p => {
+    const teste = atual ? atual + " " + p : p;
+    if (ctx.measureText(teste).width > largura && atual) { linhas.push(atual); atual = p; } else atual = teste;
+  });
+  if (atual) linhas.push(atual);
+  return linhas;
+}
+function gerarImagemContas(tipo) {
+  const d = dadosCompartilhar(tipo);
+  const W = 1080, M = 56, fonte = '"Inter", "Segoe UI", Roboto, Arial, sans-serif';
+  const cor = d.pagas ? "#1f9d5c" : "#c77700";
+  const med = document.createElement("canvas").getContext("2d");
+  med.font = `500 30px ${fonte}`;
+  const larguraDesc = W - M * 2 - 260;
+  const itens = d.itens.map(it => {
+    const linhas = quebrarTexto(med, it.descricao, larguraDesc).slice(0, 3);
+    if (quebrarTexto(med, it.descricao, larguraDesc).length > 3) linhas[2] = linhas[2].replace(/.{0,3}$/, "…");
+    return Object.assign({ linhas, altura: 34 + linhas.length * 38 + 34 + 28 }, it);
+  });
+  const alturaTopo = 250, alturaRodape = 190;
+  const H = alturaTopo + Math.max(120, itens.reduce((s2, it) => s2 + it.altura, 0)) + alturaRodape;
+  const cv = document.createElement("canvas");
+  cv.width = W; cv.height = H;
+  const c = cv.getContext("2d");
+  c.fillStyle = "#ffffff"; c.fillRect(0, 0, W, H);
+  c.fillStyle = "#ff7a1a"; c.fillRect(0, 0, W, 14);
+  c.fillStyle = "#b85400"; c.font = `800 30px ${fonte}`; c.fillText("BRASERO 96", M, 80);
+  c.fillStyle = "#1a1a1a"; c.font = `800 54px ${fonte}`; c.fillText(d.titulo, M, 148);
+  c.fillStyle = "#777"; c.font = `500 30px ${fonte}`; c.fillText(`${d.filtro} · ${d.itens.length} ${d.itens.length === 1 ? "conta" : "contas"}`, M, 196);
+  c.fillStyle = "#eee"; c.fillRect(M, 226, W - M * 2, 2);
+  let y = alturaTopo;
+  if (!itens.length) { c.fillStyle = "#999"; c.font = `500 32px ${fonte}`; c.fillText(d.pagas ? "Nenhuma conta paga nesse período." : "Nenhuma conta em aberto.", M, y + 60); y += 120; }
+  itens.forEach((it, i) => {
+    const topo = y + 34;
+    c.fillStyle = it.vencida ? "#d4281f" : "#777"; c.font = `700 24px ${fonte}`;
+    c.fillText((it.data ? `${it.rotuloData.toUpperCase()} ${it.data}` : "SEM VENCIMENTO") + (it.vencida ? " · VENCIDA" : "") + (it.forma ? ` · ${it.forma.toUpperCase()}` : ""), M, topo);
+    c.fillStyle = "#1a1a1a"; c.font = `500 30px ${fonte}`;
+    it.linhas.forEach((l, j) => c.fillText(l, M, topo + 44 + j * 38));
+    c.fillStyle = cor; c.font = `800 36px ${fonte}`; c.textAlign = "right";
+    c.fillText(fmt(it.valor), W - M, topo + 44);
+    c.textAlign = "left";
+    y += it.altura;
+    if (i < itens.length - 1) { c.fillStyle = "#f0f0f0"; c.fillRect(M, y - 14, W - M * 2, 2); }
+  });
+  // total
+  const yt = H - alturaRodape + 20;
+  c.fillStyle = d.pagas ? "#eaf7ef" : "#fff5e6";
+  if (c.roundRect) { c.beginPath(); c.roundRect(M, yt, W - M * 2, 100, 18); c.fill(); } else c.fillRect(M, yt, W - M * 2, 100);
+  c.fillStyle = "#333"; c.font = `700 32px ${fonte}`; c.fillText("Total", M + 30, yt + 62);
+  c.fillStyle = cor; c.font = `800 44px ${fonte}`; c.textAlign = "right"; c.fillText(fmt(d.total), W - M - 30, yt + 66); c.textAlign = "left";
+  c.fillStyle = "#aaa"; c.font = `500 22px ${fonte}`; c.fillText(`Gerado em ${fmtDataHoraRel(agoraBR())} · Sistema Financeiro Brasero 96`, M, H - 30);
+  return cv;
+}
+
+function abrirCompartilharContas(tipo) {
+  const d = dadosCompartilhar(tipo);
+  COMPARTILHAR_ATUAL = { tipo, texto: montarTextoContas(tipo), blob: null, dataUrl: null };
+  $("comp-titulo").textContent = `📄 ${d.titulo}`;
+  $("comp-sub").textContent = `${d.filtro} · ${d.itens.length} ${d.itens.length === 1 ? "conta" : "contas"} · total ${fmt(d.total)}`;
+  $("comp-texto").textContent = COMPARTILHAR_ATUAL.texto;
+  $("comp-status").textContent = ""; $("comp-status").className = "msg-status";
+  trocarModoCompartilhar("texto");
+  $("overlay-compartilhar").classList.add("aberto");
+}
+function trocarModoCompartilhar(modo) {
+  document.querySelectorAll("#overlay-compartilhar .comp-abas button").forEach(b => b.classList.toggle("ativa", b.dataset.modo === modo));
+  $("comp-modo-texto").style.display = modo === "texto" ? "" : "none";
+  $("comp-rodape-texto").style.display = modo === "texto" ? "" : "none";
+  $("comp-modo-imagem").style.display = modo === "imagem" ? "" : "none";
+  $("comp-rodape-imagem").style.display = modo === "imagem" ? "" : "none";
+  $("comp-status").textContent = "";
+  if (modo === "imagem" && COMPARTILHAR_ATUAL && !COMPARTILHAR_ATUAL.dataUrl) {
+    const cv = gerarImagemContas(COMPARTILHAR_ATUAL.tipo);
+    COMPARTILHAR_ATUAL.dataUrl = cv.toDataURL("image/png");
+    $("comp-imagem").src = COMPARTILHAR_ATUAL.dataUrl;
+    cv.toBlob(b => { if (COMPARTILHAR_ATUAL) COMPARTILHAR_ATUAL.blob = b; }, "image/png");
+  }
+}
+function avisoCompartilhar(msg, tipo) { $("comp-status").textContent = msg; $("comp-status").className = "msg-status " + (tipo || "ok"); }
+function nomeArquivoContas() {
+  const d = CONTAS_NA_TELA[COMPARTILHAR_ATUAL.tipo] || {};
+  return `brasero96-${COMPARTILHAR_ATUAL.tipo === "pagas" ? "contas-pagas" : "contas-a-pagar"}${d.filtroMes ? "-" + d.filtroMes : ""}.png`;
+}
+async function copiarTexto(texto) {
+  try { await navigator.clipboard.writeText(texto); return true; } catch (e) {
+    // plano B (navegadores sem permissão de área de transferência)
+    const t = document.createElement("textarea"); t.value = texto; t.style.position = "fixed"; t.style.opacity = "0";
+    document.body.appendChild(t); t.select();
+    let ok = false; try { ok = document.execCommand("copy"); } catch (e2) {}
+    t.remove(); return ok;
+  }
+}
+document.querySelectorAll(".btn-compartilhar-contas").forEach(b => {
+  b.addEventListener("click", (e) => { e.stopPropagation(); abrirCompartilharContas(b.dataset.tipo); }); // não recolhe o painel
+});
+document.querySelectorAll("#overlay-compartilhar .comp-abas button").forEach(b => b.onclick = () => trocarModoCompartilhar(b.dataset.modo));
+$("btn-comp-copiar").onclick = async () => {
+  const ok = await copiarTexto(COMPARTILHAR_ATUAL.texto);
+  avisoCompartilhar(ok ? "✓ Texto copiado! É só colar no WhatsApp." : "Não foi possível copiar automaticamente — selecione o texto acima e copie.", ok ? "ok" : "erro");
+};
+$("btn-comp-whatsapp").onclick = () => {
+  window.open("https://wa.me/?text=" + encodeURIComponent(COMPARTILHAR_ATUAL.texto), "_blank", "noopener");
+};
+$("btn-comp-baixar").onclick = () => {
+  const a = document.createElement("a");
+  a.href = COMPARTILHAR_ATUAL.dataUrl; a.download = nomeArquivoContas();
+  document.body.appendChild(a); a.click(); a.remove();
+  avisoCompartilhar("✓ Imagem baixada.");
+};
+$("btn-comp-enviar").onclick = async () => {
+  const blob = COMPARTILHAR_ATUAL.blob;
+  const arquivo = blob ? new File([blob], nomeArquivoContas(), { type: "image/png" }) : null;
+  if (arquivo && navigator.canShare && navigator.canShare({ files: [arquivo] })) {
+    try { await navigator.share({ files: [arquivo], title: $("comp-titulo").textContent.replace("📄 ", "") }); avisoCompartilhar("✓ Pronto!"); }
+    catch (e) { if (e.name !== "AbortError") avisoCompartilhar("Não foi possível enviar — use \"Baixar imagem\".", "erro"); }
+  } else {
+    $("btn-comp-baixar").onclick();
+    avisoCompartilhar("Esse navegador não envia imagem direto: ela foi baixada — anexe no WhatsApp.", "aviso");
+  }
+};
+function fecharCompartilhar() { $("overlay-compartilhar").classList.remove("aberto"); COMPARTILHAR_ATUAL = null; }
+$("btn-fechar-compartilhar").onclick = fecharCompartilhar;
+$("overlay-compartilhar").addEventListener("click", (e) => { if (e.target.id === "overlay-compartilhar") fecharCompartilhar(); });
+
 function renderContasAPagar(pendentes) {
   const lista = $("lista-contas-pagar");
   // sem vencimento vem primeiro — é o que mais precisa de atenção
   let registros = [...pendentes].sort((a, b) => (a.vencimento || "0000").localeCompare(b.vencimento || "0000"));
   if (FILTRO_MES_CONTAS_PAGAR) registros = registros.filter(r => (r.vencimento || "").slice(0, 7) === FILTRO_MES_CONTAS_PAGAR);
   const total = registros.reduce((s, r) => s + r.valor, 0);
+  CONTAS_NA_TELA.pagar = { registros, total, filtroMes: FILTRO_MES_CONTAS_PAGAR };
   $("total-contas-pagar").textContent = fmt(total);
   $("qtd-contas-pagar").textContent = registros.length ? `(${registros.length})` : "";
   if (!registros.length) {
@@ -5760,7 +5986,7 @@ function renderContasAPagar(pendentes) {
     linha.innerHTML = `
       <div class="nome-item">${escapeHtml(r.categoria)} — ${escapeHtml(r.descricao || "sem descrição")}${r.fornecedor ? ` <span style="color:var(--muted); font-weight:400;">(${escapeHtml(r.fornecedor)})</span>` : ""}
         <div class="cat-item">${r.vencimento ? "Vence " + paraBR(r.vencimento) : '<span class="tag-vencida">sem vencimento</span>'}${vencida ? '<span class="tag-vencida">vencida</span>' : ""} · ${escapeHtml(r.formaPagamento)}</div></div>
-      <div style="font-weight:800; color:var(--amarelo);">${fmt(r.valor)}</div>
+      <div class="valor-conta" style="color:var(--amarelo);">${fmt(r.valor)}</div>
       ${admin ? `<div class="acoes-conta"><button class="btn-mini btn-editar-conta" type="button" title="Editar despesa">✏️ Editar</button><button class="btn-mini salvar btn-pagar-conta" type="button">Marcar como pago</button></div>` : ""}
     `;
     if (admin) {
@@ -5783,6 +6009,7 @@ function renderContasPagas(pagas) {
   if (FILTRO_MES_CONTAS_PAGAS) registros = registros.filter(r => r._pag.mes === FILTRO_MES_CONTAS_PAGAS);
   registros.sort((a, b) => (b._pag.mes + b._pag.br.split("/")[0]).localeCompare(a._pag.mes + a._pag.br.split("/")[0]));
   const total = registros.reduce((s, r) => s + r.valor, 0);
+  CONTAS_NA_TELA.pagas = { registros, total, filtroMes: FILTRO_MES_CONTAS_PAGAS };
   $("total-contas-pagas").textContent = fmt(total);
   $("qtd-contas-pagas").textContent = registros.length ? `(${registros.length})` : "";
   if (!registros.length) {
@@ -5796,7 +6023,7 @@ function renderContasPagas(pagas) {
     linha.innerHTML = `
       <div class="nome-item">${escapeHtml(r.categoria)} — ${escapeHtml(r.descricao || "sem descrição")}${r.fornecedor ? ` <span style="color:var(--muted); font-weight:400;">(${escapeHtml(r.fornecedor)})</span>` : ""}
         <div class="cat-item">Pago em ${r._pag.br || "?"} · ${escapeHtml(r.formaPagamento)}</div></div>
-      <div style="font-weight:800; color:var(--verde);">${fmt(r.valor)} ✅</div>
+      <div class="valor-conta" style="color:var(--verde);">${fmt(r.valor)} ✅</div>
       ${ehAdmin() ? `<div class="acoes-conta"><button class="btn-mini btn-editar-conta" type="button" title="Editar despesa">✏️ Editar</button></div>` : ""}
     `;
     const btnEditar = linha.querySelector(".btn-editar-conta");
