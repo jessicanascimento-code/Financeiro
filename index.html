@@ -894,6 +894,50 @@
   .nota-dia b{ color:var(--creme); }
   .tag-pendente{ font-size:9.5px; font-weight:800; text-transform:uppercase; padding:1px 6px; border-radius:6px; background:rgba(255,196,0,.15); color:var(--amarelo); margin-left:4px; }
 
+  /* ---------- MODAL DE FORMULÁRIO (Editar despesa) ---------- */
+  .modal-form{ padding:0 !important; display:flex; flex-direction:column; overflow:hidden; }
+  .modal-form-topo{ display:flex; justify-content:space-between; align-items:flex-start; gap:10px; padding:16px 20px 12px; border-bottom:1px solid var(--borda); }
+  .modal-form-titulo{ font-size:18px; font-weight:800; color:var(--creme); }
+  .modal-form-sub{ font-size:12px; color:var(--muted); margin-top:2px; }
+  .form-modal{ padding:6px 20px 4px; overflow-y:auto; flex:1 1 auto; }
+  .form-bloco{ padding:11px 0 3px; border-bottom:1px dashed var(--borda); }
+  .form-bloco:last-child{ border-bottom:none; }
+  .form-bloco-titulo{ font-size:10.5px; font-weight:800; letter-spacing:.6px; text-transform:uppercase; color:var(--laranja); margin-bottom:8px; }
+  .form-modal .linha-campos{ display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+  .form-modal .campo{ margin-bottom:10px; min-width:0; }
+  .form-modal .linha-campos .campo{ margin-bottom:10px; }
+  .form-modal label{ display:block; font-size:11.5px; font-weight:700; color:var(--muted); margin:0 0 5px; }
+  .form-modal label em{ font-weight:400; font-style:normal; opacity:.8; }
+  .form-modal input, .form-modal select{
+    width:100%; height:40px; background:var(--preto); border:1.5px solid var(--borda); border-radius:10px;
+    padding:0 12px; color:var(--creme); font-size:14px; outline:none; transition:border-color .15s, box-shadow .15s;
+  }
+  .form-modal input:focus, .form-modal select:focus{ border-color:var(--laranja); box-shadow:0 0 0 3px rgba(255,122,26,.15); }
+  .form-modal input:disabled, .form-modal select:disabled{ opacity:.55; cursor:not-allowed; }
+  .campo-com-prefixo, .campo-com-sufixo{ display:flex; align-items:center; height:40px; background:var(--preto); border:1.5px solid var(--borda); border-radius:10px; overflow:hidden; transition:border-color .15s, box-shadow .15s; }
+  .campo-com-prefixo:focus-within, .campo-com-sufixo:focus-within{ border-color:var(--laranja); box-shadow:0 0 0 3px rgba(255,122,26,.15); }
+  .campo-com-prefixo span, .campo-com-sufixo span{ padding:0 10px; font-size:13px; font-weight:700; color:var(--muted); white-space:nowrap; }
+  .campo-com-prefixo span{ border-right:1px solid var(--borda); }
+  .campo-com-sufixo span{ border-left:1px solid var(--borda); }
+  .campo-com-prefixo input, .campo-com-sufixo input{ border:none !important; box-shadow:none !important; height:100%; border-radius:0; background:transparent; }
+  .info-categoria{ margin-top:6px; font-size:11px; line-height:1.4; color:var(--muted); background:var(--preto3); border:1px solid var(--borda); border-radius:9px; padding:6px 10px; }
+  .info-categoria:empty{ display:none; }
+  .info-categoria i{ display:block; margin-top:3px; opacity:.85; }
+  .campo-dica{ display:flex; align-items:flex-end; }
+  .dica-parcelas{ font-size:11px; color:var(--muted); line-height:1.4; margin:0 0 2px; }
+  .resumo-parcelas{ font-size:12px; font-weight:700; color:var(--amarelo); margin:2px 0 0; }
+  .resumo-parcelas:empty{ display:none; }
+  .modal-form .msg-status{ padding:0 20px; margin:0; }
+  .modal-form .msg-status:empty{ display:none; }
+  .modal-form-rodape{ display:grid; grid-template-columns:1fr 2fr; gap:10px; padding:12px 20px 16px; padding-bottom:calc(16px + env(safe-area-inset-bottom)); border-top:1px solid var(--borda); background:var(--preto2); }
+  .modal-form-rodape button{ height:44px; margin:0; }
+  .btn-cancelar-form{ font-size:13.5px !important; }
+  @media(max-width:480px){
+    .form-modal .linha-campos{ grid-template-columns:1fr; gap:0; }
+    .modal-form-topo, .form-modal, .modal-form-rodape{ padding-left:16px; padding-right:16px; }
+    .campo-dica{ display:block; }
+  }
+
   /* ---------- EDITAR DESPESA / INCONSISTÊNCIAS / DIAGNÓSTICO DE CAIXA ---------- */
   .acoes-conta{ display:flex; gap:6px; flex-wrap:wrap; justify-content:flex-end; }
   #overlay-editar-saida select:disabled, #overlay-editar-saida input:disabled{ opacity:.55; }
@@ -1681,38 +1725,81 @@
 
 <!-- ================= EDITAR DESPESA ================= -->
 <div class="overlay" id="overlay-editar-saida">
-  <div class="modal" style="max-width:520px;">
-    <div class="modal-topo">
-      <div><span class="titulo-comanda"><span>✏️ Editar despesa</span></span></div>
+  <div class="modal modal-form" style="max-width:560px;">
+    <div class="modal-form-topo">
+      <div>
+        <div class="modal-form-titulo">✏️ Editar despesa</div>
+        <div class="modal-form-sub">Altere o que precisar e toque em salvar.</div>
+      </div>
       <button class="btn-fechar-x" id="btn-fechar-editar-saida" type="button" aria-label="Fechar">✕</button>
     </div>
-    <div class="grid2">
-      <div><label>Categoria</label><select id="es-categoria"></select></div>
-      <div><label>Valor (R$)</label><input type="number" id="es-valor" step="0.01" min="0"></div>
-    </div>
-    <p class="dica-categoria-entrada" id="es-dica-categoria"></p>
-    <label>Descrição</label><input type="text" id="es-descricao">
-    <div class="grid2">
-      <div><label>Forma de pagamento</label>
-        <select id="es-forma"><option>Dinheiro</option><option>Pix</option><option>Cartão de Crédito</option></select>
+
+    <div class="form-modal">
+      <div class="form-bloco">
+        <div class="form-bloco-titulo">O que foi gasto</div>
+        <div class="campo">
+          <label for="es-categoria">Categoria</label>
+          <select id="es-categoria"></select>
+          <div class="info-categoria" id="es-dica-categoria"></div>
+        </div>
+        <div class="campo">
+          <label for="es-descricao">Descrição</label>
+          <input type="text" id="es-descricao" placeholder="Ex: Reposição Budweiser">
+        </div>
+        <div class="linha-campos">
+          <div class="campo">
+            <label for="es-valor">Valor</label>
+            <div class="campo-com-prefixo"><span>R$</span><input type="number" id="es-valor" step="0.01" min="0" inputmode="decimal"></div>
+          </div>
+          <div class="campo">
+            <label for="es-fornecedor">Fornecedor <em>(opcional)</em></label>
+            <input type="text" id="es-fornecedor" placeholder="Ex: Atacadão">
+          </div>
+        </div>
       </div>
-      <div><label>Status</label>
-        <select id="es-status"><option value="Pago">Pago</option><option value="Pendente">Pendente</option></select>
+
+      <div class="form-bloco">
+        <div class="form-bloco-titulo">Pagamento</div>
+        <div class="linha-campos">
+          <div class="campo">
+            <label for="es-forma">Forma de pagamento</label>
+            <select id="es-forma"><option>Dinheiro</option><option>Pix</option><option>Cartão de Crédito</option></select>
+          </div>
+          <div class="campo">
+            <label for="es-status">Status</label>
+            <select id="es-status"><option value="Pago">Pago</option><option value="Pendente">Pendente</option></select>
+          </div>
+        </div>
+      </div>
+
+      <div class="form-bloco">
+        <div class="form-bloco-titulo">Datas e parcelas</div>
+        <div class="linha-campos">
+          <div class="campo">
+            <label for="es-data">Data do lançamento</label>
+            <input type="date" id="es-data">
+          </div>
+          <div class="campo">
+            <label for="es-vencimento">Vencimento</label>
+            <input type="date" id="es-vencimento">
+          </div>
+        </div>
+        <div class="linha-campos">
+          <div class="campo">
+            <label for="es-parcelas">Parcelar em</label>
+            <div class="campo-com-sufixo"><input type="number" id="es-parcelas" min="1" max="24" value="1" inputmode="numeric"><span>vez(es)</span></div>
+          </div>
+          <div class="campo campo-dica">
+            <p class="dica-parcelas" id="es-dica-parcelas"></p>
+          </div>
+        </div>
+        <p class="resumo-parcelas" id="es-resumo-parcelas"></p>
       </div>
     </div>
-    <div class="grid2">
-      <div><label>Vencimento</label><input type="date" id="es-vencimento"></div>
-      <div><label>Data do lançamento</label><input type="date" id="es-data"></div>
-    </div>
-    <div class="grid2">
-      <div><label>Parcelar em</label><input type="number" id="es-parcelas" min="1" max="24" value="1"></div>
-      <div><label>Fornecedor (opcional)</label><input type="text" id="es-fornecedor"></div>
-    </div>
-    <p class="ordem-dica" id="es-dica-parcelas" style="margin-top:6px;"></p>
-    <p class="ordem-dica" id="es-resumo-parcelas" style="color:var(--amarelo); font-weight:700;"></p>
+
     <div class="msg-status" id="status-editar-saida"></div>
-    <div class="ordem-rodape">
-      <button class="btn-mini" id="btn-cancelar-editar-saida" type="button">Cancelar</button>
+    <div class="modal-form-rodape">
+      <button class="btn-mini btn-cancelar-form" id="btn-cancelar-editar-saida" type="button">Cancelar</button>
       <button class="btn-primario" id="btn-salvar-editar-saida" type="button">💾 Salvar alterações</button>
     </div>
   </div>
@@ -1979,7 +2066,7 @@
 // ar é realmente a versão mais nova ou se o GitHub Pages ainda está
 // servindo uma versão antiga em cache.
 // =====================================================================
-const VERSAO_APP = "8.5";
+const VERSAO_APP = "8.6";
 document.querySelectorAll(".badge-versao").forEach(el => el.textContent = "v" + VERSAO_APP);
 
 // =====================================================================
@@ -5360,7 +5447,7 @@ function htmlSeloCategoria(cat) {
 }
 function dicaCategoriaSaida(cat) {
   const tipo = TIPO_CATEGORIA_SAIDA[cat] || "despesa";
-  return `${htmlSeloCategoria(cat)} ${INFO_TIPO_SAIDA[tipo].texto}${EXEMPLOS_CATEGORIA_SAIDA[cat] ? ` <i>Ex: ${EXEMPLOS_CATEGORIA_SAIDA[cat]}.</i>` : ""}`;
+  return `${htmlSeloCategoria(cat)} ${INFO_TIPO_SAIDA[tipo].texto}${EXEMPLOS_CATEGORIA_SAIDA[cat] ? `<i>Ex: ${EXEMPLOS_CATEGORIA_SAIDA[cat]}.</i>` : ""}`;
 }
 function montarGuiaCategoriasSaida(categorias) {
   const ordemTipos = ["custo", "despesa", "investimento", "retirada"];
